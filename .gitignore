@@ -1,0 +1,20 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# build
+.next/
+out/
+dist/
+
+# env
+.env
+.env.local
+.env.production.local
+.env.development.local
+
+# misc
+.DS_Store
+*.log
+npm-debug.log*
