@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: watch-together-ws
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: ALLOWED_ORIGINS
+        sync: false # Set this to your Vercel URL manually

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import RoomClient from "@/components/client/RoomClient";
 import { roomStore } from "@/lib/roomStore";
 
-const WS_HTTP_URL = process.env.WS_HTTP_URL || "http://localhost:3002";
+const WS_HTTP_URL = process.env.WS_HTTP_URL || "http://localhost:3001";
 
 async function getRoomMeta(id) {
   // 1. Fast path: in-process roomStore (set during POST /api/rooms)

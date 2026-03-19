@@ -1,50 +1,12 @@
-/**
- * server/ws.js — WebSocket server + HTTP sidecar.
- *
- * Key fixes:
- *  - Host refresh grace period: electNewHost is delayed 6s so the refreshing
- *    host can reconnect and re-claim with their token before anyone else is promoted.
- *  - Host token re-claim: when host reconnects with valid token, room.hostId
- *    is reset back to them and any interim host is demoted.
- *
- * Client → Server:
- *   { type: 'join',         roomId, token, userId, videoUrl, username }
- *   { type: 'set_name',     username }
- *   { type: 'play',         currentTime }
- *   { type: 'pause',        currentTime }
- *   { type: 'seek',         currentTime }
- *   { type: 'speed',        rate }
- *   { type: 'change_video', videoUrl }   ← host only
- *   { type: 'kick',         targetUserId } ← host only
- *   { type: 'chat',         text }
- *   { type: 'ping' }
- *
- * Server → Client:
- *   { type: 'state_update',  state }
- *   { type: 'participants',  users: [{ userId, username }] }
- *   { type: 'chat',          senderId, senderName, text, ts }
- *   { type: 'user_joined',   userId, username, count }
- *   { type: 'user_left',     userId, username, count }
- *   { type: 'name_changed',  userId, username }
- *   { type: 'host_changed',  newHostId }
- *   { type: 'kicked' }
- *   { type: 'pong',          serverTime }
- *   { type: 'error',         message }
- */
-
 import { WebSocketServer, WebSocket } from "ws";
 import http from "http";
 
-const WS_PORT = parseInt(process.env.WS_PORT || "3001", 10);
-const HTTP_PORT = parseInt(process.env.WS_HTTP_PORT || "3002", 10);
+const PORT = parseInt(process.env.PORT || process.env.WS_PORT || "3001", 10);
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "http://localhost:3000")
   .split(",")
   .map((o) => o.trim());
 
-// How long (ms) to wait before electing a new host after the current host disconnects.
-// This gives a refreshing host time to reconnect and reclaim their role.
 const HOST_RECONNECT_GRACE_MS = 6000;
-
 const rooms = new Map();
 const clientMeta = new Map();
 
@@ -139,17 +101,44 @@ function makeRateLimiter(max = 5) {
   return { allow: () => ++n <= max, destroy: () => clearInterval(iv) };
 }
 
-// ── WebSocket server ──────────────────────────────────────────────────────────
+// ── HTTP server ─────────────────────────────────────────────────────────────
+const httpServer = http.createServer((req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Content-Type", "application/json");
+
+  // Health check for Render/Vercel/Fly
+  if (req.url === "/health" || req.url === "/") {
+    res.writeHead(200);
+    return res.end(JSON.stringify({ ok: true, rooms: rooms.size }));
+  }
+
+  // Room metadata query
+  const m = req.url?.match(/^\/rooms\/([^/?]+)/);
+  if (m) {
+    const room = rooms.get(m[1]);
+    if (!room) {
+      res.writeHead(404);
+      return res.end("{}");
+    }
+    res.writeHead(200);
+    return res.end(JSON.stringify(publicState(room)));
+  }
+
+  res.writeHead(404);
+  res.end("{}");
+});
+
+// ── WebSocket server (using shared HTTP server) ───────────────────────────
 const wss = new WebSocketServer({
-  port: WS_PORT,
+  server: httpServer,
   verifyClient: ({ req }, done) => {
     const origin = req.headers.origin || "";
     if (!origin || ALLOWED_ORIGINS.includes(origin)) return done(true);
+    // Allow everything in dev for convenience if not specified or explicit 'development'
+    if (!process.env.NODE_ENV || process.env.NODE_ENV === "development") return done(true);
     done(false, 403, "Forbidden");
   },
 });
-
-console.log(`[ws] WebSocket  listening on ws://localhost:${WS_PORT}`);
 
 wss.on("connection", (ws) => {
   let initialized = false;
@@ -164,7 +153,6 @@ wss.on("connection", (ws) => {
       return;
     }
 
-    // ── Join ─────────────────────────────────────────────────────────────────
     if (msg.type === "join") {
       const { roomId, token, userId, videoUrl } = msg;
       const username =
@@ -193,12 +181,9 @@ wss.on("connection", (ws) => {
         return;
       }
 
-      // FIX: If original host reconnects with valid token, re-claim host status
-      // and demote any interim host that was elected during the grace period.
       if (isHost && token === room.hostToken && room.hostId !== userId) {
         const prevHostId = room.hostId;
         room.hostId = userId;
-        // Demote the interim host's meta flag
         for (const [, m] of clientMeta) {
           if (m.roomId === roomId && m.userId === prevHostId) m.isHost = false;
         }
@@ -223,9 +208,6 @@ wss.on("connection", (ws) => {
         ws,
       );
 
-      console.log(
-        `[ws] ${username} joined room ${roomId} (${room.clients.size} total)`,
-      );
       return;
     }
 
@@ -234,7 +216,6 @@ wss.on("connection", (ws) => {
       return;
     }
     const meta = clientMeta.get(ws);
-    if (!meta) return;
     const room = rooms.get(meta.roomId);
     if (!room) return;
 
@@ -243,7 +224,6 @@ wss.on("connection", (ws) => {
       return;
     }
 
-    // ── Set display name ──────────────────────────────────────────────────────
     if (msg.type === "set_name") {
       const username = String(msg.username || "")
         .slice(0, 24)
@@ -258,7 +238,6 @@ wss.on("connection", (ws) => {
       return;
     }
 
-    // ── Chat ──────────────────────────────────────────────────────────────────
     if (msg.type === "chat") {
       if (!limiter.allow()) return;
       const text = String(msg.text || "")
@@ -275,7 +254,6 @@ wss.on("connection", (ws) => {
       return;
     }
 
-    // ── Kick (host only) ──────────────────────────────────────────────────────
     if (msg.type === "kick") {
       if (!meta.isHost) return;
       const targetId = msg.targetUserId;
@@ -293,7 +271,6 @@ wss.on("connection", (ws) => {
       return;
     }
 
-    // ── change_video (host only) ──────────────────────────────────────────────
     if (msg.type === "change_video") {
       if (!meta.isHost) return;
       const newUrl = String(msg.videoUrl || "").trim();
@@ -317,9 +294,7 @@ wss.on("connection", (ws) => {
       return;
     }
 
-    // ── Playback controls (all users) ─────────────────────────────────────────
     const currentTime = Number(msg.currentTime ?? room.currentTime);
-
     if (msg.type === "play") {
       room.isPlaying = true;
       room.currentTime = currentTime;
@@ -364,7 +339,6 @@ wss.on("connection", (ws) => {
     if (room) {
       room.clients.delete(ws);
       room.joinOrder = room.joinOrder.filter((id) => id !== meta.userId);
-
       if (room.clients.size === 0) {
         setTimeout(() => {
           if (room.clients.size === 0) rooms.delete(meta.roomId);
@@ -376,18 +350,12 @@ wss.on("connection", (ws) => {
           username: meta.username,
           count: room.clients.size,
         });
-
         if (meta.isHost) {
-          // FIX: don't immediately elect a new host — give the host time to
-          // reconnect (page refresh typically takes 1-3 seconds).
-          // Only elect if they haven't rejoined after the grace period.
           const { roomId, userId: hostUserId } = meta;
           setTimeout(() => {
             const r = rooms.get(roomId);
             if (!r) return;
-            // Still waiting on the original host — they reconnected
             if (r.joinOrder.includes(hostUserId)) return;
-            // Room no longer considers them host — already re-elected
             if (r.hostId !== hostUserId) return;
             electNewHost(r);
           }, HOST_RECONNECT_GRACE_MS);
@@ -395,39 +363,15 @@ wss.on("connection", (ws) => {
       }
     }
     clientMeta.delete(ws);
-    console.log(`[ws] ${meta.username} left room ${meta.roomId}`);
   });
 
   ws.on("error", (err) => console.error("[ws] socket error", err.message));
 });
 
-// ── HTTP sidecar ──────────────────────────────────────────────────────────────
-const httpServer = http.createServer((req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Content-Type", "application/json");
-  if (req.url === "/health") {
-    res.writeHead(200);
-    return res.end(JSON.stringify({ ok: true, rooms: rooms.size }));
-  }
-  const m = req.url?.match(/^\/rooms\/([^/?]+)/);
-  if (m) {
-    const room = rooms.get(m[1]);
-    if (!room) {
-      res.writeHead(404);
-      return res.end("{}");
-    }
-    res.writeHead(200);
-    return res.end(JSON.stringify(publicState(room)));
-  }
-  res.writeHead(404);
-  res.end("{}");
-});
-
-httpServer.listen(HTTP_PORT, () =>
-  console.log(`[ws] HTTP sidecar listening on http://localhost:${HTTP_PORT}`),
+httpServer.listen(PORT, "0.0.0.0", () =>
+  console.log(`[ws] Integrated server listening on 0.0.0.0:${PORT}`),
 );
 
-// ── Heartbeat ─────────────────────────────────────────────────────────────────
 setInterval(() => {
   const now = Date.now();
   for (const [roomId, room] of rooms) {

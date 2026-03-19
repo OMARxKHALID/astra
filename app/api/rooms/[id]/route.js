@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { roomStore }    from "@/lib/roomStore";
 
-const WS_HTTP_URL = process.env.WS_HTTP_URL || "http://localhost:3002";
+const WS_HTTP_URL = process.env.WS_HTTP_URL || "http://localhost:3001";
 
 /**
  * Try the WS HTTP sidecar for live room state.

@@ -1,0 +1,16 @@
+{
+  "name": "watch-together-server",
+  "version": "1.0.0",
+  "description": "Integrated WebSocket & Metadata Sidecar for WatchTogether",
+  "type": "module",
+  "main": "ws.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node ws.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
