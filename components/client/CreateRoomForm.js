@@ -49,6 +49,13 @@ export default function CreateRoomForm() {
     }
   }
 
+  function handleRemoveRoom(roomId, e) {
+    e?.stopPropagation();
+    const updated = recentRooms.filter(r => r.id !== roomId);
+    setRecentRooms(updated);
+    localStorage.setItem("recent_rooms", JSON.stringify(updated));
+  }
+
   return (
     <div className="glass-card p-7">
       <div className="mb-6">
@@ -121,18 +128,29 @@ export default function CreateRoomForm() {
           <p className="text-[10px] font-mono text-muted/60 uppercase tracking-widest mb-2 px-1">Your Recent Rooms</p>
           <div className="flex flex-col gap-1.5">
             {recentRooms.map((r) => (
-              <button
-                key={r.id}
-                onClick={() => router.push(`/room/${r.id}`)}
-                className="w-full text-left flex items-center gap-3 px-3 py-2 rounded-[2rem] hover:bg-white/5 transition-colors border border-transparent hover:border-white/5 group"
-              >
-                <div className="w-1.5 h-1.5 rounded-full bg-amber-500/50 group-hover:bg-amber-400 group-hover:shadow-[0_0_8px_rgba(245,158,11,0.5)] transition-all" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-white/90 truncate font-display">Room <span className="font-mono font-medium text-white/50 bg-white/10 px-1 py-0.5 rounded ml-1 text-[10px]">{r.id.slice(0, 6)}</span></p>
-                  <p className="text-[10px] text-muted truncate leading-tight mt-0.5 max-w-[90%]">{r.url}</p>
-                </div>
-                <div className="shrink-0 text-[10px] font-mono font-bold text-amber-500/0 group-hover:text-amber-500 transition-colors uppercase">Join &rarr;</div>
-              </button>
+              <div key={r.id} className="relative group">
+                <button
+                  onClick={() => router.push(`/room/${r.id}`)}
+                  className="w-full text-left flex items-center gap-3 px-3 py-2 rounded-[2rem] hover:bg-white/5 transition-colors border border-transparent hover:border-white/5"
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500/50 group-hover:bg-amber-400 group-hover:shadow-[0_0_8px_rgba(245,158,11,0.5)] transition-all" />
+                  <div className="flex-1 min-w-0 pr-8">
+                    <p className="text-xs font-bold text-white/90 truncate font-display">Room <span className="font-mono font-medium text-white/50 bg-white/10 px-1 py-0.5 rounded ml-1 text-[10px]">{r.id.slice(0, 6)}</span></p>
+                    <p className="text-[10px] text-muted truncate leading-tight mt-0.5 max-w-[90%]">{r.url}</p>
+                  </div>
+                  <div className="shrink-0 text-[10px] font-mono font-bold text-amber-500/0 group-hover:text-amber-500 transition-colors uppercase mr-6">Join &rarr;</div>
+                </button>
+                <button 
+                  onClick={(e) => handleRemoveRoom(r.id, e)}
+                  title="Remove from history"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-white/20 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100 z-10"
+                >
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
             ))}
           </div>
         </div>

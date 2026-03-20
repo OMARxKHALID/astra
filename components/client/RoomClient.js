@@ -10,7 +10,7 @@ import ParticipantList from "./ParticipantList";
 import SyncStatusIndicator from "./SyncStatusIndicator";
 import ReconnectBanner from "./ReconnectBanner";
 import ToastContainer, { useToast } from "./Toast";
-import { ShareIcon, CrownIcon, FilmIcon, LockSmallIcon, UnlockSmallIcon } from "./Icons";
+import { ShareIcon, CrownIcon, FilmIcon, LockSmallIcon, UnlockSmallIcon, CcIcon } from "./Icons";
 
 const MAX_MESSAGES = 200;
 
@@ -131,25 +131,29 @@ export default function RoomClient({ roomId, initialMeta }) {
         let type = "info";
         let cleanText = msg.text;
 
-        if (msg.text.includes("👑")) {
-          icon = <CrownIcon className="w-3 h-3 text-amber-500" />;
-          cleanText = msg.text.replace("👑", "").trim();
-        } else if (msg.text.includes("🎬")) {
-          icon = <FilmIcon className="w-3 h-3 text-jade" />;
-          cleanText = msg.text.replace("🎬", "").trim();
+        if (msg.text.includes("[HOST]")) {
+          icon = <CrownIcon className="w-4 h-4 text-amber-500" />;
+          cleanText = msg.text.replace("[HOST]", "").trim();
+        } else if (msg.text.includes("[VIDEO]")) {
+          icon = <FilmIcon className="w-4 h-4 text-jade" />;
+          cleanText = msg.text.replace("[VIDEO]", "").trim();
           type = "success";
-        } else if (msg.text.includes("\ud83d\udd12")) {
-          icon = <LockSmallIcon className="w-3 h-3 text-danger" />;
-          cleanText = msg.text.replace("\ud83d\udd12", "").trim();
+        } else if (msg.text.includes("[SUBS]")) {
+          icon = <CcIcon className="w-4 h-4 text-jade" />;
+          cleanText = msg.text.replace("[SUBS]", "").trim();
+          type = "success";
+        } else if (msg.text.includes("[LOCK]")) {
+          icon = <LockSmallIcon className="w-4 h-4 text-danger" />;
+          cleanText = msg.text.replace("[LOCK]", "").trim();
           type = "error";
-        } else if (msg.text.includes("\ud83d\udd13")) {
-          icon = <UnlockSmallIcon className="w-3 h-3 text-jade" />;
-          cleanText = msg.text.replace("\ud83d\udd13", "").trim();
+        } else if (msg.text.includes("[UNLOCK]")) {
+          icon = <UnlockSmallIcon className="w-4 h-4 text-jade" />;
+          cleanText = msg.text.replace("[UNLOCK]", "").trim();
           type = "success";
         }
 
         addToast(cleanText, type, 4000, icon);
-        return; // Don't add to chat history as per user request
+        return;
       }
 
       setMessages((prev) => {
@@ -223,7 +227,7 @@ export default function RoomClient({ roomId, initialMeta }) {
     [],
   );
   const handleLoadUrl = useCallback(
-    (url) => sendRef.current?.({ type: "change_video", videoUrl: url }),
+    (url, subUrl) => sendRef.current?.({ type: "change_video", videoUrl: url, subtitleUrl: subUrl }),
     [],
   );
   const handlePlay = useCallback(
@@ -249,8 +253,14 @@ export default function RoomClient({ roomId, initialMeta }) {
   );
   const handleSpeed = useCallback(
     (rate) => {
-      setServerState((s) => ({ ...(s || {}), playbackRate: rate }));
-      sendRef.current?.({ type: "speed", rate });
+      const time = videoRef.current?.currentTime || 0;
+      setServerState((s) => ({ 
+        ...(s || {}), 
+        playbackRate: rate,
+        currentTime: time,
+        lastUpdated: Date.now()
+      }));
+      sendRef.current?.({ type: "speed", rate, currentTime: time });
     },
     [],
   );
@@ -279,6 +289,7 @@ export default function RoomClient({ roomId, initialMeta }) {
   const isPlaying = serverState?.isPlaying ?? false;
   const playbackRate = serverState?.playbackRate ?? 1;
   const videoUrl = serverState?.videoUrl ?? initialMeta?.videoUrl ?? "";
+  const subtitleUrl = serverState?.subtitleUrl ?? initialMeta?.subtitleUrl ?? "";
   const hostOnlyControls = serverState?.hostOnlyControls ?? false;
   const canControl = !hostOnlyControls || isHost;
 
@@ -489,6 +500,7 @@ export default function RoomClient({ roomId, initialMeta }) {
           <VideoPlayer
             videoRef={videoRef}
             videoUrl={videoUrl}
+            subtitleUrl={subtitleUrl}
             isHost={isHost}
             isPlaying={isPlaying}
             playbackRate={playbackRate}
@@ -498,6 +510,7 @@ export default function RoomClient({ roomId, initialMeta }) {
             onSpeed={handleSpeed}
             canControl={canControl}
             chatOverlay={chatOverlay}
+            onLoad={handleLoadUrl}
           />
         </section>
 
@@ -505,6 +518,7 @@ export default function RoomClient({ roomId, initialMeta }) {
           <VideoUrlInput
             isHost={isHost}
             currentUrl={videoUrl}
+            currentSubtitleUrl={subtitleUrl}
             onLoad={handleLoadUrl}
           />
         </section>

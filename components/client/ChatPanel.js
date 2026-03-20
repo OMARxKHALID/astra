@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ChatBubbleIcon, SendIcon, CrownIcon, FilmIcon, LockSmallIcon, UnlockSmallIcon } from "./Icons";
+import { ChatBubbleIcon, SendIcon, CrownIcon, FilmIcon, LockSmallIcon, UnlockSmallIcon, CcIcon } from "./Icons";
 
 export default function ChatPanel({
   messages = [],
@@ -134,18 +134,21 @@ function ChatMessage({ msg, isOwn, displayNames = {} }) {
     let icon = null;
     let cleanText = msg.text;
 
-    if (msg.text.includes("👑")) {
+    if (msg.text.includes("[HOST]")) {
       icon = <CrownIcon className="w-3 h-3 text-amber-500" />;
-      cleanText = msg.text.replace("👑", "").trim();
-    } else if (msg.text.includes("🎬")) {
+      cleanText = msg.text.replace("[HOST]", "").trim();
+    } else if (msg.text.includes("[VIDEO]")) {
       icon = <FilmIcon className="w-3 h-3 text-jade" />;
-      cleanText = msg.text.replace("🎬", "").trim();
-    } else if (msg.text.includes("\ud83d\udd12")) {
+      cleanText = msg.text.replace("[VIDEO]", "").trim();
+    } else if (msg.text.includes("[SUBS]")) {
+      icon = <CcIcon className="w-3 h-3 text-jade" />;
+      cleanText = msg.text.replace("[SUBS]", "").trim();
+    } else if (msg.text.includes("[LOCK]")) {
       icon = <LockSmallIcon className="w-3 h-3 text-danger" />;
-      cleanText = msg.text.replace("\ud83d\udd12", "").trim();
-    } else if (msg.text.includes("\ud83d\udd13")) {
+      cleanText = msg.text.replace("[LOCK]", "").trim();
+    } else if (msg.text.includes("[UNLOCK]")) {
       icon = <UnlockSmallIcon className="w-3 h-3 text-jade" />;
-      cleanText = msg.text.replace("\ud83d\udd13", "").trim();
+      cleanText = msg.text.replace("[UNLOCK]", "").trim();
     }
 
     return (

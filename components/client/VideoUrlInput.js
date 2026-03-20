@@ -4,7 +4,7 @@ import { useState } from "react";
 import { classifyUrl, SOURCE_LABELS } from "@/lib/videoSource";
 import { LinkIcon } from "./Icons";
 
-export default function VideoUrlInput({ isHost, currentUrl, onLoad }) {
+export default function VideoUrlInput({ isHost, currentUrl, currentSubtitleUrl, onLoad }) {
   const [input, setInput] = useState("");
   const [focused, setFocused] = useState(false);
 
@@ -15,7 +15,7 @@ export default function VideoUrlInput({ isHost, currentUrl, onLoad }) {
   function handleSubmit(e) {
     e?.preventDefault();
     if (!input.trim() || !isHost) return;
-    onLoad(input.trim());
+    onLoad(input.trim(), ""); // Reset subs when loading a new video from here
     setInput("");
   }
 
@@ -38,6 +38,11 @@ export default function VideoUrlInput({ isHost, currentUrl, onLoad }) {
           </div>
           <div className="text-sm text-white/60 font-mono truncate max-w-full">
             {currentUrl || "No video loaded"}
+            {currentSubtitleUrl && (
+              <span className="ml-2 text-[10px] text-amber-500/80 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                CC ACTIVE
+              </span>
+            )}
           </div>
         </div>
       </div>

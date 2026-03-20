@@ -9,9 +9,11 @@ export default function VimeoPlayer({
   videoId,
   isHost,
   isPlaying,
+  playbackRate,
   onPlay,
   onPause,
   onSeek,
+  onSpeed,
   canControl = true,
   chatOverlay,
 }) {
@@ -24,6 +26,7 @@ export default function VimeoPlayer({
   const [bufferedPct, setBufferedPct] = useState(0);
   const [ctrlVis, setCtrlVis] = useState(true);
   const [muted, setMuted] = useState(false);
+  const [ccEnabled, setCcEnabled] = useState(false);
   const [volume, setVolume] = useState(1);
   const hideTimer = useRef(null);
 
@@ -41,27 +44,37 @@ export default function VimeoPlayer({
   useEffect(() => {
     if (!videoRef) return;
     let _t = 0,
-      _p = true;
+      _p = true,
+      _r = 1,
+      _ended = false;
     videoRef.current = {
       get currentTime() {
         return _t;
       },
       set currentTime(t) {
         _t = t;
+        _ended = false;
         playerRef.current?.setCurrentTime(t).catch(() => {});
       },
       get paused() {
         return _p;
       },
+      get ended() {
+        return _ended;
+      },
       get readyState() {
         return ready ? 4 : 0;
       },
       get playbackRate() {
-        return 1;
+        return _r;
       },
-      set playbackRate(_) {},
+      set playbackRate(r) {
+        _r = r;
+        if (ready) playerRef.current?.setPlaybackRate(r).catch(() => {});
+      },
       play() {
         _p = false;
+        _ended = false;
         return playerRef.current?.play().catch(() => {}) ?? Promise.resolve();
       },
       pause() {
@@ -88,6 +101,10 @@ export default function VimeoPlayer({
           player.getDuration().then((d) => setDuration(d));
           player.on("timeupdate", ({ seconds }) => setLocalTime(seconds));
           player.on("progress", ({ percent }) => setBufferedPct(percent * 100));
+          player.on("ended", () => {
+            // Notify the server to stop advancing time
+            player.getDuration().then((d) => onPause?.(d)).catch(() => {});
+          });
           setReady(true);
         })
         .catch(() => {});
@@ -99,10 +116,29 @@ export default function VimeoPlayer({
     };
   }, [videoId]);
 
+  useEffect(() => {
+    if (!ready || !playerRef.current) return;
+    if (ccEnabled) {
+      // Best effort toggle using Vimeo API
+      playerRef.current.enableTextTrack("en").catch(() => {});
+    } else {
+      playerRef.current.disableTextTrack().catch(() => {});
+    }
+  }, [ccEnabled, ready]);
+
   function handlePlayPause() {
     if (!ready || !canControl) return;
-    if (isPlaying) onPause?.(localTime);
-    else onPlay?.(localTime);
+    if (isPlaying) {
+      onPause?.(localTime);
+    } else {
+      // If video ended, restart from 0 for all viewers
+      if (localTime >= duration - 0.5) {
+        playerRef.current?.setCurrentTime(0).catch(() => {});
+        onPlay?.(0);
+      } else {
+        onPlay?.(localTime);
+      }
+    }
   }
 
   function handleSeekCommit(e) {
@@ -166,15 +202,19 @@ export default function VimeoPlayer({
         duration={duration}
         progressPct={duration > 0 ? (localTime / duration) * 100 : 0}
         bufferedPct={bufferedPct}
-        playbackRate={1}
+        playbackRate={playbackRate}
         onPlayPause={handlePlayPause}
         onSeekCommit={handleSeekCommit}
-        showSpeed={false}
+        showSpeed={canControl}
+        onSpeedChange={onSpeed}
         volume={volume}
         muted={muted}
         onVolumeChange={handleVolumeChange}
         onMuteToggle={() => setMuted((m) => !m)}
         showVolume
+        showCc
+        ccEnabled={ccEnabled}
+        onCcToggle={() => setCcEnabled((e) => !e)}
         canControl={canControl}
       />
     </div>

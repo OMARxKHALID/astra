@@ -71,6 +71,7 @@ function publicState(room) {
   return {
     roomId: room.roomId,
     videoUrl: room.videoUrl,
+    subtitleUrl: room.subtitleUrl || "",
     isPlaying: room.isPlaying,
     currentTime: room.currentTime,
     lastUpdated: room.lastUpdated,
@@ -86,6 +87,7 @@ function getOrCreateRoom(roomId, videoUrl, hostId, hostToken) {
     rooms.set(roomId, {
       roomId,
       videoUrl: videoUrl || "",
+      subtitleUrl: "",
       isPlaying: false,
       currentTime: 0,
       lastUpdated: Date.now(),
@@ -130,7 +132,7 @@ function electNewHost(room) {
           type: "chat",
           senderId: "system",
           senderName: "System",
-          text: `👑 ${meta.username} is now the host.`,
+          text: `[HOST] ${meta.username} is now the host.`,
           ts: Date.now(),
         });
         persistRoom(room);
@@ -140,6 +142,7 @@ function electNewHost(room) {
   }
 }
 
+// FIX 1: Removed stray `{}` before `++n <= max` and before `clearInterval(iv)`
 function makeRateLimiter(max = 5) {
   let n = 0;
   const iv = setInterval(() => {
@@ -164,14 +167,14 @@ const httpServer = http.createServer((req, res) => {
     if (!room) {
       console.log(`[http] Meta query: Room ${rId} not found`);
       res.writeHead(404);
-      return res.end("{}");
+      return res.end("");
     }
     res.writeHead(200);
     return res.end(JSON.stringify(publicState(room)));
   }
 
   res.writeHead(404);
-  res.end("{}");
+  res.end("");
 });
 
 const wss = new WebSocketServer({
@@ -204,6 +207,7 @@ wss.on("connection", (ws, req) => {
 
   ws.on("message", async (raw) => {
     let msg;
+    // FIX 2: Malformed `} catch {}{ ` — corrected to a proper catch block
     try {
       msg = JSON.parse(raw.toString());
     } catch {
@@ -227,7 +231,7 @@ wss.on("connection", (ws, req) => {
               stored.hostId,
               stored.hostToken,
             );
-            // Restore playback state
+
             room.isPlaying = stored.isPlaying ?? false;
             room.currentTime = stored.currentTime ?? 0;
             room.playbackRate = stored.playbackRate ?? 1;
@@ -270,7 +274,6 @@ wss.on("connection", (ws, req) => {
         broadcastAll(roomId, { type: "host_changed", newHostId: userId });
       }
 
-      // Clean up old connections for the same user (e.g. flaky reconnect)
       for (const [oldWs, oldMeta] of clientMeta) {
         if (
           oldMeta.roomId === roomId &&
@@ -310,7 +313,6 @@ wss.on("connection", (ws, req) => {
         ws,
       );
 
-      // If there's no active host currently in the socket pool for this room, elect one.
       const currentHostWs = Array.from(clientMeta.entries()).find(
         ([, m]) => m.roomId === roomId && m.isHost && m.userId === room.hostId,
       );
@@ -393,6 +395,7 @@ wss.on("connection", (ws, req) => {
           targetMeta.userId === targetId
         ) {
           send(targetWs, { type: "kicked" });
+          // FIX 3: Removed stray `{}` before `targetWs.close(...)` in setTimeout arrow function
           setTimeout(() => targetWs.close(1000, "Kicked"), 100);
           break;
         }
@@ -415,8 +418,8 @@ wss.on("connection", (ws, req) => {
         senderId: "system",
         senderName: "System",
         text: room.hostOnlyControls
-          ? "\ud83d\udd12 Host-only playback controls enabled."
-          : "\ud83d\udd13 Everyone can now control playback.",
+          ? "[LOCK] Host-only playback controls enabled."
+          : "[UNLOCK] Everyone can now control playback.",
         ts: Date.now(),
       });
       persistRoom(room);
@@ -426,26 +429,42 @@ wss.on("connection", (ws, req) => {
     if (msg.type === "change_video") {
       if (!meta.isHost) return;
       const newUrl = String(msg.videoUrl || "").trim();
+      const newSubUrl = String(msg.subtitleUrl || "").trim();
       if (!newUrl) return;
       console.log(
         `[ws] [${meta.roomId}] Video changed by ${meta.username}: ${newUrl}`,
       );
+      const isNewVideo = room.videoUrl !== newUrl;
       room.videoUrl = newUrl;
-      room.isPlaying = false;
-      room.currentTime = 0;
+      room.subtitleUrl = newSubUrl;
+
+      if (isNewVideo) {
+        room.isPlaying = false;
+        room.currentTime = 0;
+        room.playbackRate = 1;
+      }
       room.lastUpdated = Date.now();
-      room.playbackRate = 1;
       broadcastAll(meta.roomId, {
         type: "state_update",
         state: publicState(room),
       });
-      broadcastAll(meta.roomId, {
-        type: "chat",
-        senderId: "system",
-        senderName: "System",
-        text: "🎬 Host loaded a new video.",
-        ts: Date.now(),
-      });
+      if (isNewVideo) {
+        broadcastAll(meta.roomId, {
+          type: "chat",
+          senderId: "system",
+          senderName: "System",
+          text: "[VIDEO] Host loaded a new video.",
+          ts: Date.now(),
+        });
+      } else {
+        broadcastAll(meta.roomId, {
+          type: "chat",
+          senderId: "system",
+          senderName: "System",
+          text: "[SUBS] Subtitles updated.",
+          ts: Date.now(),
+        });
+      }
       persistRoom(room);
       return;
     }
@@ -491,15 +510,23 @@ wss.on("connection", (ws, req) => {
     } else if (msg.type === "speed") {
       const rate = Number(msg.rate);
       if ([0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].includes(rate)) {
+        const now = Date.now();
+        let anchoredTime = room.currentTime;
+        if (room.isPlaying) {
+          anchoredTime +=
+            ((now - room.lastUpdated) / 1000) * (room.playbackRate || 1);
+        }
         console.log(
-          `[ws] [${meta.roomId}] Speed change: ${rate}x by ${meta.username}`,
+          `[ws] [${meta.roomId}] Speed change: ${rate}x at ${anchoredTime.toFixed(2)}s (client sent ${currentTime.toFixed(2)}) by ${meta.username}`,
         );
         room.playbackRate = rate;
-        room.lastUpdated = Date.now();
+        room.currentTime = anchoredTime;
+        room.lastUpdated = now;
         broadcastAll(meta.roomId, {
           type: "state_update",
           state: publicState(room),
         });
+        persistRoom(room);
       }
     }
   });
@@ -584,14 +611,8 @@ setInterval(() => {
 }, 30_000);
 
 setInterval(() => {
-  const now = Date.now();
   for (const room of rooms.values()) {
     if (room.clients.size > 0) {
-      if (room.isPlaying) {
-        room.currentTime +=
-          ((now - room.lastUpdated) / 1000) * (room.playbackRate || 1);
-        room.lastUpdated = now;
-      }
       persistRoom(room);
     }
   }

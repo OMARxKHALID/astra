@@ -9,6 +9,7 @@ import { ExclamationIcon } from "./utils";
 export default function VideoPlayer({
   videoRef,
   videoUrl,
+  subtitleUrl,
   isHost,
   isPlaying,
   playbackRate = 1,
@@ -18,6 +19,7 @@ export default function VideoPlayer({
   onSpeed,
   canControl = true,
   chatOverlay,
+  onLoad,
 }) {
   const source = classifyUrl(videoUrl);
 
@@ -26,6 +28,7 @@ export default function VideoPlayer({
       <NativeVideoPlayer
         videoRef={videoRef}
         videoUrl={videoUrl}
+        subtitleUrl={subtitleUrl}
         sourceType={source.type}
         isHost={isHost}
         isPlaying={isPlaying}
@@ -36,6 +39,7 @@ export default function VideoPlayer({
         onSpeed={onSpeed}
         canControl={canControl}
         chatOverlay={chatOverlay}
+        onLoad={onLoad}
       />
     );
 
@@ -53,6 +57,7 @@ export default function VideoPlayer({
         onSpeed={onSpeed}
         canControl={canControl}
         chatOverlay={chatOverlay}
+        onLoad={onLoad}
       />
     );
 
@@ -63,11 +68,14 @@ export default function VideoPlayer({
         videoId={source.videoId}
         isHost={isHost}
         isPlaying={isPlaying}
+        playbackRate={playbackRate}
         onPlay={onPlay}
         onPause={onPause}
         onSeek={onSeek}
+        onSpeed={onSpeed}
         canControl={canControl}
         chatOverlay={chatOverlay}
+        onLoad={onLoad}
       />
     );
 

@@ -17,6 +17,7 @@
     "clsx": "^2.1.1",
     "hls.js": "^1.6.15",
     "next": "^15.1.0",
+    "opensubtitles-api": "^5.1.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^2.5.4",

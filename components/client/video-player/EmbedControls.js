@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { formatTime, SpeedPicker } from "./utils";
 import {
-  formatTime,
-  SpeedPicker,
   PlayIcon,
   PauseIcon,
   VolumeIcon,
   MuteIcon,
   LockSmallIcon,
-} from "./utils";
+  CcIcon,
+} from "../Icons";
 
 export default function EmbedControls({
   visible,
@@ -28,6 +28,9 @@ export default function EmbedControls({
   onVolumeChange,
   onMuteToggle,
   showVolume = false,
+  showCc = false,
+  ccEnabled = false,
+  onCcToggle,
   canControl = true,
 }) {
   const [tmp, setTmp] = useState(0);
@@ -126,6 +129,18 @@ export default function EmbedControls({
             </span>
           )}
           <div className="flex-1" />
+          
+          {showCc && onCcToggle && (
+            <button
+              onClick={onCcToggle}
+              aria-label="Toggle Subtitles"
+              className={`w-9 h-9 flex items-center justify-center rounded-[2rem] border transition-all active:scale-90 backdrop-blur-sm
+                ${ccEnabled ? "bg-amber-500/20 text-amber-500 border-amber-500/30" : "bg-white/8 hover:bg-white/18 text-white border-white/8"}`}
+            >
+              <CcIcon className="w-5 h-5" />
+            </button>
+          )}
+
           {showSpeed && onSpeedChange && canControl && (
             <SpeedPicker value={playbackRate} onChange={onSpeedChange} />
           )}

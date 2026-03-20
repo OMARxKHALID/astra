@@ -26,6 +26,7 @@ export default function YouTubePlayer({
   const [bufferedPct, setBufferedPct] = useState(0);
   const [ctrlVis, setCtrlVis] = useState(true);
   const [muted, setMuted] = useState(false);
+  const [ccEnabled, setCcEnabled] = useState(false);
   const [volume, setVolume] = useState(1);
   const hideTimer = useRef(null);
 
@@ -67,6 +68,16 @@ export default function YouTubePlayer({
           );
         } catch {
           return true;
+        }
+      },
+      get ended() {
+        try {
+          return (
+            playerRef.current?.getPlayerState?.() ===
+            window.YT?.PlayerState?.ENDED
+          );
+        } catch {
+          return false;
         }
       },
       get readyState() {
@@ -128,8 +139,18 @@ export default function YouTubePlayer({
           modestbranding: 1,
           rel: 0,
           enablejsapi: 1,
+          cc_load_policy: ccEnabled ? 1 : 0,
         },
-        events: { onReady: () => setReady(true) },
+        events: {
+          onReady: () => setReady(true),
+          onStateChange: (e) => {
+            // YT.PlayerState.ENDED === 0
+            if (e.data === window.YT?.PlayerState?.ENDED) {
+              const dur = playerRef.current?.getDuration?.() ?? 0;
+              onPause?.(dur);
+            }
+          },
+        },
       });
     });
     return () => {
@@ -142,11 +163,35 @@ export default function YouTubePlayer({
     };
   }, [videoId]);
 
+  // Toggle CC in the YouTube player dynamically
+  useEffect(() => {
+    if (!ready || !playerRef.current) return;
+    try {
+      if (ccEnabled) {
+        playerRef.current.loadModule?.("captions");
+        playerRef.current.setOption?.("captions", "track", { languageCode: "en" });
+      } else {
+        playerRef.current.unloadModule?.("captions");
+      }
+    } catch {}
+  }, [ccEnabled, ready]);
+
   function handlePlayPause() {
     if (!ready || !canControl) return;
-    const t = playerRef.current?.getCurrentTime?.() ?? 0;
-    if (isPlaying) onPause?.(t);
-    else onPlay?.(t);
+    if (isPlaying) {
+      const t = playerRef.current?.getCurrentTime?.() ?? 0;
+      onPause?.(t);
+    } else {
+      // If video ended, restart from 0 for all viewers
+      const state = playerRef.current?.getPlayerState?.();
+      if (state === window.YT?.PlayerState?.ENDED) {
+        playerRef.current?.seekTo?.(0, true);
+        onPlay?.(0);
+      } else {
+        const t = playerRef.current?.getCurrentTime?.() ?? 0;
+        onPlay?.(t);
+      }
+    }
   }
 
   function handleSeekCommit(e) {
@@ -217,6 +262,9 @@ export default function YouTubePlayer({
         onVolumeChange={handleVolumeChange}
         onMuteToggle={() => setMuted((m) => !m)}
         showVolume
+        showCc
+        ccEnabled={ccEnabled}
+        onCcToggle={() => setCcEnabled((e) => !e)}
         canControl={canControl}
       />
     </div>

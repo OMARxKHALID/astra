@@ -16,9 +16,7 @@ function Avatar({ name, isMe, isHost }) {
     >
       {initials}
       {isHost && (
-        <div 
-          className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center border border-void shadow-[0_0_8px_rgba(245,158,11,0.5)]"
-        >
+        <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center border border-void shadow-[0_0_8px_rgba(245,158,11,0.5)]">
           <CrownIcon className="w-2 h-2 text-void" />
         </div>
       )}
@@ -52,8 +50,6 @@ export default function ParticipantList({
           </p>
         </div>
       </div>
-
-      {}
       <div
         className="flex-1 overflow-y-auto px-4 py-3 space-y-1"
         style={{ scrollbarWidth: "none" }}
@@ -65,13 +61,11 @@ export default function ParticipantList({
             </p>
           </div>
         )}
-
         {participants.map((uid) => {
           const isMe = uid === myUserId;
           const isThisHost = uid === hostId;
           const name = getName(uid);
           const canKick = isHost && !isMe && !isThisHost;
-
           return (
             <div
               key={uid}

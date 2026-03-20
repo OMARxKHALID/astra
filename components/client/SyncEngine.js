@@ -6,6 +6,7 @@ import {
   computeCorrection,
   driftStatus,
   SYNC_CHECK_INTERVAL,
+  HARD_SEEK_THRESHOLD,
 } from "@/lib/sync";
 
 const WS_URL =
@@ -15,7 +16,7 @@ const WS_URL =
     : `ws://${typeof window !== "undefined" ? window.location.hostname : "localhost"}:3001`);
 const backoff = (attempt) => Math.min(1000 * 2 ** attempt, 30_000);
 
-const SEEK_COOLDOWN_MS = 1500;
+const SEEK_COOLDOWN_MS = 3000;
 
 export default function SyncEngine({
   roomId,
@@ -32,7 +33,7 @@ export default function SyncEngine({
   onKicked,
   sendRef,
 }) {
-  const p = useRef({});
+  const p = useRef();
   p.current = {
     roomId,
     userId,
@@ -54,6 +55,7 @@ export default function SyncEngine({
   const attempt = useRef(0);
   const rTimer = useRef(null);
   const clockOffset = useRef(0);
+  const clockSamples = useRef([]);
   const pTimer = useRef(null);
   const off = useRef(false);
 
@@ -81,33 +83,49 @@ export default function SyncEngine({
       const v = vr?.current;
       const s = serverLine.current;
       if (!v || !s) return;
-      if (v.readyState < 1) return;
 
-      if (Date.now() - lastSeekAt.current < SEEK_COOLDOWN_MS) {
-        od?.("synced");
-        return;
+      if (v.readyState < 3 || v.seeking) return;
+
+      if (v.ended) return;
+
+      const inCooldown = Date.now() - lastSeekAt.current < SEEK_COOLDOWN_MS;
+
+      if (!inCooldown) {
+        let target = expectedTime(s, clockOffset.current);
+
+        if (v.duration && isFinite(v.duration) && target > v.duration) {
+          target = v.duration;
+        }
+        const drift = Math.abs(target - v.currentTime);
+        od?.(driftStatus(drift));
+        const c = computeCorrection(
+          v.currentTime,
+          target,
+          s.isPlaying,
+          s.playbackRate || 1,
+        );
+
+        if (c.action === "hard") {
+          try {
+            v.currentTime = c.seekTo;
+            lastSeekAt.current = Date.now();
+
+            serverLine.current = {
+              ...s,
+              currentTime: c.seekTo,
+              lastUpdated: Date.now() + clockOffset.current,
+            };
+          } catch {}
+        }
+        if (Math.abs(v.playbackRate - c.playbackRate) > 1e-4) {
+          v.playbackRate = c.playbackRate;
+        }
       }
 
-      const target = expectedTime(s, clockOffset.current);
-      const drift = Math.abs(target - v.currentTime);
-      od?.(driftStatus(drift));
-      const c = computeCorrection(v.currentTime, target, s.isPlaying);
-
-      if (c.action === "hard") {
-        try {
-          v.currentTime = c.seekTo;
-          lastSeekAt.current = Date.now();
-        } catch {}
-        if (v.readyState >= 3) v.playbackRate = s.playbackRate || 1;
-      } else if (c.action === "soft") {
-        if (v.readyState >= 3) v.playbackRate = c.playbackRate;
-      } else {
-        if (
-          s.playbackRate &&
-          v.playbackRate !== s.playbackRate &&
-          v.readyState >= 3
-        )
-          v.playbackRate = s.playbackRate;
+      if (s.isPlaying && v.paused) {
+        v.play().catch(() => {});
+      } else if (!s.isPlaying && !v.paused) {
+        v.pause();
       }
     }, SYNC_CHECK_INTERVAL);
   }, []);
@@ -118,17 +136,31 @@ export default function SyncEngine({
     const v = p.current.videoRef?.current;
     if (!v) return;
 
-    if (v.readyState >= 1) {
+    const inCooldown = Date.now() - lastSeekAt.current < SEEK_COOLDOWN_MS;
+    if (v.readyState >= 1 && !inCooldown && !v.seeking) {
       const target = expectedTime(s, clockOffset.current);
-      if (Math.abs(target - v.currentTime) > 0.5) {
+      if (Math.abs(target - v.currentTime) > HARD_SEEK_THRESHOLD) {
         try {
           v.currentTime = target;
           lastSeekAt.current = Date.now();
+
+          serverLine.current = {
+            ...s,
+            currentTime: target,
+            lastUpdated: Date.now() + clockOffset.current,
+          };
         } catch {}
       }
     }
-    if (s.isPlaying && v.paused) v.play().catch(() => {});
-    else if (!s.isPlaying && !v.paused) v.pause();
+
+    if (s.isPlaying && v.paused && v.readyState >= 1) {
+      const target = expectedTime(s, clockOffset.current);
+      const farFromTarget =
+        Math.abs(target - v.currentTime) > HARD_SEEK_THRESHOLD;
+      if (!farFromTarget) v.play().catch(() => {});
+    } else if (!s.isPlaying && !v.paused) {
+      v.pause();
+    }
   }, []);
 
   const connect = useCallback(() => {
@@ -154,6 +186,7 @@ export default function SyncEngine({
           videoUrl,
         }),
       );
+
       loop();
       ping();
       clearInterval(pTimer.current);
@@ -167,6 +200,7 @@ export default function SyncEngine({
       } catch {
         return;
       }
+      if (!m) return;
       const pr = p.current;
       switch (m.type) {
         case "state_update":
@@ -193,8 +227,13 @@ export default function SyncEngine({
           if (m.serverTime) {
             const rtt = Date.now() - (m.clientTs || Date.now());
             const serverNow = m.serverTime + rtt / 2;
-            clockOffset.current = serverNow - Date.now();
-            console.log(`[sync] Clock offset: ${clockOffset.current.toFixed(0)} ms (RTT: ${rtt} ms)`);
+            const sample = serverNow - Date.now();
+
+            const samples = clockSamples.current;
+            samples.push(sample);
+            if (samples.length > 5) samples.shift();
+            clockOffset.current =
+              samples.reduce((a, b) => a + b, 0) / samples.length;
           }
           break;
         case "chat":
