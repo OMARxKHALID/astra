@@ -28,7 +28,12 @@ export default function VimeoPlayer({
   const [muted, setMuted] = useState(false);
   const [ccEnabled, setCcEnabled] = useState(false);
   const [volume, setVolume] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const hideTimer = useRef(null);
+
+  // Buffering state for the Vimeo proxy — read by SyncEngine's sync loop to
+  // suppress rate corrections while the player is stalled (Bug #4 fix).
+  const isBufferingRef = useRef(false);
 
   const showCtrl = useCallback(() => {
     setCtrlVis(true);
@@ -72,6 +77,11 @@ export default function VimeoPlayer({
         _r = r;
         if (ready) playerRef.current?.setPlaybackRate(r).catch(() => {});
       },
+      // Buffering state — read by SyncEngine's sync loop to suppress rate
+      // corrections while the Vimeo player is stalled (Bug #4 fix).
+      get isBuffering() {
+        return isBufferingRef.current;
+      },
       play() {
         _p = false;
         _ended = false;
@@ -101,9 +111,23 @@ export default function VimeoPlayer({
           player.getDuration().then((d) => setDuration(d));
           player.on("timeupdate", ({ seconds }) => setLocalTime(seconds));
           player.on("progress", ({ percent }) => setBufferedPct(percent * 100));
+          // Track buffering state so SyncEngine can suppress rate corrections
+          // while the Vimeo player is stalled (Bug #4 fix).
+          player.on("bufferstart", () => {
+            isBufferingRef.current = true;
+          });
+          player.on("bufferend", () => {
+            isBufferingRef.current = false;
+          });
+          player.on("playing", () => {
+            isBufferingRef.current = false;
+          });
           player.on("ended", () => {
             // Notify the server to stop advancing time
-            player.getDuration().then((d) => onPause?.(d)).catch(() => {});
+            player
+              .getDuration()
+              .then((d) => onPause?.(d))
+              .catch(() => {});
           });
           setReady(true);
         })
@@ -158,6 +182,12 @@ export default function VimeoPlayer({
     if (!document.fullscreenElement) containerRef.current?.requestFullscreen();
     else document.exitFullscreen();
   }
+
+  useEffect(() => {
+    const onFS = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFS);
+    return () => document.removeEventListener("fullscreenchange", onFS);
+  }, []);
 
   useVideoHotkeys({
     videoRef,
@@ -216,6 +246,8 @@ export default function VimeoPlayer({
         ccEnabled={ccEnabled}
         onCcToggle={() => setCcEnabled((e) => !e)}
         canControl={canControl}
+        onFullscreen={handleFullscreen}
+        isFullscreen={isFullscreen}
       />
     </div>
   );

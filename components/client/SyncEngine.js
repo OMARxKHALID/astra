@@ -133,9 +133,14 @@ export default function SyncEngine({
   }, [videoRef]);
 
   // Track buffering state so the sync loop can pause corrections while stalled.
+  // For the native player, videoRef.current is a real HTMLVideoElement that
+  // supports addEventListener. For YouTube / Vimeo, videoRef.current is a
+  // custom JS proxy — addEventListener does not exist on it. Those players
+  // instead expose an `isBuffering` getter on the proxy that the sync loop
+  // reads directly (see YouTubePlayer.js / VimeoPlayer.js).
   useEffect(() => {
     const v = videoRef?.current;
-    if (!v) return;
+    if (!v || typeof v.addEventListener !== "function") return;
     const handleWaiting = () => {
       isBuffering.current = true;
     };
@@ -175,10 +180,16 @@ export default function SyncEngine({
       }
 
       // Skip rate corrections while buffering, not ready, or just after
-      // a user-initiated event (preventSync window)
+      // a user-initiated event (preventSync window).
+      // For embedded players (YouTube/Vimeo), isBuffering.current is never
+      // set by DOM events (no addEventListener). Those players expose an
+      // `isBuffering` getter on the proxy object instead, so check both.
+      const proxyBuffering =
+        typeof v.isBuffering !== "undefined" ? v.isBuffering : false;
       if (
         v.readyState < 3 ||
         isBuffering.current ||
+        proxyBuffering ||
         Date.now() < preventUpdateEnd.current
       ) {
         if (v.playbackRate !== 1.0) v.playbackRate = 1.0;
@@ -328,6 +339,13 @@ export default function SyncEngine({
 
       // Full roster update (emitted on join and on disconnect)
       "REC:roster": (users) => onUserChange?.({ type: "participants", users }),
+
+      // A new user joined — notify existing members so they can show a toast
+      // and update the participant list immediately without waiting for the
+      // next full roster broadcast.
+      user_joined: (m) => {
+        onUserChange?.({ type: "user_joined", ...m });
+      },
 
       // A specific user left — update their row in the UI
       user_left: (m) => {

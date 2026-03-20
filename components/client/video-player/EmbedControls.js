@@ -9,6 +9,8 @@ import {
   MuteIcon,
   LockSmallIcon,
   CcIcon,
+  ExpandIcon,
+  CompressIcon,
 } from "../Icons";
 
 export default function EmbedControls({
@@ -32,6 +34,9 @@ export default function EmbedControls({
   ccEnabled = false,
   onCcToggle,
   canControl = true,
+  // Bug #5 fix: fullscreen support for embedded players
+  onFullscreen,
+  isFullscreen = false,
 }) {
   const [tmp, setTmp] = useState(0);
   const [seeking, setSeeking] = useState(false);
@@ -129,7 +134,7 @@ export default function EmbedControls({
             </span>
           )}
           <div className="flex-1" />
-          
+
           {showCc && onCcToggle && (
             <button
               onClick={onCcToggle}
@@ -143,6 +148,23 @@ export default function EmbedControls({
 
           {showSpeed && onSpeedChange && canControl && (
             <SpeedPicker value={playbackRate} onChange={onSpeedChange} />
+          )}
+
+          {/* Bug #5 fix: fullscreen button for embedded players (YouTube / Vimeo).
+              Previously EmbedControls had no fullscreen button at all — users
+              had no visible affordance to enter fullscreen. */}
+          {onFullscreen && (
+            <button
+              onClick={onFullscreen}
+              aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+              className="w-9 h-9 flex items-center justify-center rounded-[2rem] bg-white/8 hover:bg-white/18 border border-white/8 text-white transition-all active:scale-90 backdrop-blur-sm"
+            >
+              {isFullscreen ? (
+                <CompressIcon className="w-4 h-4" />
+              ) : (
+                <ExpandIcon className="w-4 h-4" />
+              )}
+            </button>
           )}
         </div>
       </div>

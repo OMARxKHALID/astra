@@ -325,11 +325,17 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("CMD:pause", () => {
+  socket.on("CMD:pause", (msg) => {
     const ctx = handleCmd(socket);
     if (ctx) {
       ctx.room.paused = true;
       ctx.room.lastUpdated = Date.now();
+      // Store the exact timestamp the client was at when it paused so that
+      // any user who rejoins a paused room seeks to the correct position.
+      // Previously this handler accepted no arguments, leaving room.videoTS
+      // at a stale seek-position value.
+      if (msg && typeof msg.videoTS === "number")
+        ctx.room.videoTS = msg.videoTS;
       ctx.room.tsMap = {};
       ctx.room.preventTSUpdate = true;
       setTimeout(() => {

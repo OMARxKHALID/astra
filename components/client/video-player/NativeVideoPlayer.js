@@ -127,9 +127,9 @@ export default function NativeVideoPlayer({
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
     const finalSubUrl = `${baseUrl}/api/subtitles/download?url=${encodeURIComponent(sub.url)}`;
     if (onSubtitleChange) {
-        onSubtitleChange(finalSubUrl);
+      onSubtitleChange(finalSubUrl);
     } else {
-        onLoad?.(videoUrl, finalSubUrl);
+      onLoad?.(videoUrl, finalSubUrl);
     }
     setActivePanel(null);
     setSubOptions(null);
@@ -249,15 +249,17 @@ export default function NativeVideoPlayer({
   }
 
   function handleSeekChange(e) {
+    if (!canControl) return; // viewers must not be able to scrub locally
     seekingRef.current = true;
     setLocalTime(Number(e.target.value));
   }
 
   function handleSeekCommit(e) {
+    if (!canControl) return;
     seekingRef.current = false;
     const t = Number(e.target.value);
     if (videoRef.current) videoRef.current.currentTime = t;
-    if (canControl) onSeek?.(t);
+    onSeek?.(t);
   }
 
   function handleVolumeChange(e) {

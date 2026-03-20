@@ -28,7 +28,22 @@ export default function YouTubePlayer({
   const [muted, setMuted] = useState(false);
   const [ccEnabled, setCcEnabled] = useState(false);
   const [volume, setVolume] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const hideTimer = useRef(null);
+
+  // Keep a ref that always holds the latest ccEnabled value.
+  // The YT player is created inside an async onYTReady callback whose closure
+  // captures values from the time the effect ran. Without this ref, toggling
+  // captions and then loading a new video would initialise the new player
+  // with the OLD (stale) ccEnabled value — Bug #7 fix.
+  const ccEnabledRef = useRef(ccEnabled);
+  useEffect(() => {
+    ccEnabledRef.current = ccEnabled;
+  }, [ccEnabled]);
+
+  // Buffering state for embedded player — exposed via the videoRef proxy so
+  // SyncEngine can read it without needing native DOM events (Bug #4 fix).
+  const isBufferingRef = useRef(false);
 
   const showCtrl = useCallback(() => {
     setCtrlVis(true);
@@ -95,6 +110,11 @@ export default function YouTubePlayer({
           playerRef.current?.setPlaybackRate?.(r);
         } catch {}
       },
+      // Buffering state — read by SyncEngine's sync loop to suppress rate
+      // corrections while the YouTube player is stalled (Bug #4 fix).
+      get isBuffering() {
+        return isBufferingRef.current;
+      },
       play() {
         try {
           playerRef.current?.playVideo?.();
@@ -115,7 +135,9 @@ export default function YouTubePlayer({
       try {
         setLocalTime(playerRef.current.getCurrentTime?.() ?? 0);
         setDuration(playerRef.current.getDuration?.() ?? 0);
-        setBufferedPct((playerRef.current.getVideoLoadedFraction?.() ?? 0) * 100);
+        setBufferedPct(
+          (playerRef.current.getVideoLoadedFraction?.() ?? 0) * 100,
+        );
       } catch {}
     }, 250);
     return () => clearInterval(t);
@@ -139,11 +161,24 @@ export default function YouTubePlayer({
           modestbranding: 1,
           rel: 0,
           enablejsapi: 1,
-          cc_load_policy: ccEnabled ? 1 : 0,
+          // Use the ref so we always get the current value even if the user
+          // toggled CC before this async callback fires (Bug #7 fix).
+          cc_load_policy: ccEnabledRef.current ? 1 : 0,
         },
         events: {
           onReady: () => setReady(true),
           onStateChange: (e) => {
+            // Track buffering so SyncEngine can skip rate corrections while
+            // the YouTube player is stalled (Bug #4 fix).
+            if (e.data === window.YT?.PlayerState?.BUFFERING) {
+              isBufferingRef.current = true;
+            } else if (
+              e.data === window.YT?.PlayerState?.PLAYING ||
+              e.data === window.YT?.PlayerState?.PAUSED ||
+              e.data === window.YT?.PlayerState?.UNSTARTED
+            ) {
+              isBufferingRef.current = false;
+            }
             // YT.PlayerState.ENDED === 0
             if (e.data === window.YT?.PlayerState?.ENDED) {
               const dur = playerRef.current?.getDuration?.() ?? 0;
@@ -169,7 +204,9 @@ export default function YouTubePlayer({
     try {
       if (ccEnabled) {
         playerRef.current.loadModule?.("captions");
-        playerRef.current.setOption?.("captions", "track", { languageCode: "en" });
+        playerRef.current.setOption?.("captions", "track", {
+          languageCode: "en",
+        });
       } else {
         playerRef.current.unloadModule?.("captions");
       }
@@ -211,6 +248,17 @@ export default function YouTubePlayer({
     if (!document.fullscreenElement) containerRef.current?.requestFullscreen();
     else document.exitFullscreen();
   }
+
+  function handleFullscreen() {
+    if (!document.fullscreenElement) containerRef.current?.requestFullscreen();
+    else document.exitFullscreen();
+  }
+
+  useEffect(() => {
+    const onFS = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFS);
+    return () => document.removeEventListener("fullscreenchange", onFS);
+  }, []);
 
   useVideoHotkeys({
     videoRef,
@@ -266,6 +314,8 @@ export default function YouTubePlayer({
         ccEnabled={ccEnabled}
         onCcToggle={() => setCcEnabled((e) => !e)}
         canControl={canControl}
+        onFullscreen={handleFullscreen}
+        isFullscreen={isFullscreen}
       />
     </div>
   );
