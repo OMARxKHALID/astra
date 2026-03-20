@@ -149,7 +149,6 @@
     grid-area: video;
   }
   .bento-url {
-    grid-area: url;
     display: flex;
     align-items: center;
     padding: 0 1.5rem;

@@ -20,7 +20,7 @@ export async function POST(request) {
     const hostId    = randomUUID();
     const hostToken = randomUUID();
 
-    roomStore.set(roomId, {
+    await roomStore.set(roomId, {
       roomId,
       videoUrl,
       hostId,

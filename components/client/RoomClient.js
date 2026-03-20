@@ -213,7 +213,7 @@ export default function RoomClient({ roomId, initialMeta }) {
       <ToastContainer toasts={toasts} />
 
       <nav className="relative z-10 shrink-0 px-4 py-3 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0">
           <button
             onClick={() => router.push("/")}
             className="flex items-center gap-2 px-3 py-2 rounded-2xl glass-card hover:border-white/15 transition-all active:scale-95 shrink-0"

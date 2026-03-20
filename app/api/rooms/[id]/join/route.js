@@ -7,7 +7,7 @@ const WS_HTTP_URL = process.env.WS_HTTP_URL || "http://localhost:3001";
 export async function POST(_req, { params }) {
   const { id } = await params;
 
-  let exists = roomStore.has(id);
+  let exists = await roomStore.get(id);
   if (!exists) {
     try {
       const res = await fetch(`${WS_HTTP_URL}/rooms/${id}`, {

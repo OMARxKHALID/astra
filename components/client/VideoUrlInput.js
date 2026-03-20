@@ -29,7 +29,7 @@ export default function VideoUrlInput({ isHost, currentUrl, onLoad }) {
         <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-jade/10 border border-jade/20 shrink-0">
           <LinkIcon className="w-4 h-4 text-jade/70" />
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 px-1 overflow-hidden">
           <div className="flex items-center gap-2 mb-0.5">
             <span className="text-[10px] font-mono font-bold text-jade uppercase tracking-wider">Now Playing</span>
             <span className="text-[10px] font-mono text-white/20 px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 uppercase tracking-tight">

@@ -458,7 +458,6 @@ function NativeVideoPlayer({
                 <PlayIcon className="w-5 h-5 ml-0.5" />
               )}
             </button>
-
             <div className="flex items-center group/vol">
               <button
                 onClick={() => setMuted((m) => !m)}

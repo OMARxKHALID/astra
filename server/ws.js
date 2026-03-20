@@ -1,5 +1,10 @@
 import { WebSocketServer, WebSocket } from "ws";
 import http from "http";
+import { Redis } from "@upstash/redis";
+
+const redis = process.env.REDIS_KV_REST_API_URL 
+  ? new Redis({ url: process.env.REDIS_KV_REST_API_URL, token: process.env.REDIS_KV_REST_API_TOKEN })
+  : null;
 
 const PORT = parseInt(process.env.PORT || process.env.WS_PORT || "3001", 10);
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "http://localhost:3000")
@@ -152,7 +157,7 @@ wss.on("connection", (ws, req) => {
   const limiter = makeRateLimiter(5);
   const ip = req.socket.remoteAddress;
 
-  ws.on("message", (raw) => {
+  ws.on("message", async (raw) => {
     let msg;
     try {
       msg = JSON.parse(raw.toString());
@@ -163,17 +168,20 @@ wss.on("connection", (ws, req) => {
 
     if (msg.type === "join") {
       const { roomId, token, userId, videoUrl } = msg;
-      const username =
-        String(msg.username || "")
-          .slice(0, 24)
-          .trim() || `Guest-${userId?.slice(0, 4) || "????"}`;
-
-      if (!roomId || !userId) {
-        send(ws, { type: "error", message: "join requires roomId and userId" });
-        return;
-      }
 
       let room = rooms.get(roomId);
+
+      if (!room && redis) {
+        try {
+          const stored = await redis.get(`room:${roomId}`);
+          if (stored) {
+            console.log(`[ws] [${roomId}] Recovered room from Redis`);
+            room = getOrCreateRoom(roomId, stored.videoUrl, stored.hostId, stored.hostToken);
+          }
+        } catch (err) {
+          console.error(`[ws] Redis error: ${err.message}`);
+        }
+      }
       const isHost = Boolean(token);
 
       if (!room) {

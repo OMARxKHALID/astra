@@ -20,7 +20,7 @@ async function queryWsSidecar(id) {
 export async function GET(_req, { params }) {
   const { id } = await params;
 
-  const stored = roomStore.get(id);
+  const stored = await roomStore.get(id);
   if (stored) {
     const live = await queryWsSidecar(id);
     return NextResponse.json({

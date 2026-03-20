@@ -1,28 +1,39 @@
 "use client";
 
-const STATUS_CONFIG = {
-  connecting:   { dot: "bg-amber-400 animate-pulse",  label: "Connecting",   color: "text-amber-400/70" },
-  reconnecting: { dot: "bg-danger animate-ping",      label: "Reconnecting", color: "text-danger/70"    },
-  connected:    null,
+const STATUS_MAP = {
+  connecting:   { dot: "bg-amber-400 animate-pulse", label: "CONNECTING", color: "text-amber-400" },
+  reconnecting: { dot: "bg-danger animate-ping",    label: "RECONNECTING", color: "text-danger"    },
+  connected:    { dot: "bg-jade shadow-[0_0_8px_rgba(16,185,129,0.5)]", label: "LIVE", color: "text-jade" },
 };
 
-const SYNC_CONFIG = {
-  synced: { dot: "bg-jade/70",              label: "Synced",    color: "text-jade/60"         },
-  soft:   { dot: "bg-amber-400/80 animate-pulse", label: "Syncing", color: "text-amber-400/60" },
-  hard:   { dot: "bg-danger/80 animate-pulse",    label: "Lagging", color: "text-danger/60"   },
+const SYNC_MAP = {
+  synced: { label: "SYNCED", color: "text-white/40" },
+  soft:   { label: "ADJUSTING", color: "text-amber-400/60" },
+  hard:   { label: "SYNCING", color: "text-danger/60" },
 };
 
 export default function SyncStatusIndicator({ syncStatus, connStatus }) {
-  const connCfg = connStatus !== "connected" ? STATUS_CONFIG[connStatus] : null;
-  const syncCfg = SYNC_CONFIG[syncStatus] ?? SYNC_CONFIG.synced;
-  const cfg     = connCfg ?? syncCfg;
+  const isConnected = connStatus === "connected";
+  const c = STATUS_MAP[connStatus] || STATUS_MAP.connecting;
+  const s = SYNC_MAP[syncStatus] || SYNC_MAP.synced;
 
   return (
-    <div className="flex items-center gap-2" aria-label={`Status: ${cfg.label}`}>
-      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dot}`} />
-      <span className={`text-[10px] font-mono uppercase tracking-[0.2em] font-bold ${cfg.color}`}>
-        {cfg.label}
-      </span>
+    <div className="flex items-center gap-3 select-none">
+      <div className="flex items-center gap-2">
+        <span className={`w-1.5 h-1.5 rounded-full shrink-0 transition-all duration-500 ${c.dot}`} />
+        <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${c.color}`}>
+          {c.label}
+        </span>
+      </div>
+      
+      {isConnected && (
+        <>
+          <div className="w-px h-3 bg-white/10" />
+          <span className={`text-[9px] font-mono uppercase tracking-[0.15em] font-medium ${s.color}`}>
+            {s.label}
+          </span>
+        </>
+      )}
     </div>
   );
 }

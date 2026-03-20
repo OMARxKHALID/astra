@@ -5,7 +5,7 @@ import { roomStore } from "@/lib/roomStore";
 const WS_HTTP_URL = process.env.WS_HTTP_URL || "http://localhost:3001";
 
 async function getRoomMeta(id) {
-  const stored = roomStore.get(id);
+  const stored = await roomStore.get(id);
   if (stored) {
     return {
       roomId: id,
