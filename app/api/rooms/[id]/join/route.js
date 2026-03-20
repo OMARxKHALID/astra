@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
-import { randomUUID }   from "crypto";
-import { roomStore }    from "@/lib/roomStore";
+import { randomUUID } from "crypto";
+import { roomStore } from "@/lib/roomStore";
 
 const WS_HTTP_URL = process.env.WS_HTTP_URL || "http://localhost:3001";
 
 export async function POST(_req, { params }) {
   const { id } = await params;
 
-  // Check roomStore first; fall back to WS sidecar
   let exists = roomStore.has(id);
   if (!exists) {
     try {

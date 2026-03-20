@@ -69,15 +69,31 @@ export default function RoomClient({ roomId, initialMeta }) {
   const [mobileSheet, setMobileSheet] = useState(null);
   // Sidebar visible by default on desktop
   const [showSidebar, setShowSidebar] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const videoRef = useRef(null);
 
   // ── State handlers ────────────────────────────────────────────────────────
   const handleStateUpdate = useCallback((stOrFn) => setServerState(stOrFn), []);
 
-  const handleChatMessage = useCallback((msg) => {
-    setMessages((prev) => [...prev, msg].slice(-MAX_MESSAGES));
-  }, []);
+  // Handle message arrive logic
+  const handleChatMessage = useCallback(
+    (msg) => {
+      setMessages((prev) => {
+        const next = [...prev, msg].slice(-MAX_MESSAGES);
+        return next;
+      });
+
+      // Check visibility to decide if unread count should be incremented
+      const isMobile =
+        typeof window !== "undefined" && window.innerWidth < 1024;
+      const isVisible = isMobile ? mobileSheet === "chat" : showSidebar;
+      if (!isVisible) {
+        setUnreadCount((prev) => prev + 1);
+      }
+    },
+    [mobileSheet, showSidebar],
+  );
 
   const handleUserChange = useCallback((event) => {
     if (!event || typeof event !== "object") return;
@@ -105,10 +121,15 @@ export default function RoomClient({ roomId, initialMeta }) {
             ...prev,
             [event.userId]: event.username,
           }));
+          if (event.userId !== userId) {
+            addToast(`${event.username} joined!`);
+          }
         }
         break;
       case "user_left":
+        const leaverName = displayNames[event.userId] || "Someone";
         setParticipants((prev) => prev.filter((id) => id !== event.userId));
+        addToast(`${leaverName} left.`);
         break;
       case "name_changed":
         setDisplayNames((prev) => ({
@@ -155,12 +176,10 @@ export default function RoomClient({ roomId, initialMeta }) {
 
   const handleShare = useCallback(() => {
     addToast("Link copied!");
-    // Remove ?url= from the shared link — viewers don't need it
     const shareUrl = `${window.location.origin}/room/${roomId}`;
     navigator.clipboard?.writeText(shareUrl).catch(() => {});
   }, [addToast, roomId]);
 
-  // ── Derived state ─────────────────────────────────────────────────────────
   const hostToken = useMemo(() => {
     if (typeof window === "undefined") return "";
     return localStorage.getItem(`host_${roomId}`) || "";
@@ -172,12 +191,10 @@ export default function RoomClient({ roomId, initialMeta }) {
   const playbackRate = serverState?.playbackRate ?? 1;
   const videoUrl = serverState?.videoUrl ?? initialMeta?.videoUrl ?? "";
 
-  // Don't render editable name or send WS until name is loaded from localStorage
   const nameLabel = nameReady ? displayName : "";
 
   return (
     <div className="h-dvh bg-void flex flex-col overflow-hidden text-text font-body antialiased">
-      {/* Ambient */}
       <div
         aria-hidden
         className="pointer-events-none fixed inset-0 z-0
@@ -185,7 +202,6 @@ export default function RoomClient({ roomId, initialMeta }) {
             radial-gradient(ellipse_at_85%_80%,rgba(16,185,129,0.05),transparent_50%)]"
       />
 
-      {/* Only mount SyncEngine after userId and displayName are ready */}
       {userId && nameReady && (
         <SyncEngine
           roomId={roomId}
@@ -207,10 +223,8 @@ export default function RoomClient({ roomId, initialMeta }) {
       <ReconnectBanner connStatus={connStatus} />
       <ToastContainer toasts={toasts} />
 
-      {/* ── Nav bar ──────────────────────────────────────────────────────── */}
       <nav className="relative z-10 shrink-0 px-4 py-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
-          {/* Logo */}
           <button
             onClick={() => router.push("/")}
             className="flex items-center gap-2 px-3 py-2 rounded-2xl glass-card hover:border-white/15 transition-all active:scale-95 shrink-0"
@@ -223,13 +237,11 @@ export default function RoomClient({ roomId, initialMeta }) {
             </span>
           </button>
 
-          {/* Room ID */}
           <div className="flex items-center gap-2 px-3 py-2 rounded-2xl glass-card text-[10px] font-mono uppercase tracking-[0.2em] shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-jade/70 animate-pulse" />
             <span className="text-white/70 font-black">{roomId}</span>
           </div>
 
-          {/* Editable display name — only render after hydration */}
           {nameReady &&
             (editingName ? (
               <form
@@ -272,14 +284,24 @@ export default function RoomClient({ roomId, initialMeta }) {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {/* Sidebar toggle (desktop only) */}
           <button
-            onClick={() => setShowSidebar((v) => !v)}
+            onClick={() => {
+              setShowSidebar((v) => !v);
+              if (!showSidebar) setUnreadCount(0);
+            }}
             title={showSidebar ? "Hide sidebar" : "Show sidebar"}
             className="hidden lg:flex w-9 h-9 items-center justify-center rounded-xl glass-card
-                       text-muted hover:text-white/80 transition-all active:scale-95"
+                       text-muted hover:text-white/80 transition-all active:scale-95 relative"
           >
             <SidebarIcon className="w-4 h-4" />
+            {!showSidebar && unreadCount > 0 && (
+              <span
+                className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-500 rounded-full border-2 border-void
+                             flex items-center justify-center text-[8px] font-bold text-void"
+              >
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
           </button>
 
           <div className="px-3 py-2 rounded-2xl glass-card">
@@ -302,11 +324,9 @@ export default function RoomClient({ roomId, initialMeta }) {
         </div>
       </nav>
 
-      {/* ── Bento grid ───────────────────────────────────────────────────── */}
       <main
         className={`relative z-10 flex-1 min-h-0 bento-grid px-4 pb-4 ${showSidebar ? "sidebar-open" : "sidebar-closed"}`}
       >
-        {/* Video */}
         <section className="bento-video glass-card overflow-hidden">
           <VideoPlayer
             videoRef={videoRef}
@@ -321,7 +341,6 @@ export default function RoomClient({ roomId, initialMeta }) {
           />
         </section>
 
-        {/* URL bar */}
         <section className="bento-url glass-card">
           <VideoUrlInput
             isHost={isHost}
@@ -330,10 +349,8 @@ export default function RoomClient({ roomId, initialMeta }) {
           />
         </section>
 
-        {/* Sidebar — spans both rows, desktop only */}
         {showSidebar && (
           <aside className="bento-sidebar hidden lg:flex">
-            {/* Chat — flex 1 (takes 2/3 of sidebar) */}
             <div className="flex-[2] min-h-0 glass-card overflow-hidden flex flex-col">
               <ChatPanel
                 messages={messages}
@@ -342,7 +359,6 @@ export default function RoomClient({ roomId, initialMeta }) {
                 onSend={handleSendChat}
               />
             </div>
-            {/* Participants — flex 1 (takes 1/3 of sidebar) */}
             <div className="flex-1 min-h-0 glass-card overflow-hidden flex flex-col">
               <ParticipantList
                 participants={participants}
@@ -356,18 +372,27 @@ export default function RoomClient({ roomId, initialMeta }) {
           </aside>
         )}
       </main>
-
-      {/* ── Mobile bottom tab bar ─────────────────────────────────────────── */}
       <div
         className="lg:hidden shrink-0 relative z-20 flex items-center justify-around
                       px-6 py-3 pb-safe border-t border-white/5 bg-void/85 backdrop-blur-xl"
       >
         <MobileTabBtn
-          label={`Chat${messages.length ? ` (${messages.length})` : ""}`}
+          label={`Chat${unreadCount > 0 ? ` (${unreadCount})` : ""}`}
           active={mobileSheet === "chat"}
-          onClick={() => setMobileSheet(mobileSheet === "chat" ? null : "chat")}
-          icon={<ChatIcon className="w-5 h-5" />}
+          onClick={() => {
+            setMobileSheet(mobileSheet === "chat" ? null : "chat");
+            if (mobileSheet !== "chat") setUnreadCount(0);
+          }}
+          icon={
+            <div className="relative">
+              <ChatIcon className="w-5 h-5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1.5 w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+              )}
+            </div>
+          }
         />
+
         <MobileTabBtn
           label={`People (${participants.length})`}
           active={mobileSheet === "users"}
@@ -388,8 +413,6 @@ export default function RoomClient({ roomId, initialMeta }) {
           />
         )}
       </div>
-
-      {/* ── Mobile slide-up sheet ─────────────────────────────────────────── */}
       {mobileSheet && (
         <>
           <div
@@ -438,7 +461,6 @@ export default function RoomClient({ roomId, initialMeta }) {
   );
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
 function MobileTabBtn({ label, active, onClick, icon }) {
   return (
     <button

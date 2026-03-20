@@ -1,7 +1,7 @@
 import "./globals.css";
 
 export const metadata = {
-  title:       "WatchTogether",
+  title: "WatchTogether",
   description: "Watch videos in perfect sync with friends.",
 };
 

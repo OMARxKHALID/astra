@@ -14,15 +14,12 @@ export default function ChatPanel({
   const inputRef = useRef(null);
   const atBottomRef = useRef(true);
   const scrollRef = useRef(null);
-
-  // Track whether the user has scrolled up
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
     atBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 50;
   }, []);
 
-  // Auto-scroll only when the user is already at the bottom
   useEffect(() => {
     if (atBottomRef.current) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -44,7 +41,6 @@ export default function ChatPanel({
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Header */}
       <div className="flex items-center gap-3 px-5 py-4 border-b border-white/5 shrink-0">
         <div className="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 shrink-0">
           <ChatBubbleIcon className="w-4 h-4 text-amber-500" />
@@ -58,8 +54,6 @@ export default function ChatPanel({
           </p>
         </div>
       </div>
-
-      {/* Messages */}
       <div
         ref={scrollRef}
         onScroll={handleScroll}
@@ -86,8 +80,6 @@ export default function ChatPanel({
 
         <div ref={bottomRef} className="h-2" />
       </div>
-
-      {/* Input */}
       <div className="px-5 py-4 border-t border-white/5 shrink-0">
         <div className="relative">
           <label htmlFor="chat-input" className="sr-only">
@@ -132,14 +124,12 @@ function ChatMessage({ msg, isOwn, displayNames = {} }) {
     hour: "2-digit",
     minute: "2-digit",
   });
-  // Prefer server-sent senderName, then displayNames map, then short ID
   const name =
     msg.senderName ||
     displayNames[msg.senderId] ||
     msg.senderId?.slice(0, 6) ||
     "???";
 
-  // BUG FIX #4: check senderId === "system" (not msg.type)
   if (msg.senderId === "system") {
     return (
       <div className="flex justify-center">
