@@ -128,16 +128,16 @@
     grid-template-areas:
       "video  sidebar"
       "url    sidebar";
-    grid-template-columns: 1fr var(--sidebar-width, 300px);
-    grid-template-rows: 1fr 60px;
+    grid-template-columns: minmax(0, 1fr) var(--sidebar-width, 300px);
+    grid-template-rows: minmax(0, 1fr) 60px;
   }
 
   .bento-grid.sidebar-closed {
     grid-template-areas:
       "video"
       "url";
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr 60px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) 60px;
   }
 
   @media (max-width: 1023px) {
@@ -146,13 +146,15 @@
       grid-template-areas:
         "video"
         "url";
-      grid-template-columns: 1fr;
-      grid-template-rows: 1fr 56px;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr) 56px;
     }
   }
 
   .bento-video {
     grid-area: video;
+    min-width: 0;
+    min-height: 0;
   }
   .bento-url {
     display: flex;

@@ -1,51 +1,118 @@
 import { NextResponse } from "next/server";
 
+const API_KEY = process.env.OPENSUBTITLES_KEY || "Zff4vJKGx6hFiW02ouPLV1iXQCB3VjL1";
+const API_BASE = "https://api.opensubtitles.com/api/v1";
+
+/**
+ * OpenSubtitles Hash Algorithm
+ */
+function computeHash(buffer, size) {
+    let hash = BigInt(size);
+    const view = new DataView(buffer);
+    for (let i = 0; i < 65536; i += 8) {
+        hash = (hash + view.getBigUint64(i, true)) & 0xFFFFFFFFFFFFFFFFn;
+    }
+    for (let i = 65536; i < 131072; i += 8) {
+        hash = (hash + view.getBigUint64(i, true)) & 0xFFFFFFFFFFFFFFFFn;
+    }
+    return hash.toString(16).padStart(16, "0");
+}
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get("q");
+    const videoUrl = searchParams.get("url");
 
-    if (!query) {
-      return NextResponse.json({ error: "Missing query parameter 'q'" }, { status: 400 });
+    let results = [];
+    let movieTitle = "Unknown";
+
+    // Common headers for OpenSubtitles API v1
+    const headers = {
+        "Api-Key": API_KEY,
+        "User-Agent": "WatchTogether v1",
+        "Content-Type": "application/json"
+    };
+
+    if (videoUrl) {
+        // 1. HASH SEARCH (Highest Accuracy)
+        try {
+            const headResp = await fetch(videoUrl, { method: "HEAD" });
+            const size = parseInt(headResp.headers.get("content-length") || "0");
+            
+            if (size > 131072) {
+                const startResp = await fetch(videoUrl, { headers: { Range: "bytes=0-65535" } });
+                const endResp = await fetch(videoUrl, { headers: { Range: `bytes=${size - 65536}-${size - 1}` } });
+                const startBuf = await startResp.arrayBuffer();
+                const endBuf = await endResp.arrayBuffer();
+                
+                const combined = new Uint8Array(131072);
+                combined.set(new Uint8Array(startBuf), 0);
+                combined.set(new Uint8Array(endBuf), 65536);
+                
+                const hash = computeHash(combined.buffer, size);
+                const searchRes = await fetch(`${API_BASE}/subtitles?moviehash=${hash}&languages=en`, { headers });
+                const data = await searchRes.json();
+                
+                if (data.data) {
+                    results = data.data.map(s => ({
+                        id: s.id,
+                        label: s.attributes.release || s.attributes.feature_details.title,
+                        url: s.attributes.files[0].file_id // Returns file_id for download
+                    }));
+                }
+            }
+        } catch (err) {
+            console.error("[subtitles] Hash search failed:", err.message);
+        }
     }
 
-    const cinemetaUrl = `https://v3-cinemeta.strem.io/catalog/movie/top/search=${encodeURIComponent(query)}.json`;
-    const searchRes = await fetch(cinemetaUrl);
-    if (!searchRes.ok) throw new Error("Failed to search metadata.");
-    const searchData = await searchRes.json();
-    if (!searchData.metas || searchData.metas.length === 0) {
-      return NextResponse.json({ error: `Could not find "${query}"` }, { status: 404 });
+    if (results.length === 0 && query) {
+        // 2. QUERY SEARCH (Fallback)
+        const searchRes = await fetch(`${API_BASE}/subtitles?query=${encodeURIComponent(query)}&languages=en`, { headers });
+        const data = await searchRes.json();
+        
+        if (data.data) {
+            results = data.data.map(s => ({
+                id: s.id,
+                label: s.attributes.release || s.attributes.feature_details.title,
+                url: s.attributes.files[0].file_id
+            }));
+        }
     }
 
-    const imdbId = searchData.metas[0].imdb_id;
-    const movieTitle = searchData.metas[0].name;
-
-    const opensubsUrl = `https://opensubtitles-v3.strem.io/subtitles/movie/${imdbId}.json`;
-    const subsRes = await fetch(opensubsUrl);
-    if (!subsRes.ok) throw new Error("Failed to connect to subtitle database.");
-    const subsData = await subsRes.json();
-    if (!subsData.subtitles || subsData.subtitles.length === 0) {
-      return NextResponse.json({ error: "No subtitles found." }, { status: 404 });
+    // 3. LEGACY/PROXY FALLBACK (If primary API yields nothing and query is present)
+    if (results.length === 0 && query) {
+        const cinemetaUrl = `https://v3-cinemeta.strem.io/catalog/movie/top/search=${encodeURIComponent(query)}.json`;
+        const cRes = await fetch(cinemetaUrl);
+        const cData = await cRes.json();
+        
+        if (cData.metas && cData.metas.length > 0) {
+            movieTitle = cData.metas[0].name;
+            const imdbId = cData.metas[0].imdb_id;
+            const osUrl = `https://opensubtitles-v3.strem.io/subtitles/movie/${imdbId}.json`;
+            const sRes = await fetch(osUrl);
+            const sData = await sRes.json();
+            
+            if (sData.subtitles) {
+                const engSubs = sData.subtitles.filter(s => 
+                    s.lang === "eng" || s.lang === "en" || s.lang.toLowerCase().includes("english")
+                );
+                results = engSubs.slice(0, 10).map((s, index) => ({
+                    id: s.id || `strem_${index}`,
+                    label: `${movieTitle} - Track ${index + 1} (Proxy)`,
+                    url: s.url // This returns a direct download URL
+                }));
+            }
+        }
     }
-
-
-    const engSubs = subsData.subtitles.filter(s => s.lang === "eng" || s.lang === "en" || s.lang.toLowerCase().includes("english"));
-    if (engSubs.length === 0) {
-      return NextResponse.json({ error: "No English subtitles found." }, { status: 404 });
-    }
-
-
-    const results = engSubs.slice(0, 20).map((s, index) => ({
-      id: s.id || `sub_${index}`,
-      label: `${movieTitle} - English Track ${index + 1}`,
-      url: s.url
-    }));
 
     return NextResponse.json({
       title: movieTitle,
       subtitles: results,
     });
   } catch (err) {
+    console.error("[subtitles] Search error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

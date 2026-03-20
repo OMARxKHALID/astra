@@ -1,17 +1,18 @@
 {
   "name": "watch-together-server",
   "version": "1.0.0",
-  "description": "Integrated WebSocket & Metadata Sidecar for WatchTogether",
+  "description": "Integrated Socket.IO & Metadata Sidecar for WatchTogether",
   "type": "module",
-  "main": "ws.js",
+  "main": "socket.js",
   "engines": {
     "node": ">=18"
   },
   "scripts": {
-    "start": "node ws.js"
+    "start": "node socket.js"
   },
   "dependencies": {
     "@upstash/redis": "^1.37.0",
-    "ws": "^8.18.0"
+    "socket.io": "^4.8.1",
+    "@next/env": "^15.1.0"
   }
 }

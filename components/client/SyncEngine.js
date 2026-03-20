@@ -1,22 +1,21 @@
+// components/client/SyncEngine.js - Refactored for Socket.IO and ref.md logic
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
+import io from "socket.io-client";
 import {
-  expectedTime,
+  selectLeader,
   computeCorrection,
   driftStatus,
-  SYNC_CHECK_INTERVAL,
-  HARD_SEEK_THRESHOLD,
+  SYNC_INTERVAL,
+  EXTREME_DRIFT_THRESHOLD,
 } from "@/lib/sync";
 
 const WS_URL =
   process.env.NEXT_PUBLIC_WS_URL ||
   (process.env.NODE_ENV === "production"
-    ? "wss://watch-together-ws.onrender.com"
-    : `ws://${typeof window !== "undefined" ? window.location.hostname : "localhost"}:3001`);
-const backoff = (attempt) => Math.min(1000 * 2 ** attempt, 30_000);
-
-const SEEK_COOLDOWN_MS = 3000;
+    ? "https://watch-together-ws.onrender.com"
+    : `http://${typeof window !== "undefined" ? window.location.hostname : "localhost"}:3001`);
 
 export default function SyncEngine({
   roomId,
@@ -33,7 +32,7 @@ export default function SyncEngine({
   onKicked,
   sendRef,
 }) {
-  const p = useRef();
+  const p = useRef(); // Props ref to avoid dependency loops
   p.current = {
     roomId,
     userId,
@@ -49,237 +48,258 @@ export default function SyncEngine({
     onKicked,
   };
 
-  const wsRef = useRef(null);
+  const socketRef = useRef(null);
   const serverLine = useRef(null);
   const timer = useRef(null);
-  const attempt = useRef(0);
-  const rTimer = useRef(null);
-  const clockOffset = useRef(0);
-  const clockSamples = useRef([]);
-  const pTimer = useRef(null);
-  const off = useRef(false);
+  const backoffRef = useRef(1000);
+  const tsMap = useRef({});
+  const isBuffering = useRef(false);
+  const preventUpdateEnd = useRef(0);
+  const lastPbrRef = useRef(1.0);
 
-  const lastSeekAt = useRef(0);
-
-  const send = useCallback((payload) => {
-    const ws = wsRef.current;
-    if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
+  const preventSync = useCallback((ms = 1000) => {
+    preventUpdateEnd.current = Date.now() + ms;
   }, []);
+
+  const send = useCallback(
+    (type, data) => {
+      const socket = socketRef.current;
+      if (socket?.connected) {
+          socket.emit(type, data);
+      }
+
+      // Conflict resolution for local actions
+      if (["CMD:play", "CMD:pause", "CMD:host", "CMD:speed"].includes(type)) {
+          preventSync(1000);
+      }
+      if (type === "CMD:seek") {
+          preventSync(3000); 
+      }
+    },
+    [preventSync],
+  );
+
   useEffect(() => {
-    if (sendRef) sendRef.current = send;
+    if (sendRef) sendRef.current = (msg) => {
+        if (msg.type === "chat") send("chat", { text: msg.text });
+        else if (msg.type === "play") send("CMD:play", { videoTS: msg.currentTime });
+        else if (msg.type === "pause") send("CMD:pause", { videoTS: msg.currentTime });
+        else if (msg.type === "seek") send("CMD:seek", msg.currentTime);
+        else if (msg.type === "speed") send("CMD:speed", { rate: msg.rate, videoTS: msg.currentTime });
+        else if (msg.type === "change_video") send("CMD:host", { video: msg.videoUrl, subtitleUrl: msg.subtitleUrl, paused: true });
+        else if (msg.type === "kick") send("CMD:kick", { targetUserId: msg.targetUserId });
+        else if (msg.type === "toggle_host_controls") send("CMD:lock");
+        else if (msg.type === "set_subtitle") send("CMD:subtitle", msg.url);
+        else send(msg.type, msg);
+    };
   }, [send, sendRef]);
 
-  const ping = useCallback(() => {
-    const ws = wsRef.current;
-    if (ws?.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: "ping", clientTs: Date.now() }));
-    }
-  }, []);
+  // Periodic Reporting (ref.md: Client-Side Timestamp Emission)
+  useEffect(() => {
+    const int = setInterval(() => {
+      const v = videoRef?.current;
+      const socket = socketRef.current;
+      if (v && !v.paused && !isBuffering.current && socket?.connected) {
+        // ref.md uses CMD:ts
+        socket.emit("CMD:ts", v.currentTime);
+      }
+    }, 1000); // EXACTLY 1 second
+    return () => clearInterval(int);
+  }, [videoRef]);
 
+  // Buffering Detection
+  useEffect(() => {
+    const v = videoRef?.current;
+    if (!v) return;
+
+    const handleWaiting = () => { isBuffering.current = true; };
+    const handleCanPlay = () => { isBuffering.current = false; };
+    const handlePlaying = () => { isBuffering.current = false; };
+
+    v.addEventListener("waiting", handleWaiting);
+    v.addEventListener("canplay", handleCanPlay);
+    v.addEventListener("playing", handlePlaying);
+
+    return () => {
+      v.removeEventListener("waiting", handleWaiting);
+      v.removeEventListener("canplay", handleCanPlay);
+      v.removeEventListener("playing", handlePlaying);
+    };
+  }, [videoRef]);
+
+  // Drift Correction Loop (ref.md: Drift Detection & Correction)
   const loop = useCallback(() => {
     clearInterval(timer.current);
     timer.current = setInterval(() => {
-      const { videoRef: vr, onDriftStatus: od } = p.current;
+      const { videoRef: vr, onDriftStatus: od, userId: myId } = p.current;
       const v = vr?.current;
       const s = serverLine.current;
+      
       if (!v || !s) return;
-
-      if (v.readyState < 3 || v.seeking) return;
-
-      if (v.ended) return;
-
-      const inCooldown = Date.now() - lastSeekAt.current < SEEK_COOLDOWN_MS;
-
-      if (!inCooldown) {
-        let target = expectedTime(s, clockOffset.current);
-
-        if (v.duration && isFinite(v.duration) && target > v.duration) {
-          target = v.duration;
-        }
-        const drift = Math.abs(target - v.currentTime);
-        od?.(driftStatus(drift));
-        const c = computeCorrection(
-          v.currentTime,
-          target,
-          s.isPlaying,
-          s.playbackRate || 1,
-        );
-
-        if (c.action === "hard") {
-          try {
-            v.currentTime = c.seekTo;
-            lastSeekAt.current = Date.now();
-
-            serverLine.current = {
-              ...s,
-              currentTime: c.seekTo,
-              lastUpdated: Date.now() + clockOffset.current,
-            };
-          } catch {}
-        }
-        if (Math.abs(v.playbackRate - c.playbackRate) > 1e-4) {
-          v.playbackRate = c.playbackRate;
-        }
-      }
-
-      if (s.isPlaying && v.paused) {
-        v.play().catch(() => {});
+      
+      // 1. Enforce Play/Pause (Always, regardless of state, to trigger loads)
+      if (s.isPlaying && v.paused && !isBuffering.current) {
+          v.play().catch(() => {});
       } else if (!s.isPlaying && !v.paused) {
-        v.pause();
+          v.pause();
       }
-    }, SYNC_CHECK_INTERVAL);
-  }, []);
 
-  const sync = useCallback((s) => {
-    p.current.onStateUpdate?.(s);
-    serverLine.current = s;
-    const v = p.current.videoRef?.current;
-    if (!v) return;
-
-    const inCooldown = Date.now() - lastSeekAt.current < SEEK_COOLDOWN_MS;
-    if (v.readyState >= 1 && !inCooldown && !v.seeking) {
-      const target = expectedTime(s, clockOffset.current);
-      if (Math.abs(target - v.currentTime) > HARD_SEEK_THRESHOLD) {
-        try {
-          v.currentTime = target;
-          lastSeekAt.current = Date.now();
-
-          serverLine.current = {
-            ...s,
-            currentTime: target,
-            lastUpdated: Date.now() + clockOffset.current,
-          };
-        } catch {}
+      // 2. State Guard for Time Correction
+      if (v.readyState < 3 || isBuffering.current || Date.now() < preventUpdateEnd.current) {
+          if (v.playbackRate !== 1.0) v.playbackRate = 1.0;
+          return;
       }
-    }
 
-    if (s.isPlaying && v.paused && v.readyState >= 1) {
-      const target = expectedTime(s, clockOffset.current);
-      const farFromTarget =
-        Math.abs(target - v.currentTime) > HARD_SEEK_THRESHOLD;
-      if (!farFromTarget) v.play().catch(() => {});
-    } else if (!s.isPlaying && !v.paused) {
-      v.pause();
-    }
+      // Watchparty Sync Logic
+      const times = Object.values(tsMap.current).filter(t => typeof t === "number");
+      if (times.length === 0) return;
+
+      const myTime = v.currentTime;
+      let leaderTime;
+
+      // 1. Leader Selection
+      if (times.length > 2) {
+          const sorted = [...times].sort((a,b) => a-b);
+          leaderTime = sorted[Math.floor(sorted.length / 2)];
+      } else {
+          leaderTime = Math.max(...times);
+      }
+
+      // 2. Drift Calculation (target is leaderTime)
+      const delta = leaderTime - myTime;
+      let pbr = 1.0;
+
+      // Update Sync Status for UI
+      od?.(Math.abs(delta) <= 0.5 ? "synced" : "soft");
+
+      // 3. Smooth Correction
+      if (delta > 0.5) {
+          pbr += Number((delta / 10).toFixed(2));
+          pbr = Math.min(pbr, 1.1);
+      } else if (delta < -1.0) {
+          // If we are significantly ahead, slow down slightly
+          pbr = 0.95;
+      }
+
+      // Apply PBR (with jitter guard)
+      if (Math.abs(v.playbackRate - pbr) > 0.01) {
+          v.playbackRate = pbr;
+      }
+
+      // 4. Hard Seek (Emergency Only)
+      if (Math.abs(delta) > 10) {
+          preventSync(1000);
+          v.currentTime = leaderTime;
+      }
+
+      // Enforce play/pause
+      if (s.isPlaying && v.paused) v.play().catch(() => {});
+      else if (!s.isPlaying && !v.paused) v.pause();
+
+    }, SYNC_INTERVAL);
   }, []);
 
   const connect = useCallback(() => {
-    if (off.current) return;
-    const { roomId, userId, hostToken, videoUrl, displayName, onConnStatus } =
-      p.current;
-    onConnStatus?.(attempt.current === 0 ? "connecting" : "reconnecting");
+    const { roomId, userId, hostToken, videoUrl, displayName, onConnStatus, onUserChange, onStateUpdate, onChatMessage, onKicked } = p.current;
+    
+    if (socketRef.current) socketRef.current.disconnect();
 
-    const ws = new WebSocket(WS_URL);
-    wsRef.current = ws;
+    const socket = io(WS_URL, {
+      transports: ["websocket", "polling"],
+      reconnectionAttempts: 5,
+    });
+    socketRef.current = socket;
 
-    ws.onopen = () => {
-      attempt.current = 0;
-      p.current.onConnStatus?.("connected");
-      p.current.onUserChange?.({ type: "reset" });
-      ws.send(
-        JSON.stringify({
-          type: "join",
-          roomId,
-          userId,
-          username: displayName,
-          token: hostToken || undefined,
-          videoUrl,
-        }),
-      );
-
+    socket.on("connect", () => {
+      onConnStatus?.("connected");
+      socket.emit("JOIN_ROOM", {
+        roomId,
+        clientId: userId,
+        username: displayName,
+        token: hostToken || undefined,
+        videoUrl: videoUrl || "",
+      });
+      console.log(`[sync] Joined room ${roomId}. Initial Video: ${videoUrl || 'none'}`);
       loop();
-      ping();
-      clearInterval(pTimer.current);
-      pTimer.current = setInterval(ping, 10_000);
+    });
+
+    // Core Handlers
+    const handlers = {
+        "disconnect": () => {
+            onConnStatus?.("reconnecting");
+        },
+        "REC:host": (m) => {
+            const state = {
+                ...m,
+                videoUrl: m.video,
+                isPlaying: !m.paused,
+                currentTime: m.videoTS,
+            };
+            
+            // Record state even if sync is prevented (so we have latest info when window ends)
+            const wasInitial = !serverLine.current;
+            serverLine.current = state;
+            onStateUpdate?.(state);
+
+            // But only apply immediate jump if NOT in a preventSync window
+            if (Date.now() < preventUpdateEnd.current) return;
+
+            // Initial Jump on Join
+            const v = p.current.videoRef?.current;
+            if (wasInitial && v && state.currentTime > 0) {
+                v.currentTime = state.currentTime;
+                if (state.isPlaying) v.play().catch(() => {});
+            }
+        },
+        "REC:play": (m) => {
+            const v = p.current.videoRef?.current;
+            if (v) {
+                if (m && typeof m.videoTS === "number") {
+                    const delta = Math.abs(v.currentTime - m.videoTS);
+                    if (delta > 0.5) v.currentTime = m.videoTS;
+                }
+                v.play().catch(() => {});
+            }
+        },
+        "REC:pause": () => {
+            const v = p.current.videoRef?.current;
+            if (v && !v.paused) v.pause();
+        },
+        "REC:seek": (time) => {
+            const v = p.current.videoRef?.current;
+            if (v && Math.abs(v.currentTime - time) > 0.5) {
+                v.currentTime = time;
+            }
+        },
+        "REC:tsMap": (data) => {
+            tsMap.current = data;
+        },
+        "roster": (users) => onUserChange?.({ type: "participants", users }),
+        "host_changed": (m) => {
+            onUserChange?.({ type: "host_changed", ...m });
+            onStateUpdate?.(prev => prev ? { ...prev, hostId: m.newHostId } : prev);
+        },
+        "REC:subtitle": (url) => {
+            onStateUpdate?.(prev => prev ? { ...prev, subtitleUrl: url } : prev);
+        },
+        "chat": (m) => onChatMessage?.(m),
+        "chat_history": (m) => onChatMessage?.(m),
+        "error": (m) => {
+            if (m.message === "Invalid host token") onKicked?.();
+        }
     };
 
-    ws.onmessage = (e) => {
-      let m;
-      try {
-        m = JSON.parse(e.data);
-      } catch {
-        return;
-      }
-      if (!m) return;
-      const pr = p.current;
-      switch (m.type) {
-        case "state_update":
-          sync(m.state);
-          break;
-        case "participants":
-          pr.onUserChange?.(m);
-          break;
-        case "user_joined":
-          pr.onUserChange?.(m);
-          break;
-        case "user_left":
-          pr.onUserChange?.(m);
-          break;
-        case "name_changed":
-          pr.onUserChange?.(m);
-          break;
-        case "host_changed":
-          pr.onStateUpdate?.((prev) =>
-            prev ? { ...prev, hostId: m.newHostId } : prev,
-          );
-          break;
-        case "pong":
-          if (m.serverTime) {
-            const rtt = Date.now() - (m.clientTs || Date.now());
-            const serverNow = m.serverTime + rtt / 2;
-            const sample = serverNow - Date.now();
+    Object.entries(handlers).forEach(([ev, fn]) => socket.on(ev, fn));
 
-            const samples = clockSamples.current;
-            samples.push(sample);
-            if (samples.length > 5) samples.shift();
-            clockOffset.current =
-              samples.reduce((a, b) => a + b, 0) / samples.length;
-          }
-          break;
-        case "chat":
-        case "chat_history":
-          pr.onChatMessage?.(m);
-          break;
-        case "kicked":
-          pr.onKicked?.();
-          break;
-      }
-    };
-
-    ws.onclose = () => {
-      if (off.current) return;
-      clearInterval(timer.current);
-      p.current.onConnStatus?.("reconnecting");
-      p.current.onDriftStatus?.("hard");
-      rTimer.current = setTimeout(connect, backoff(attempt.current++));
-    };
-
-    ws.onerror = () => ws.close();
-  }, [loop, sync, ping]);
+  }, [loop]);
 
   useEffect(() => {
-    off.current = false;
     connect();
-
-    const onVisible = () => {
-      if (document.visibilityState !== "visible") return;
-      const ws = wsRef.current;
-      if (!ws || ws.readyState === WebSocket.CLOSED) connect();
-    };
-    document.addEventListener("visibilitychange", onVisible);
-
     return () => {
-      off.current = true;
+      if (socketRef.current) socketRef.current.disconnect();
       clearInterval(timer.current);
-      clearInterval(pTimer.current);
-      clearTimeout(rTimer.current);
-      document.removeEventListener("visibilitychange", onVisible);
-      if (wsRef.current) {
-        wsRef.current.onclose = null;
-        wsRef.current.close();
-      }
     };
-  }, [connect, ping, loop, sync]);
+  }, [connect]);
 
   return null;
 }

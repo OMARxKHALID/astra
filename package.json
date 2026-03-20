@@ -4,12 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"next dev\" \"node server/ws.js\"",
+    "dev": "concurrently \"next dev\" \"node server/socket.js\"",
     "dev:next": "next dev",
-    "dev:ws": "node server/ws.js",
+    "dev:server": "node server/socket.js",
     "build": "next build",
-    "start": "concurrently \"next start\" \"node server/ws.js\"",
-    "start:ws": "node server/ws.js",
+    "start": "concurrently \"next start\" \"node server/socket.js\"",
+    "start:server": "node server/socket.js",
     "lint": "next lint"
   },
   "dependencies": {
@@ -20,8 +20,9 @@
     "opensubtitles-api": "^5.1.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "tailwind-merge": "^2.5.4",
-    "ws": "^8.18.0"
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
+    "tailwind-merge": "^2.5.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",

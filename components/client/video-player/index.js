@@ -20,6 +20,7 @@ export default function VideoPlayer({
   canControl = true,
   chatOverlay,
   onLoad,
+  onSubtitleChange,
 }) {
   const source = classifyUrl(videoUrl);
 
@@ -40,6 +41,7 @@ export default function VideoPlayer({
         canControl={canControl}
         chatOverlay={chatOverlay}
         onLoad={onLoad}
+        onSubtitleChange={onSubtitleChange}
       />
     );
 
