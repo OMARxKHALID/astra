@@ -3,6 +3,15 @@ import { roomStore } from "@/lib/roomStore";
 
 const WS_HTTP_URL = process.env.WS_HTTP_URL || "http://localhost:3001";
 
+/**
+ * Query the live socket server for a room's current state.
+ *
+ * publicState() returns: { roomId, video, subtitleUrl, paused, videoTS,
+ *   lastUpdated, hostId, playbackRate, hostOnlyControls }
+ *
+ * We normalise the field names here to the convention the rest of the Next.js
+ * app uses:  video → videoUrl,  paused → isPlaying (inverted),  videoTS → currentTime
+ */
 async function queryWsSidecar(id) {
   try {
     const res = await fetch(`${WS_HTTP_URL}/rooms/${id}`, {
@@ -11,7 +20,15 @@ async function queryWsSidecar(id) {
     });
     if (!res.ok) return null;
     const data = await res.json();
-    return Object.keys(data).length ? data : null;
+    if (!data || !Object.keys(data).length) return null;
+
+    return {
+      roomId: data.roomId,
+      videoUrl: data.video || "", // publicState uses "video" not "videoUrl"
+      isPlaying: data.paused === false, // publicState uses "paused" not "isPlaying"
+      currentTime: data.videoTS ?? 0, // publicState uses "videoTS" not "currentTime"
+      lastUpdated: data.lastUpdated ?? Date.now(),
+    };
   } catch {
     return null;
   }
@@ -22,10 +39,11 @@ export async function GET(_req, { params }) {
 
   const stored = await roomStore.get(id);
   if (stored) {
+    // Prefer live state for time-sensitive fields; fall back to persisted store
     const live = await queryWsSidecar(id);
     return NextResponse.json({
       roomId: id,
-      videoUrl: live?.videoUrl ?? stored.videoUrl,
+      videoUrl: live?.videoUrl ?? stored.videoUrl ?? "",
       isPlaying: live?.isPlaying ?? stored.isPlaying ?? false,
       currentTime: live?.currentTime ?? stored.currentTime ?? 0,
       lastUpdated: live?.lastUpdated ?? stored.lastUpdated ?? stored.createdAt,
@@ -33,6 +51,7 @@ export async function GET(_req, { params }) {
     });
   }
 
+  // No Redis entry — query the live server only
   const live = await queryWsSidecar(id);
   if (live) {
     return NextResponse.json({

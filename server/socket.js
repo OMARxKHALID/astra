@@ -6,19 +6,34 @@ import pkg from "@next/env";
 const { loadEnvConfig } = pkg;
 loadEnvConfig(process.cwd());
 
-const redis = process.env.UPSTASH_REDIS_REST_URL
-  ? new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN,
-    })
-  : null;
+// Support both Upstash's own env var names (UPSTASH_REDIS_REST_*) and the
+// Vercel KV / legacy names (REDIS_KV_REST_API_*). The .env.local and
+// .env.example both use REDIS_KV_REST_API_* — so the old code that only
+// checked UPSTASH_REDIS_REST_* silently skipped Redis entirely.
+const redisUrl =
+  process.env.UPSTASH_REDIS_REST_URL || process.env.REDIS_KV_REST_API_URL;
+const redisToken =
+  process.env.UPSTASH_REDIS_REST_TOKEN || process.env.REDIS_KV_REST_API_TOKEN;
+
+const redis =
+  redisUrl && redisToken
+    ? new Redis({ url: redisUrl, token: redisToken })
+    : null;
+
+if (!redis) {
+  console.warn(
+    "[socket.io] Redis not configured — room state will not persist.",
+  );
+}
 
 const PORT = parseInt(process.env.PORT || process.env.WS_PORT || "3001", 10);
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "http://localhost:3000")
   .split(",")
   .map((o) => o.trim().replace(/\/$/, ""));
 
+// How long to wait before electing a new host after the current host disconnects.
 const HOST_RECONNECT_GRACE_MS = 6000;
+
 const rooms = new Map();
 
 console.log(`[socket.io] Starting server on port ${PORT}...`);
@@ -29,6 +44,8 @@ class Room {
     this.roomId = roomId;
     this.video = video;
     this.subtitleUrl = "";
+    // videoTS is updated only via explicit events (seek/play/pause) or
+    // client-reported timestamps. Never self-advanced by a server timer.
     this.videoTS = 0;
     this.paused = true;
     this.lastUpdated = Date.now();
@@ -39,44 +56,33 @@ class Room {
     this.clients = new Set();
     this.joinOrder = [];
     this.messages = [];
+    // tsMap: { userId → currentTimeSeconds }, populated by CMD:ts
     this.tsMap = {};
-    this.lastTsMap = Date.now();
     this.preventTSUpdate = false;
-    this.lastBroadcast = Date.now();
     this.broadcastInterval = null;
   }
 
   startBroadcast(io) {
     if (this.broadcastInterval) return;
 
-    this.heartbeatInterval = setInterval(() => {
-      const now = Date.now();
-      if (!this.paused && this.video) {
-        this.videoTS +=
-          ((now - this.lastUpdated) / 1000) * (this.playbackRate || 1);
-      }
-      this.lastUpdated = now;
-    }, 50);
-
+    // Broadcast every 1 second. The client drift-correction loop fires every
+    // 500ms — broadcasting every 5s (old bug) made all corrections stale.
     this.broadcastInterval = setInterval(() => {
       if (this.clients.size === 0) return;
-      this.lastBroadcast = Date.now();
-      const normalizedMap = {};
-      Object.entries(this.tsMap).forEach(([clientId, rawTime]) => {
-          if (typeof rawTime === "number" && rawTime >= 0) {
-              normalizedMap[clientId] = rawTime + 1;
-          }
+
+      // Prune tsMap entries for users no longer in the room so disconnected
+      // clients don't skew the leader time calculation.
+      Object.keys(this.tsMap).forEach((uid) => {
+        if (!this.joinOrder.includes(uid)) delete this.tsMap[uid];
       });
-      io.to(this.roomId).emit("REC:tsMap", normalizedMap);
+
+      // Send raw timestamps — no artificial inflation.
+      io.to(this.roomId).emit("REC:tsMap", { ...this.tsMap });
       io.to(this.roomId).emit("REC:host", this.publicState());
-    }, 5000);
+    }, 1000);
   }
 
   stopBroadcast() {
-    if (this.heartbeatInterval) {
-      clearInterval(this.heartbeatInterval);
-      this.heartbeatInterval = null;
-    }
     if (this.broadcastInterval) {
       clearInterval(this.broadcastInterval);
       this.broadcastInterval = null;
@@ -86,9 +92,9 @@ class Room {
   receiveTimestamp(userId, rawTime) {
     if (this.preventTSUpdate) return;
     if (typeof rawTime !== "number" || rawTime < 0) return;
-    if (rawTime > this.videoTS) {
-      this.videoTS = rawTime;
-    }
+    // Advance canonical videoTS to furthest reported client time so newly
+    // joining clients seek to the right position.
+    if (rawTime > this.videoTS) this.videoTS = rawTime;
     this.tsMap[userId] = rawTime;
   }
 
@@ -180,10 +186,7 @@ const httpServer = http.createServer((req, res) => {
 });
 
 const io = new Server(httpServer, {
-  cors: {
-    origin: ALLOWED_ORIGINS,
-    methods: ["GET", "POST"],
-  },
+  cors: { origin: ALLOWED_ORIGINS, methods: ["GET", "POST"] },
 });
 
 const clientMeta = new Map();
@@ -192,6 +195,7 @@ io.on("connection", (socket) => {
   socket.on("JOIN_ROOM", async (msg) => {
     const { roomId, token, clientId, videoUrl, username } = msg;
     let room = rooms.get(roomId);
+
     if (!room && redis) {
       try {
         const stored = await redis.get(`room:${roomId}`);
@@ -215,6 +219,7 @@ io.on("connection", (socket) => {
         console.error(`[socket.io] Redis error: ${err.message}`);
       }
     }
+
     const isHost = Boolean(token);
     if (!room) {
       room = new Room(roomId, videoUrl || "", clientId, isHost ? token : "");
@@ -228,10 +233,12 @@ io.on("connection", (socket) => {
         if (videoUrl) room.video = videoUrl;
       }
     }
+
     if (isHost && room.hostToken && token !== room.hostToken) {
       socket.emit("REC:error", { message: "Invalid host token" });
       return;
     }
+
     if (isHost && token === room.hostToken && room.hostId !== clientId) {
       const prevHostId = room.hostId;
       room.hostId = clientId;
@@ -241,23 +248,39 @@ io.on("connection", (socket) => {
       }
       io.to(roomId).emit("host_changed", { newHostId: clientId });
     }
+
     socket.join(roomId);
     room.clients.add(socket.id);
-    if (!room.joinOrder.includes(clientId)) room.joinOrder.push(clientId);
+    const isNewParticipant = !room.joinOrder.includes(clientId);
+    if (isNewParticipant) room.joinOrder.push(clientId);
+
     clientMeta.set(socket.id, {
       userId: clientId,
       roomId,
       isHost: isHost && token === room.hostToken,
       username,
     });
+
+    // Send full state to the joining client
     socket.emit("REC:host", room.publicState());
     socket.emit("REC:tsMap", room.tsMap);
+    if (room.messages.length > 0)
+      socket.emit("chat_history", { messages: room.messages });
+
+    // Broadcast updated roster to everyone in the room.
+    // Also notify existing clients that someone new arrived so they can
+    // show a "X joined" toast (user_joined is emitted to others only).
     io.to(roomId).emit("REC:roster", room.getParticipants(clientMeta));
-    if (room.messages.length > 0) socket.emit("chat_history", { messages: room.messages });
+    if (isNewParticipant) {
+      socket.to(roomId).emit("user_joined", { userId: clientId, username });
+    }
+
     if (!room.hostId) electNewHost(room);
   });
 
-  const handleCmd = (socket, action) => {
+  // handleCmd is only for playback control events. CMD:ts MUST bypass it —
+  // see that handler below for the reason why.
+  const handleCmd = (socket) => {
     const meta = clientMeta.get(socket.id);
     if (!meta) return null;
     const room = rooms.get(meta.roomId);
@@ -266,10 +289,19 @@ io.on("connection", (socket) => {
     return { room, meta };
   };
 
+  // CMD:ts: record this client's current playback position.
+  //
+  // MUST NOT go through handleCmd(). handleCmd checks hostOnlyControls and
+  // returns null for viewers when it's enabled. That would silently drop all
+  // viewer timestamps → the server is blind to their positions → sync breaks.
+  // Timestamp reporting is always permitted regardless of room lock state.
   socket.on("CMD:ts", (rId, payload) => {
-    const ctx = handleCmd(socket);
+    const meta = clientMeta.get(socket.id);
+    if (!meta) return;
+    const room = rooms.get(meta.roomId);
+    if (!room) return;
     const time = typeof payload === "object" ? payload.currentTime : payload;
-    if (ctx) ctx.room.receiveTimestamp(ctx.meta.userId, time);
+    room.receiveTimestamp(meta.userId, time);
   });
 
   socket.on("CMD:play", (msg) => {
@@ -354,8 +386,39 @@ io.on("connection", (socket) => {
     const ctx = handleCmd(socket);
     if (ctx) {
       ctx.room.subtitleUrl = url;
-      io.to(ctx.room.roomId).emit("REC:subtitle", url);
+      io.to(ctx.room.roomId).emit("REC:subtitle", ctx.room.subtitleUrl);
       saveRoom(ctx.room);
+    }
+  });
+
+  socket.on("CMD:lock", () => {
+    const meta = clientMeta.get(socket.id);
+    if (!meta?.isHost) return;
+    const room = rooms.get(meta.roomId);
+    if (!room) return;
+    room.hostOnlyControls = !room.hostOnlyControls;
+    io.to(room.roomId).emit("REC:host", room.publicState());
+    saveRoom(room);
+  });
+
+  // Kick a viewer from the room. Only the host can do this.
+  socket.on("CMD:kick", (msg) => {
+    const meta = clientMeta.get(socket.id);
+    if (!meta?.isHost) return;
+    const room = rooms.get(meta.roomId);
+    if (!room) return;
+    const { targetUserId } = msg || {};
+    if (!targetUserId || targetUserId === meta.userId) return;
+
+    // Find the target's socket and disconnect them
+    for (const [sid, m] of clientMeta.entries()) {
+      if (m.roomId === meta.roomId && m.userId === targetUserId) {
+        io.to(sid).emit("REC:error", {
+          message: "You have been removed from the room.",
+        });
+        io.sockets.sockets.get(sid)?.disconnect(true);
+        break;
+      }
     }
   });
 
@@ -387,6 +450,7 @@ io.on("connection", (socket) => {
     };
     if (chatMsg.text) {
       room.messages.push(chatMsg);
+      if (room.messages.length > 200) room.messages = room.messages.slice(-200);
       io.to(meta.roomId).emit("chat", chatMsg);
       saveRoom(room);
     }
@@ -396,10 +460,12 @@ io.on("connection", (socket) => {
     const meta = clientMeta.get(socket.id);
     if (!meta) return;
     const room = rooms.get(meta.roomId);
+
     if (room) {
       room.clients.delete(socket.id);
       room.joinOrder = room.joinOrder.filter((id) => id !== meta.userId);
       delete room.tsMap[meta.userId];
+
       if (room.clients.size === 0) {
         saveRoom(room);
         setTimeout(() => {
@@ -414,6 +480,9 @@ io.on("connection", (socket) => {
           username: meta.username,
           count: room.clients.size,
         });
+        // Re-broadcast the full roster so all clients have an accurate list.
+        io.to(room.roomId).emit("REC:roster", room.getParticipants(clientMeta));
+
         if (meta.isHost) {
           setTimeout(() => {
             const r = rooms.get(meta.roomId);
@@ -427,6 +496,7 @@ io.on("connection", (socket) => {
         }
       }
     }
+
     clientMeta.delete(socket.id);
   });
 });
