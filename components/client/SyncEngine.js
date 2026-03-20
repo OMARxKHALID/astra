@@ -56,6 +56,7 @@ export default function SyncEngine({
   const tsMap = useRef({}); // latest REC:tsMap from server
   const isBuffering = useRef(false); // true while the native <video> element is stalled
   const lastStatus = useRef("synced");
+  const lastSystemTx = useRef(0);
   const preventUpdateEnd = useRef(0); // timestamp until which sync corrections are suppressed
   const clockOffset = useRef(0); // ms offset between local and server clocks
   const initialSeekDone = useRef(false);
@@ -253,19 +254,6 @@ export default function SyncEngine({
   }, [isBufferingNow]);
 
   const connect = useCallback(() => {
-    const {
-      roomId,
-      userId,
-      hostToken,
-      videoUrl,
-      displayName,
-      onConnStatus,
-      onUserChange,
-      onStateUpdate,
-      onChatMessage,
-      onKicked,
-    } = p.current;
-
     if (socketRef.current) socketRef.current.disconnect();
 
     const socket = io(WS_URL, {
@@ -285,13 +273,13 @@ export default function SyncEngine({
     // Re-emitting JOIN_ROOM on reconnect is correct — it re-registers the
     // client with the server and triggers a full REC:host state re-sync.
     socket.on("connect", () => {
-      onConnStatus?.("connected");
+      p.current.onConnStatus?.("connected");
       socket.emit("JOIN_ROOM", {
-        roomId,
-        clientId: userId,
-        username: displayName,
-        token: hostToken || undefined,
-        videoUrl: videoUrl || "",
+        roomId: p.current.roomId,
+        clientId: p.current.userId,
+        username: p.current.displayName,
+        token: p.current.hostToken || undefined,
+        videoUrl: p.current.videoUrl || "",
       });
       loop();
     });
@@ -307,15 +295,39 @@ export default function SyncEngine({
 
       // Full room state broadcast from server (on join + after control events)
       "REC:host": (m) => {
+        const prevState = serverLine.current;
         const state = {
           ...m,
           videoUrl: m.video,
           isPlaying: !m.paused,
           currentTime: m.videoTS,
         };
-        const wasInitial = !serverLine.current;
+        const wasInitial = !prevState;
         serverLine.current = state;
-        onStateUpdate?.(state);
+        p.current.onStateUpdate?.(state);
+
+        // Event-driven toasts: compare previous and current state to detect mode changes.
+        if (prevState && Date.now() - lastSystemTx.current > 500) {
+          if (prevState.strictVideoUrlMode !== state.strictVideoUrlMode) {
+            lastSystemTx.current = Date.now();
+            p.current.onChatMessage?.({
+              senderId: "system",
+              text: state.strictVideoUrlMode
+                ? "[SHIELD] Strict URL mode ON — direct files only."
+                : "[SHIELD] Strict URL mode OFF — all URLs allowed.",
+              ts: Date.now(),
+            });
+          } else if (prevState.hostOnlyControls !== state.hostOnlyControls) {
+            lastSystemTx.current = Date.now();
+            p.current.onChatMessage?.({
+              senderId: "system",
+              text: state.hostOnlyControls
+                ? "[LOCK] Room Locked — Host controls only."
+                : "[UNLOCK] Room Unlocked — Everyone can control.",
+              ts: Date.now(),
+            });
+          }
+        }
 
         if (wasInitial) initialSeekDone.current = false;
 
@@ -358,45 +370,46 @@ export default function SyncEngine({
       },
 
       // Full roster update (emitted on join and on disconnect)
-      "REC:roster": (users) => onUserChange?.({ type: "participants", users }),
+      "REC:roster": (users) =>
+        p.current.onUserChange?.({ type: "participants", users }),
 
       // A new user joined — notify existing members so they can show a toast
       // and update the participant list immediately without waiting for the
       // next full roster broadcast.
       user_joined: (m) => {
-        onUserChange?.({ type: "user_joined", ...m });
+        p.current.onUserChange?.({ type: "user_joined", ...m });
       },
 
       // A specific user left — update their row in the UI
       user_left: (m) => {
-        onUserChange?.({ type: "user_left", ...m });
+        p.current.onUserChange?.({ type: "user_left", ...m });
       },
 
       // A user changed their display name
       name_changed: (m) => {
-        onUserChange?.({ type: "name_changed", ...m });
+        p.current.onUserChange?.({ type: "name_changed", ...m });
       },
 
       host_changed: (m) => {
-        onUserChange?.({ type: "host_changed", ...m });
-        onStateUpdate?.((prev) =>
+        p.current.onUserChange?.({ type: "host_changed", ...m });
+        p.current.onStateUpdate?.((prev) =>
           prev ? { ...prev, hostId: m.newHostId } : prev,
         );
       },
 
       "REC:subtitle": (url) => {
-        onStateUpdate?.((prev) =>
+        p.current.onStateUpdate?.((prev) =>
           prev ? { ...prev, subtitleUrl: url } : prev,
         );
       },
 
-      chat: (m) => onChatMessage?.(m),
-      chat_history: (m) => onChatMessage?.({ type: "chat_history", ...m }),
+      chat: (m) => p.current.onChatMessage?.(m),
+      chat_history: (m) => p.current.onChatMessage?.({ type: "chat_history", ...m }),
 
       "REC:error": (m) => {
         // Strict video URL mode rejection — surface as a toast, don't kick.
         if (m.code === "STRICT_VIDEO_MODE") {
-          onChatMessage?.({
+          p.current.onChatMessage?.({
             senderId: "system",
             text: `[STRICT] ${m.message}`,
             ts: Date.now(),
@@ -411,7 +424,7 @@ export default function SyncEngine({
             socketRef.current.io.opts.reconnection = false;
             socketRef.current.disconnect();
           }
-          onKicked?.();
+          p.current.onKicked?.();
         }
       },
     };

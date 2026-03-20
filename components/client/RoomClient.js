@@ -24,6 +24,7 @@ import {
   ChatIcon,
   UsersIcon,
   ShieldIcon,
+  SeekIcon,
 } from "./Icons";
 
 const MAX_MESSAGES = 200;
@@ -160,6 +161,10 @@ export default function RoomClient({ roomId, initialMeta }) {
           icon = <CcIcon className="w-4 h-4 text-jade" />;
           cleanText = msg.text.replace("[SUBS]", "").trim();
           type = "success";
+        } else if (msg.text.includes("[SHIELD]")) {
+          icon = <ShieldIcon className="w-4 h-4 text-amber-500" />;
+          cleanText = msg.text.replace("[SHIELD]", "").trim();
+          type = "info";
         } else if (msg.text.includes("[LOCK]")) {
           icon = <LockSmallIcon className="w-4 h-4 text-danger" />;
           cleanText = msg.text.replace("[LOCK]", "").trim();
@@ -172,6 +177,10 @@ export default function RoomClient({ roomId, initialMeta }) {
           icon = <ShieldIcon className="w-4 h-4 text-danger" />;
           cleanText = msg.text.replace("[STRICT]", "").trim();
           type = "error";
+        } else if (msg.text.includes("[SEEK]")) {
+          icon = <SeekIcon className="w-4 h-4 text-amber-500" />;
+          cleanText = msg.text.replace("[SEEK]", "").trim();
+          type = "info";
         }
         addToast(cleanText, type, 4000, icon);
         return;
@@ -329,34 +338,6 @@ export default function RoomClient({ roomId, initialMeta }) {
   const hostOnlyControls = serverState?.hostOnlyControls ?? false;
   const strictVideoUrlMode = serverState?.strictVideoUrlMode ?? false;
   const canControl = !hostOnlyControls || isHost;
-
-  // Show a toast whenever the host toggles strictVideoUrlMode so all
-  // participants know the URL policy changed.
-  const prevStrictRef = useRef(null);
-  useEffect(() => {
-    if (prevStrictRef.current === null) {
-      // Skip the very first render — no state change has occurred yet.
-      prevStrictRef.current = strictVideoUrlMode;
-      return;
-    }
-    if (prevStrictRef.current === strictVideoUrlMode) return;
-    prevStrictRef.current = strictVideoUrlMode;
-    if (strictVideoUrlMode) {
-      addToast(
-        "Strict URL mode ON — direct video files only.",
-        "error",
-        5000,
-        <ShieldIcon className="w-4 h-4 text-danger" />,
-      );
-    } else {
-      addToast(
-        "Strict URL mode OFF — all URLs allowed.",
-        "success",
-        4000,
-        <ShieldIcon className="w-4 h-4 text-jade" />,
-      );
-    }
-  }, [strictVideoUrlMode, addToast]);
 
   const chatOverlay = isFullscreen ? (
     <div className="absolute top-3 right-4 sm:top-4 sm:right-6 lg:right-4 z-30 flex flex-col items-end pointer-events-none">
