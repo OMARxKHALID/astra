@@ -26,9 +26,9 @@ export async function GET(_req, { params }) {
     return NextResponse.json({
       roomId: id,
       videoUrl: live?.videoUrl ?? stored.videoUrl,
-      isPlaying: live?.isPlaying ?? false,
-      currentTime: live?.currentTime ?? 0,
-      lastUpdated: live?.lastUpdated ?? stored.createdAt,
+      isPlaying: live?.isPlaying ?? stored.isPlaying ?? false,
+      currentTime: live?.currentTime ?? stored.currentTime ?? 0,
+      lastUpdated: live?.lastUpdated ?? stored.lastUpdated ?? stored.createdAt,
       createdAt: stored.createdAt,
     });
   }

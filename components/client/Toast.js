@@ -2,12 +2,42 @@
 
 import { useState, useCallback } from "react";
 
+const TYPE_MAP = {
+  success: {
+    icon: (
+      <svg className="w-3 h-3 text-jade" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+      </svg>
+    ),
+    bg: "bg-jade/20",
+    border: "border-jade/30",
+  },
+  error: {
+    icon: (
+      <svg className="w-3 h-3 text-danger" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    ),
+    bg: "bg-danger/20",
+    border: "border-danger/30",
+  },
+  info: {
+    icon: (
+      <svg className="w-3 h-3 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+      </svg>
+    ),
+    bg: "bg-amber-400/20",
+    border: "border-amber-400/30",
+  },
+};
+
 export function useToast() {
   const [toasts, setToasts] = useState([]);
 
-  const addToast = useCallback((message, duration = 3000) => {
-    const id = crypto.randomUUID();
-    setToasts((prev) => [...prev, { id, message }]);
+  const addToast = useCallback((message, type = "success", duration = 3000) => {
+    const id = typeof crypto !== "undefined" ? crypto.randomUUID() : Date.now().toString();
+    setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, duration);
@@ -22,29 +52,29 @@ export default function ToastContainer({ toasts }) {
   return (
     <div
       aria-live="polite"
-      aria-atomic="false"
       className="fixed inset-x-0 bottom-0 z-[10000] flex flex-col items-center gap-3 pb-32 lg:pb-12 pointer-events-none"
     >
-      {toasts.map((t) => (
-        <div
-          key={t.id}
-          role="status"
-          style={{ animation: "toastIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards" }}
-          className="px-6 py-3 rounded-[20px]
-                     bg-[#0d1018]/90 backdrop-blur-2xl
-                     border border-white/10
-                     text-[13px] font-semibold text-white/95
-                     shadow-[0_8px_32px_-4px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.05)]
-                     flex items-center gap-3 transition-all"
-        >
-          <div className="w-5 h-5 rounded-full bg-jade/20 border border-jade/30 flex items-center justify-center shrink-0">
-            <svg className="w-3 h-3 text-jade" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-            </svg>
+      {toasts.map((t) => {
+        const theme = TYPE_MAP[t.type] || TYPE_MAP.success;
+        return (
+          <div
+            key={t.id}
+            role="status"
+            style={{ animation: "toastIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards" }}
+            className="px-6 py-3 rounded-[20px]
+                       bg-[#0d1018]/90 backdrop-blur-2xl
+                       border border-white/10
+                       text-[13px] font-semibold text-white/95
+                       shadow-[0_8px_32px_-4px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.05)]
+                       flex items-center gap-3 transition-all"
+          >
+            <div className={`w-5 h-5 rounded-full ${theme.bg} ${theme.border} flex items-center justify-center shrink-0`}>
+              {theme.icon}
+            </div>
+            <span className="tracking-tight">{t.message}</span>
           </div>
-          <span className="tracking-tight">{t.message}</span>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

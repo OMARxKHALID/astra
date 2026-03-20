@@ -112,14 +112,14 @@ export default function RoomClient({ roomId, initialMeta }) {
             [event.userId]: event.username,
           }));
           if (event.userId !== userId) {
-            addToast(`${event.username} joined!`);
+            addToast(`${event.username} joined!`, "info");
           }
         }
         break;
       case "user_left":
         const leaverName = displayNames[event.userId] || "Someone";
         setParticipants((prev) => prev.filter((id) => id !== event.userId));
-        addToast(`${leaverName} left.`);
+        addToast(`${leaverName} left.`, "info");
         break;
       case "name_changed":
         setDisplayNames((prev) => ({
@@ -164,7 +164,7 @@ export default function RoomClient({ roomId, initialMeta }) {
   );
 
   const handleShare = useCallback(() => {
-    addToast("Link copied!");
+    addToast("Link copied!", "success");
     const shareUrl = `${window.location.origin}/room/${roomId}`;
     navigator.clipboard?.writeText(shareUrl).catch(() => {});
   }, [addToast, roomId]);

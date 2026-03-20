@@ -18,6 +18,24 @@ const clientMeta = new Map();
 console.log(`[ws] Starting server on port ${PORT}...`);
 console.log(`[ws] Allowed Origins: [${ALLOWED_ORIGINS.join(", ")}]`);
 
+async function persistRoom(room) {
+  if (!redis) return;
+  try {
+    await redis.set(`room:${room.roomId}`, {
+      roomId: room.roomId,
+      videoUrl: room.videoUrl,
+      isPlaying: room.isPlaying,
+      currentTime: room.currentTime,
+      lastUpdated: room.lastUpdated,
+      hostId: room.hostId,
+      hostToken: room.hostToken,
+      playbackRate: room.playbackRate,
+    }, { ex: 86400 }); 
+  } catch (err) {
+    console.error(`[redis] Save failed for ${room.roomId}: ${err.message}`);
+  }
+}
+
 function send(ws, payload) {
   if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
 }
@@ -97,6 +115,7 @@ function electNewHost(room) {
           text: `👑 ${meta.username} is now the host.`,
           ts: Date.now(),
         });
+        persistRoom(room);
         return;
       }
     }
@@ -167,7 +186,7 @@ wss.on("connection", (ws, req) => {
     }
 
     if (msg.type === "join") {
-      const { roomId, token, userId, videoUrl } = msg;
+      const { roomId, token, userId, videoUrl, username } = msg;
 
       let room = rooms.get(roomId);
 
@@ -177,6 +196,11 @@ wss.on("connection", (ws, req) => {
           if (stored) {
             console.log(`[ws] [${roomId}] Recovered room from Redis`);
             room = getOrCreateRoom(roomId, stored.videoUrl, stored.hostId, stored.hostToken);
+            // Restore playback state
+            room.isPlaying = stored.isPlaying ?? false;
+            room.currentTime = stored.currentTime ?? 0;
+            room.playbackRate = stored.playbackRate ?? 1;
+            room.lastUpdated = stored.lastUpdated ?? Date.now();
           }
         } catch (err) {
           console.error(`[ws] Redis error: ${err.message}`);
@@ -228,6 +252,14 @@ wss.on("connection", (ws, req) => {
         { type: "user_joined", userId, username, count: room.clients.size },
         ws,
       );
+
+      // If there's no active host currently in the socket pool for this room, elect one.
+      const currentHostWs = Array.from(clientMeta.entries()).find(
+        ([, m]) => m.roomId === roomId && m.isHost && m.userId === room.hostId
+      );
+      if (!currentHostWs) {
+        electNewHost(room);
+      }
 
       return;
     }
@@ -316,6 +348,7 @@ wss.on("connection", (ws, req) => {
         text: "🎬 Host loaded a new video.",
         ts: Date.now(),
       });
+      persistRoom(room);
       return;
     }
 
@@ -329,6 +362,7 @@ wss.on("connection", (ws, req) => {
         type: "state_update",
         state: publicState(room),
       });
+      persistRoom(room);
     } else if (msg.type === "pause") {
       console.log(`[ws] [${meta.roomId}] Pause at ${currentTime} by ${meta.username}`);
       room.isPlaying = false;
@@ -338,6 +372,7 @@ wss.on("connection", (ws, req) => {
         type: "state_update",
         state: publicState(room),
       });
+      persistRoom(room);
     } else if (msg.type === "seek") {
       console.log(`[ws] [${meta.roomId}] Seek to ${currentTime} by ${meta.username}`);
       room.currentTime = currentTime;
@@ -346,6 +381,7 @@ wss.on("connection", (ws, req) => {
         type: "state_update",
         state: publicState(room),
       });
+      persistRoom(room);
     } else if (msg.type === "speed") {
       const rate = Number(msg.rate);
       if ([0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].includes(rate)) {
@@ -423,5 +459,11 @@ setInterval(() => {
 setInterval(() => {
   for (const ws of wss.clients) {
     if (ws.readyState === WebSocket.OPEN) ws.ping();
+  }
+}, 30_000);
+
+setInterval(() => {
+  for (const room of rooms.values()) {
+    if (room.clients.size > 0) persistRoom(room);
   }
 }, 30_000);

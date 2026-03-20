@@ -49,6 +49,8 @@ export default function SyncEngine({
   const timer = useRef(null);
   const attempt = useRef(0);
   const rTimer = useRef(null);
+  const clockOffset = useRef(0);
+  const pTimer = useRef(null);
   const off = useRef(false);
 
   const lastSeekAt = useRef(0);
@@ -60,6 +62,13 @@ export default function SyncEngine({
   useEffect(() => {
     if (sendRef) sendRef.current = send;
   }, [send, sendRef]);
+
+  const ping = useCallback(() => {
+    const ws = wsRef.current;
+    if (ws?.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: "ping", clientTs: Date.now() }));
+    }
+  }, []);
 
   const loop = useCallback(() => {
     clearInterval(timer.current);
@@ -75,10 +84,10 @@ export default function SyncEngine({
         return;
       }
 
-      const target = expectedTime(s);
+      const target = expectedTime(s, clockOffset.current);
       const drift = Math.abs(target - v.currentTime);
-      const c = computeCorrection(v.currentTime, target, s.isPlaying);
       od?.(driftStatus(drift));
+      const c = computeCorrection(v.currentTime, target, s.isPlaying);
 
       if (c.action === "hard") {
         try {
@@ -106,7 +115,7 @@ export default function SyncEngine({
     if (!v) return;
 
     if (v.readyState >= 1) {
-      const target = expectedTime(s);
+      const target = expectedTime(s, clockOffset.current);
       if (Math.abs(target - v.currentTime) > 0.5) {
         try {
           v.currentTime = target;
@@ -142,6 +151,9 @@ export default function SyncEngine({
         }),
       );
       loop();
+      ping();
+      clearInterval(pTimer.current);
+      pTimer.current = setInterval(ping, 10_000);
     };
 
     ws.onmessage = (e) => {
@@ -173,6 +185,14 @@ export default function SyncEngine({
             prev ? { ...prev, hostId: m.newHostId } : prev,
           );
           break;
+        case "pong":
+          if (m.serverTime) {
+            const rtt = Date.now() - (m.clientTs || Date.now());
+            const serverNow = m.serverTime + rtt / 2;
+            clockOffset.current = serverNow - Date.now();
+            console.log(`[sync] Clock offset: ${clockOffset.current.toFixed(0)} ms (RTT: ${rtt} ms)`);
+          }
+          break;
         case "chat":
           pr.onChatMessage?.(m);
           break;
@@ -191,7 +211,7 @@ export default function SyncEngine({
     };
 
     ws.onerror = () => ws.close();
-  }, [loop, sync]);
+  }, [loop, sync, ping]);
 
   useEffect(() => {
     off.current = false;
@@ -207,6 +227,7 @@ export default function SyncEngine({
     return () => {
       off.current = true;
       clearInterval(timer.current);
+      clearInterval(pTimer.current);
       clearTimeout(rTimer.current);
       document.removeEventListener("visibilitychange", onVisible);
       if (wsRef.current) {
@@ -214,7 +235,7 @@ export default function SyncEngine({
         wsRef.current.close();
       }
     };
-  }, [connect]);
+  }, [connect, ping, loop, sync]);
 
   return null;
 }
