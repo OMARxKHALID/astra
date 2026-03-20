@@ -57,7 +57,7 @@ export default function ChatPanel({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-5 py-5 space-y-5"
+        className="flex-1 overflow-y-auto px-5 py-4 space-y-3"
         style={{ scrollbarWidth: "none" }}
       >
         {messages.length === 0 && (
@@ -153,16 +153,16 @@ function ChatMessage({ msg, isOwn, displayNames = {} }) {
         </span>
       )}
       <div
-        className={`max-w-[88%] px-4 py-3 rounded-[1.5rem] text-sm font-body leading-relaxed break-words border transition-colors duration-200
+        className={`max-w-[85%] px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-2xl text-[12px] sm:text-[13px] font-body leading-relaxed break-words border transition-colors duration-200
           ${
             isOwn
-              ? "bg-amber-500 text-void border-transparent rounded-br-md shadow-lg shadow-amber-500/8 ring-1 ring-amber-400/50"
-              : "bg-white/5 border-white/6 text-text rounded-bl-md hover:border-white/15"
+              ? "bg-amber-500 text-void border-transparent rounded-br-md shadow-[0_4px_12px_-4px_rgba(245,158,11,0.5)] ring-1 ring-amber-400/50"
+              : "bg-white/5 border-white/6 text-white/90 rounded-bl-md hover:border-white/15"
           }`}
       >
         {msg.text}
       </div>
-      <span className="text-[9px] font-mono text-muted/40 px-1 uppercase">
+      <span className="text-[10px] font-medium text-white/50 px-1 mt-0.5">
         {time}
       </span>
     </div>

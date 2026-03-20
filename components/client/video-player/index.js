@@ -17,6 +17,7 @@ export default function VideoPlayer({
   onSeek,
   onSpeed,
   canControl = true,
+  chatOverlay,
 }) {
   const source = classifyUrl(videoUrl);
 
@@ -34,6 +35,7 @@ export default function VideoPlayer({
         onSeek={onSeek}
         onSpeed={onSpeed}
         canControl={canControl}
+        chatOverlay={chatOverlay}
       />
     );
 
@@ -50,6 +52,7 @@ export default function VideoPlayer({
         onSeek={onSeek}
         onSpeed={onSpeed}
         canControl={canControl}
+        chatOverlay={chatOverlay}
       />
     );
 
@@ -64,6 +67,7 @@ export default function VideoPlayer({
         onPause={onPause}
         onSeek={onSeek}
         canControl={canControl}
+        chatOverlay={chatOverlay}
       />
     );
 

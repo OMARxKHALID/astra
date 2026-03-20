@@ -8,7 +8,11 @@ import {
   SYNC_CHECK_INTERVAL,
 } from "@/lib/sync";
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3001";
+const WS_URL =
+  process.env.NEXT_PUBLIC_WS_URL ||
+  (process.env.NODE_ENV === "production"
+    ? "wss://watch-together-ws.onrender.com"
+    : `ws://${typeof window !== "undefined" ? window.location.hostname : "localhost"}:3001`);
 const backoff = (attempt) => Math.min(1000 * 2 ** attempt, 30_000);
 
 const SEEK_COOLDOWN_MS = 1500;
@@ -194,6 +198,7 @@ export default function SyncEngine({
           }
           break;
         case "chat":
+        case "chat_history":
           pr.onChatMessage?.(m);
           break;
         case "kicked":

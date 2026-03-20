@@ -65,7 +65,20 @@ export default function RoomClient({ roomId, initialMeta }) {
   displayNamesRef.current = displayNames;
 
   const [showSidebar, setShowSidebar] = useState(true);
+  const [playerChatOpen, setPlayerChatOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const onFS = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+      if (!document.fullscreenElement) {
+        setPlayerChatOpen(false);
+      }
+    };
+    document.addEventListener("fullscreenchange", onFS);
+    return () => document.removeEventListener("fullscreenchange", onFS);
+  }, []);
 
   const videoRef = useRef(null);
 
@@ -73,6 +86,11 @@ export default function RoomClient({ roomId, initialMeta }) {
 
   const handleChatMessage = useCallback(
     (msg) => {
+      if (msg.type === "chat_history") {
+        setMessages(msg.messages);
+        return;
+      }
+
       setMessages((prev) => {
         const next = [...prev, msg].slice(-MAX_MESSAGES);
         return next;
@@ -80,12 +98,14 @@ export default function RoomClient({ roomId, initialMeta }) {
 
       const isMobile =
         typeof window !== "undefined" && window.innerWidth < 1024;
-      const isVisible = isMobile ? mobileSheet === "chat" : showSidebar;
+      const isVisible = document.fullscreenElement
+        ? playerChatOpen
+        : (isMobile ? mobileSheet === "chat" : showSidebar);
       if (!isVisible) {
         setUnreadCount((prev) => prev + 1);
       }
     },
-    [mobileSheet, showSidebar],
+    [mobileSheet, showSidebar, playerChatOpen],
   );
 
   const handleUserChange = useCallback((event) => {
@@ -146,19 +166,31 @@ export default function RoomClient({ roomId, initialMeta }) {
     [],
   );
   const handlePlay = useCallback(
-    (time) => sendRef.current?.({ type: "play", currentTime: time }),
+    (time) => {
+      setServerState((s) => ({ ...(s || {}), isPlaying: true, currentTime: time }));
+      sendRef.current?.({ type: "play", currentTime: time });
+    },
     [],
   );
   const handlePause = useCallback(
-    (time) => sendRef.current?.({ type: "pause", currentTime: time }),
+    (time) => {
+      setServerState((s) => ({ ...(s || {}), isPlaying: false, currentTime: time }));
+      sendRef.current?.({ type: "pause", currentTime: time });
+    },
     [],
   );
   const handleSeek = useCallback(
-    (time) => sendRef.current?.({ type: "seek", currentTime: time }),
+    (time) => {
+      setServerState((s) => ({ ...(s || {}), currentTime: time }));
+      sendRef.current?.({ type: "seek", currentTime: time });
+    },
     [],
   );
   const handleSpeed = useCallback(
-    (rate) => sendRef.current?.({ type: "speed", rate }),
+    (rate) => {
+      setServerState((s) => ({ ...(s || {}), playbackRate: rate }));
+      sendRef.current?.({ type: "speed", rate });
+    },
     [],
   );
   const handleKick = useCallback(
@@ -190,6 +222,52 @@ export default function RoomClient({ roomId, initialMeta }) {
   const canControl = !hostOnlyControls || isHost;
 
   const nameLabel = nameReady ? displayName : "";
+
+  const chatOverlay = isFullscreen ? (
+    <div className="absolute top-3 right-4 sm:top-4 sm:right-6 lg:right-4 z-30 flex flex-col items-end pointer-events-none">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setPlayerChatOpen((v) => {
+            if (!v) setUnreadCount(0);
+            return !v;
+          });
+        }}
+        className="pointer-events-auto w-10 h-10 flex items-center justify-center rounded-xl bg-black/40 backdrop-blur-md text-white/70 hover:text-white transition-all ring-1 ring-white/10 shadow-xl"
+        title={playerChatOpen ? "Close Chat" : "Open Chat"}
+      >
+        <ChatIcon className="w-5 h-5" />
+        {!playerChatOpen && unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-500 rounded-full flex items-center justify-center border-2 border-void animate-pulse" />
+        )}
+      </button>
+      {playerChatOpen && (
+        <div 
+          className="pointer-events-auto mt-2 w-80 sm:w-96 h-[450px] sm:h-[550px] max-h-[85vh] rounded-[1.5rem] border border-white/10 bg-black/30 backdrop-blur-2xl overflow-hidden flex flex-col shadow-2xl animate-fadeIn"
+          onClick={(e) => e.stopPropagation()}
+          onDoubleClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0 bg-white/5">
+            <span className="font-display font-bold text-sm text-white/90 tracking-wide">Room Chat</span>
+            <button 
+              onClick={() => setPlayerChatOpen(false)}
+              className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="flex-1 min-h-0 relative">
+            <ChatPanel
+              messages={messages}
+              userId={userId}
+              displayNames={displayNames}
+              onSend={handleSendChat}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  ) : null;
 
   return (
     <div className="h-dvh bg-void flex flex-col overflow-hidden text-text font-body antialiased">
@@ -357,6 +435,7 @@ export default function RoomClient({ roomId, initialMeta }) {
             onSeek={handleSeek}
             onSpeed={handleSpeed}
             canControl={canControl}
+            chatOverlay={chatOverlay}
           />
         </section>
 

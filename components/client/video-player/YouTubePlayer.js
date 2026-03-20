@@ -15,12 +15,15 @@ export default function YouTubePlayer({
   onSeek,
   onSpeed,
   canControl = true,
+  chatOverlay,
 }) {
   const containerRef = useRef(null);
+  const iframeContainerRef = useRef(null);
   const playerRef = useRef(null);
   const [ready, setReady] = useState(false);
   const [localTime, setLocalTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [bufferedPct, setBufferedPct] = useState(0);
   const [ctrlVis, setCtrlVis] = useState(true);
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(1);
@@ -101,6 +104,7 @@ export default function YouTubePlayer({
       try {
         setLocalTime(playerRef.current.getCurrentTime?.() ?? 0);
         setDuration(playerRef.current.getDuration?.() ?? 0);
+        setBufferedPct((playerRef.current.getVideoLoadedFraction?.() ?? 0) * 100);
       } catch {}
     }, 250);
     return () => clearInterval(t);
@@ -111,9 +115,9 @@ export default function YouTubePlayer({
     const divId = `yt-${videoId}-${Math.random().toString(36).slice(2, 6)}`;
     const div = document.createElement("div");
     div.id = divId;
-    containerRef.current?.appendChild(div);
+    iframeContainerRef.current?.appendChild(div);
     onYTReady(() => {
-      if (!containerRef.current) return;
+      if (!iframeContainerRef.current) return;
       playerRef.current = new window.YT.Player(divId, {
         videoId,
         playerVars: {
@@ -173,12 +177,13 @@ export default function YouTubePlayer({
 
   return (
     <div
-      className="relative w-full h-full bg-black"
+      ref={containerRef}
+      className="relative w-full h-full bg-black overflow-hidden group/yt"
       onMouseMove={showCtrl}
       onTouchStart={showCtrl}
     >
       <div
-        ref={containerRef}
+        ref={iframeContainerRef}
         className="w-full h-full [&>div]:w-full [&>div]:h-full [&_iframe]:w-full [&_iframe]:h-full"
       />
       <div
@@ -191,7 +196,8 @@ export default function YouTubePlayer({
           <div className="w-10 h-10 rounded-full border-2 border-amber-500/20 border-t-amber-500 animate-spin" />
         </div>
       )}
-      <div className="absolute top-3 right-3 px-2 py-1 rounded-lg bg-red-600/80 text-[10px] font-bold text-white backdrop-blur-sm z-20">
+      {chatOverlay}
+      <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-red-600/80 text-[10px] font-bold text-white backdrop-blur-sm z-20 pointer-events-none opacity-0 group-hover/yt:opacity-100 transition-opacity">
         YouTube
       </div>
       <EmbedControls
@@ -200,6 +206,7 @@ export default function YouTubePlayer({
         localTime={localTime}
         duration={duration}
         progressPct={duration > 0 ? (localTime / duration) * 100 : 0}
+        bufferedPct={bufferedPct}
         playbackRate={playbackRate}
         onPlayPause={handlePlayPause}
         onSeekCommit={handleSeekCommit}

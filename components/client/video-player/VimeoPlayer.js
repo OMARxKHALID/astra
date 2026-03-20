@@ -13,6 +13,7 @@ export default function VimeoPlayer({
   onPause,
   onSeek,
   canControl = true,
+  chatOverlay,
 }) {
   const containerRef = useRef(null);
   const iframeRef = useRef(null);
@@ -20,6 +21,7 @@ export default function VimeoPlayer({
   const [ready, setReady] = useState(false);
   const [localTime, setLocalTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [bufferedPct, setBufferedPct] = useState(0);
   const [ctrlVis, setCtrlVis] = useState(true);
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(1);
@@ -85,6 +87,7 @@ export default function VimeoPlayer({
         .then(() => {
           player.getDuration().then((d) => setDuration(d));
           player.on("timeupdate", ({ seconds }) => setLocalTime(seconds));
+          player.on("progress", ({ percent }) => setBufferedPct(percent * 100));
           setReady(true);
         })
         .catch(() => {});
@@ -131,7 +134,7 @@ export default function VimeoPlayer({
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full bg-black"
+      className="relative w-full h-full bg-black overflow-hidden group/vm"
       onMouseMove={showCtrl}
       onTouchStart={showCtrl}
     >
@@ -152,7 +155,8 @@ export default function VimeoPlayer({
           <div className="w-10 h-10 rounded-full border-2 border-amber-500/20 border-t-amber-500 animate-spin" />
         </div>
       )}
-      <div className="absolute top-3 right-3 px-2 py-1 rounded-lg bg-[#1ab7ea]/80 text-[10px] font-bold text-white backdrop-blur-sm z-20">
+      {chatOverlay}
+      <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-[#1ab7ea]/80 text-[10px] font-bold text-white backdrop-blur-sm z-20 pointer-events-none opacity-0 group-hover/vm:opacity-100 transition-opacity">
         Vimeo
       </div>
       <EmbedControls
@@ -161,6 +165,7 @@ export default function VimeoPlayer({
         localTime={localTime}
         duration={duration}
         progressPct={duration > 0 ? (localTime / duration) * 100 : 0}
+        bufferedPct={bufferedPct}
         playbackRate={1}
         onPlayPause={handlePlayPause}
         onSeekCommit={handleSeekCommit}

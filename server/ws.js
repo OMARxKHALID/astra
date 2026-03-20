@@ -1,9 +1,16 @@
 import { WebSocketServer, WebSocket } from "ws";
 import http from "http";
 import { Redis } from "@upstash/redis";
+import pkg from "@next/env";
 
-const redis = process.env.REDIS_KV_REST_API_URL 
-  ? new Redis({ url: process.env.REDIS_KV_REST_API_URL, token: process.env.REDIS_KV_REST_API_TOKEN })
+const { loadEnvConfig } = pkg;
+loadEnvConfig(process.cwd());
+
+const redis = process.env.REDIS_KV_REST_API_URL
+  ? new Redis({
+      url: process.env.REDIS_KV_REST_API_URL,
+      token: process.env.REDIS_KV_REST_API_TOKEN,
+    })
   : null;
 
 const PORT = parseInt(process.env.PORT || process.env.WS_PORT || "3001", 10);
@@ -21,17 +28,22 @@ console.log(`[ws] Allowed Origins: [${ALLOWED_ORIGINS.join(", ")}]`);
 async function persistRoom(room) {
   if (!redis) return;
   try {
-    await redis.set(`room:${room.roomId}`, {
-      roomId: room.roomId,
-      videoUrl: room.videoUrl,
-      isPlaying: room.isPlaying,
-      currentTime: room.currentTime,
-      lastUpdated: room.lastUpdated,
-      hostId: room.hostId,
-      hostToken: room.hostToken,
-      playbackRate: room.playbackRate,
-      hostOnlyControls: room.hostOnlyControls ?? false,
-    }, { ex: 86400 }); 
+    await redis.set(
+      `room:${room.roomId}`,
+      {
+        roomId: room.roomId,
+        videoUrl: room.videoUrl,
+        isPlaying: room.isPlaying,
+        currentTime: room.currentTime,
+        lastUpdated: room.lastUpdated,
+        hostId: room.hostId,
+        hostToken: room.hostToken,
+        playbackRate: room.playbackRate,
+        hostOnlyControls: room.hostOnlyControls ?? false,
+        messages: room.messages || [],
+      },
+      { ex: 86400 },
+    );
   } catch (err) {
     console.error(`[redis] Save failed for ${room.roomId}: ${err.message}`);
   }
@@ -83,6 +95,7 @@ function getOrCreateRoom(roomId, videoUrl, hostId, hostToken) {
       hostOnlyControls: false,
       clients: new Set(),
       joinOrder: [],
+      messages: [],
     });
   }
   return rooms.get(roomId);
@@ -107,7 +120,9 @@ function electNewHost(room) {
     if (userId === room.hostId) continue;
     for (const [ws, meta] of clientMeta) {
       if (meta.roomId === room.roomId && meta.userId === userId) {
-        console.log(`[ws] [${room.roomId}] Electing new host: ${meta.username} (${userId})`);
+        console.log(
+          `[ws] [${room.roomId}] Electing new host: ${meta.username} (${userId})`,
+        );
         room.hostId = userId;
         meta.isHost = true;
         broadcastAll(room.roomId, { type: "host_changed", newHostId: userId });
@@ -163,13 +178,21 @@ const wss = new WebSocketServer({
   server: httpServer,
   verifyClient: ({ req }, done) => {
     const origin = (req.headers.origin || "").replace(/\/$/, "");
-    const isDev = !process.env.NODE_ENV || process.env.NODE_ENV === "development";
+    const isDev =
+      !process.env.NODE_ENV || process.env.NODE_ENV === "development";
 
-    if (!origin || ALLOWED_ORIGINS.includes(origin) || ALLOWED_ORIGINS.includes("*") || isDev) {
+    if (
+      !origin ||
+      ALLOWED_ORIGINS.includes(origin) ||
+      ALLOWED_ORIGINS.includes("*") ||
+      isDev
+    ) {
       return done(true);
     }
 
-    console.warn(`[ws] Connection rejected: Origin "${origin}" not in allowed list.`);
+    console.warn(
+      `[ws] Connection rejected: Origin "${origin}" not in allowed list.`,
+    );
     done(false, 403, "Forbidden");
   },
 });
@@ -198,12 +221,18 @@ wss.on("connection", (ws, req) => {
           const stored = await redis.get(`room:${roomId}`);
           if (stored) {
             console.log(`[ws] [${roomId}] Recovered room from Redis`);
-            room = getOrCreateRoom(roomId, stored.videoUrl, stored.hostId, stored.hostToken);
+            room = getOrCreateRoom(
+              roomId,
+              stored.videoUrl,
+              stored.hostId,
+              stored.hostToken,
+            );
             // Restore playback state
             room.isPlaying = stored.isPlaying ?? false;
             room.currentTime = stored.currentTime ?? 0;
             room.playbackRate = stored.playbackRate ?? 1;
             room.hostOnlyControls = stored.hostOnlyControls ?? false;
+            room.messages = stored.messages || [];
             room.lastUpdated = stored.lastUpdated ?? Date.now();
           }
         } catch (err) {
@@ -222,13 +251,17 @@ wss.on("connection", (ws, req) => {
       }
 
       if (isHost && room.hostToken && token !== room.hostToken) {
-        console.warn(`[ws] [${roomId}] Join rejected: Invalid host token for ${username}`);
+        console.warn(
+          `[ws] [${roomId}] Join rejected: Invalid host token for ${username}`,
+        );
         send(ws, { type: "error", message: "Invalid host token" });
         return;
       }
 
       if (isHost && token === room.hostToken && room.hostId !== userId) {
-        console.log(`[ws] [${roomId}] Original host ${username} re-joined. Reclaiming...`);
+        console.log(
+          `[ws] [${roomId}] Original host ${username} re-joined. Reclaiming...`,
+        );
         const prevHostId = room.hostId;
         room.hostId = userId;
         for (const [, m] of clientMeta) {
@@ -239,10 +272,16 @@ wss.on("connection", (ws, req) => {
 
       // Clean up old connections for the same user (e.g. flaky reconnect)
       for (const [oldWs, oldMeta] of clientMeta) {
-        if (oldMeta.roomId === roomId && oldMeta.userId === userId && oldWs !== ws) {
+        if (
+          oldMeta.roomId === roomId &&
+          oldMeta.userId === userId &&
+          oldWs !== ws
+        ) {
           room.clients.delete(oldWs);
           clientMeta.delete(oldWs);
-          try { oldWs.close(1000, "Replaced"); } catch {}
+          try {
+            oldWs.close(1000, "Replaced");
+          } catch {}
         }
       }
       room.clients.add(ws);
@@ -255,10 +294,16 @@ wss.on("connection", (ws, req) => {
       });
       initialized = true;
 
-      console.log(`[ws] [${roomId}] ${username} joined (${room.clients.size} total) IP: ${ip}`);
+      console.log(
+        `[ws] [${roomId}] ${username} joined (${room.clients.size} total) IP: ${ip}`,
+      );
 
       send(ws, { type: "state_update", state: publicState(room) });
       send(ws, { type: "participants", users: getRoomParticipants(room) });
+      if (room.messages && room.messages.length > 0) {
+        send(ws, { type: "chat_history", messages: room.messages });
+      }
+
       broadcast(
         roomId,
         { type: "user_joined", userId, username, count: room.clients.size },
@@ -267,7 +312,7 @@ wss.on("connection", (ws, req) => {
 
       // If there's no active host currently in the socket pool for this room, elect one.
       const currentHostWs = Array.from(clientMeta.entries()).find(
-        ([, m]) => m.roomId === roomId && m.isHost && m.userId === room.hostId
+        ([, m]) => m.roomId === roomId && m.isHost && m.userId === room.hostId,
       );
       if (!currentHostWs) {
         electNewHost(room);
@@ -285,7 +330,11 @@ wss.on("connection", (ws, req) => {
     if (!room) return;
 
     if (msg.type === "ping") {
-      send(ws, { type: "pong", serverTime: Date.now(), clientTs: msg.clientTs });
+      send(ws, {
+        type: "pong",
+        serverTime: Date.now(),
+        clientTs: msg.clientTs,
+      });
       return;
     }
 
@@ -296,7 +345,9 @@ wss.on("connection", (ws, req) => {
         .trim();
       if (!username) return;
       meta.username = username;
-      console.log(`[ws] [${meta.roomId}] Name change: ${oldName} -> ${username}`);
+      console.log(
+        `[ws] [${meta.roomId}] Name change: ${oldName} -> ${username}`,
+      );
       broadcastAll(meta.roomId, {
         type: "name_changed",
         userId: meta.userId,
@@ -311,13 +362,21 @@ wss.on("connection", (ws, req) => {
         .slice(0, 500)
         .trim();
       if (!text) return;
-      broadcastAll(meta.roomId, {
+      const chatMsg = {
         type: "chat",
         senderId: meta.userId,
         senderName: meta.username,
         text,
         ts: Date.now(),
-      });
+      };
+
+      if (!room.messages) room.messages = [];
+      room.messages.push(chatMsg);
+      if (room.messages.length > 100)
+        room.messages.splice(0, room.messages.length - 100);
+
+      broadcastAll(meta.roomId, chatMsg);
+      persistRoom(room);
       return;
     }
 
@@ -325,7 +384,9 @@ wss.on("connection", (ws, req) => {
       if (!meta.isHost) return;
       const targetId = msg.targetUserId;
       if (!targetId || targetId === meta.userId) return;
-      console.log(`[ws] [${meta.roomId}] Host ${meta.username} kicked ${targetId}`);
+      console.log(
+        `[ws] [${meta.roomId}] Host ${meta.username} kicked ${targetId}`,
+      );
       for (const [targetWs, targetMeta] of clientMeta) {
         if (
           targetMeta.roomId === meta.roomId &&
@@ -342,10 +403,17 @@ wss.on("connection", (ws, req) => {
     if (msg.type === "toggle_host_controls") {
       if (!meta.isHost) return;
       room.hostOnlyControls = !room.hostOnlyControls;
-      console.log(`[ws] [${meta.roomId}] Host-only controls: ${room.hostOnlyControls} by ${meta.username}`);
-      broadcastAll(meta.roomId, { type: "state_update", state: publicState(room) });
+      console.log(
+        `[ws] [${meta.roomId}] Host-only controls: ${room.hostOnlyControls} by ${meta.username}`,
+      );
       broadcastAll(meta.roomId, {
-        type: "chat", senderId: "system", senderName: "System",
+        type: "state_update",
+        state: publicState(room),
+      });
+      broadcastAll(meta.roomId, {
+        type: "chat",
+        senderId: "system",
+        senderName: "System",
         text: room.hostOnlyControls
           ? "\ud83d\udd12 Host-only playback controls enabled."
           : "\ud83d\udd13 Everyone can now control playback.",
@@ -359,7 +427,9 @@ wss.on("connection", (ws, req) => {
       if (!meta.isHost) return;
       const newUrl = String(msg.videoUrl || "").trim();
       if (!newUrl) return;
-      console.log(`[ws] [${meta.roomId}] Video changed by ${meta.username}: ${newUrl}`);
+      console.log(
+        `[ws] [${meta.roomId}] Video changed by ${meta.username}: ${newUrl}`,
+      );
       room.videoUrl = newUrl;
       room.isPlaying = false;
       room.currentTime = 0;
@@ -384,7 +454,9 @@ wss.on("connection", (ws, req) => {
 
     const currentTime = Number(msg.currentTime ?? room.currentTime);
     if (msg.type === "play") {
-      console.log(`[ws] [${meta.roomId}] Play at ${currentTime} by ${meta.username}`);
+      console.log(
+        `[ws] [${meta.roomId}] Play at ${currentTime} by ${meta.username}`,
+      );
       room.isPlaying = true;
       room.currentTime = currentTime;
       room.lastUpdated = Date.now();
@@ -394,7 +466,9 @@ wss.on("connection", (ws, req) => {
       });
       persistRoom(room);
     } else if (msg.type === "pause") {
-      console.log(`[ws] [${meta.roomId}] Pause at ${currentTime} by ${meta.username}`);
+      console.log(
+        `[ws] [${meta.roomId}] Pause at ${currentTime} by ${meta.username}`,
+      );
       room.isPlaying = false;
       room.currentTime = currentTime;
       room.lastUpdated = Date.now();
@@ -404,7 +478,9 @@ wss.on("connection", (ws, req) => {
       });
       persistRoom(room);
     } else if (msg.type === "seek") {
-      console.log(`[ws] [${meta.roomId}] Seek to ${currentTime} by ${meta.username}`);
+      console.log(
+        `[ws] [${meta.roomId}] Seek to ${currentTime} by ${meta.username}`,
+      );
       room.currentTime = currentTime;
       room.lastUpdated = Date.now();
       broadcastAll(meta.roomId, {
@@ -415,7 +491,9 @@ wss.on("connection", (ws, req) => {
     } else if (msg.type === "speed") {
       const rate = Number(msg.rate);
       if ([0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].includes(rate)) {
-        console.log(`[ws] [${meta.roomId}] Speed change: ${rate}x by ${meta.username}`);
+        console.log(
+          `[ws] [${meta.roomId}] Speed change: ${rate}x by ${meta.username}`,
+        );
         room.playbackRate = rate;
         room.lastUpdated = Date.now();
         broadcastAll(meta.roomId, {
@@ -434,10 +512,14 @@ wss.on("connection", (ws, req) => {
     if (room) {
       room.clients.delete(ws);
       room.joinOrder = room.joinOrder.filter((id) => id !== meta.userId);
-      console.log(`[ws] [${meta.roomId}] ${meta.username} left (${room.clients.size} total). Code: ${code} Reason: ${reason}`);
+      console.log(
+        `[ws] [${meta.roomId}] ${meta.username} left (${room.clients.size} total). Code: ${code} Reason: ${reason}`,
+      );
 
       if (room.clients.size === 0) {
-        console.log(`[ws] [${meta.roomId}] Room empty. Scheduling deletion in 10 minutes...`);
+        console.log(
+          `[ws] [${meta.roomId}] Room empty. Scheduling deletion in 10 minutes...`,
+        );
         setTimeout(() => {
           if (room.clients.size === 0) {
             console.log(`[ws] [${meta.roomId}] Deleting dormant room.`);
@@ -453,12 +535,16 @@ wss.on("connection", (ws, req) => {
         });
         if (meta.isHost) {
           const { roomId, userId: hostUserId } = meta;
-          console.log(`[ws] [${roomId}] Host left. Starting 6s grace period for re-election...`);
+          console.log(
+            `[ws] [${roomId}] Host left. Starting 6s grace period for re-election...`,
+          );
           setTimeout(() => {
             const r = rooms.get(roomId);
             if (!r) return;
             if (r.joinOrder.includes(hostUserId)) {
-              console.log(`[ws] [${roomId}] Host re-joined within grace period. Election cancelled.`);
+              console.log(
+                `[ws] [${roomId}] Host re-joined within grace period. Election cancelled.`,
+              );
               return;
             }
             if (r.hostId !== hostUserId) return;
@@ -470,7 +556,9 @@ wss.on("connection", (ws, req) => {
     clientMeta.delete(ws);
   });
 
-  ws.on("error", (err) => console.error(`[ws] Socket Error (IP: ${ip}): ${err.message}`));
+  ws.on("error", (err) =>
+    console.error(`[ws] Socket Error (IP: ${ip}): ${err.message}`),
+  );
 });
 
 httpServer.listen(PORT, "0.0.0.0", () =>
@@ -482,7 +570,8 @@ setInterval(() => {
   for (const [roomId, room] of rooms) {
     if (room.clients.size === 0 || !room.isPlaying) continue;
     if (now - room.lastUpdated < 6_000) continue;
-    room.currentTime += (now - room.lastUpdated) / 1000 * (room.playbackRate || 1);
+    room.currentTime +=
+      ((now - room.lastUpdated) / 1000) * (room.playbackRate || 1);
     room.lastUpdated = now;
     broadcastAll(roomId, { type: "state_update", state: publicState(room) });
   }
@@ -499,7 +588,8 @@ setInterval(() => {
   for (const room of rooms.values()) {
     if (room.clients.size > 0) {
       if (room.isPlaying) {
-        room.currentTime += (now - room.lastUpdated) / 1000 * (room.playbackRate || 1);
+        room.currentTime +=
+          ((now - room.lastUpdated) / 1000) * (room.playbackRate || 1);
         room.lastUpdated = now;
       }
       persistRoom(room);

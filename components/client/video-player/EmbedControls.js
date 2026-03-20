@@ -17,6 +17,7 @@ export default function EmbedControls({
   localTime,
   duration,
   progressPct,
+  bufferedPct = 0,
   playbackRate,
   onPlayPause,
   onSeekCommit,
@@ -38,9 +39,13 @@ export default function EmbedControls({
     >
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
       <div className="relative px-4 pb-4 pt-8 space-y-2">
-        <div className="relative h-1.5 bg-white/15 rounded-full hover:h-2 transition-all duration-150 cursor-pointer">
+        <div className="relative h-1.5 bg-white/15 rounded-full hover:h-2 transition-all duration-150 cursor-pointer overflow-hidden group/seek">
           <div
-            className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-600 to-amber-400 rounded-full"
+            className="absolute inset-y-0 left-0 bg-white/20 transition-all duration-200"
+            style={{ width: `${bufferedPct}%` }}
+          />
+          <div
+            className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-600 to-amber-400 rounded-full transition-all duration-150"
             style={{ width: `${progressPct}%` }}
           />
           <input
@@ -92,17 +97,23 @@ export default function EmbedControls({
                   <VolumeIcon className="w-4 h-4" />
                 )}
               </button>
-              <div className="w-0 group-hover/vol:w-20 transition-all duration-300 overflow-hidden">
-                <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.05}
-                  value={muted ? 0 : volume}
-                  onChange={onVolumeChange}
-                  aria-label="Volume"
-                  className="w-18 ml-2"
-                />
+              <div className="w-0 group-hover/vol:w-20 transition-all duration-300 overflow-hidden flex items-center h-9">
+                <div className="relative w-18 h-1.5 ml-2 bg-white/15 rounded-full cursor-pointer overflow-hidden">
+                  <div
+                    className="absolute inset-y-0 left-0 bg-white/80 rounded-full pointer-events-none transition-all duration-150"
+                    style={{ width: `${(muted ? 0 : volume) * 100}%` }}
+                  />
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    value={muted ? 0 : volume}
+                    onChange={onVolumeChange}
+                    aria-label="Volume"
+                    className="absolute inset-0 w-full opacity-0 cursor-pointer"
+                  />
+                </div>
               </div>
             </div>
           )}

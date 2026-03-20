@@ -19,7 +19,6 @@ export default function NativeVideoPlayer({
   videoRef,
   videoUrl,
   sourceType,
-  isHost,
   isPlaying,
   playbackRate,
   onPlay,
@@ -27,9 +26,11 @@ export default function NativeVideoPlayer({
   onSeek,
   onSpeed,
   canControl = true,
+  chatOverlay,
 }) {
   const [localTime, setLocalTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [bufferedPct, setBufferedPct] = useState(0);
   const [volume, setVolume] = useState(1);
   const [muted, setMuted] = useState(false);
   const [buffering, setBuffering] = useState(false);
@@ -86,6 +87,12 @@ export default function NativeVideoPlayer({
     const onWait = () => setBuffering(true);
     const onCan = () => setBuffering(false);
     const onErr = () => setVideoError(true);
+    const onProg = () => {
+      if (v.buffered && v.buffered.length > 0) {
+        const end = v.buffered.end(v.buffered.length - 1);
+        setBufferedPct(v.duration > 0 ? (end / v.duration) * 100 : 0);
+      }
+    };
     const onFS = () => setFullscreen(Boolean(document.fullscreenElement));
     v.addEventListener("timeupdate", onTime);
     v.addEventListener("loadedmetadata", onMeta);
@@ -93,6 +100,7 @@ export default function NativeVideoPlayer({
     v.addEventListener("canplay", onCan);
     v.addEventListener("canplaythrough", onCan);
     v.addEventListener("error", onErr);
+    v.addEventListener("progress", onProg);
     document.addEventListener("fullscreenchange", onFS);
     return () => {
       v.removeEventListener("timeupdate", onTime);
@@ -101,6 +109,7 @@ export default function NativeVideoPlayer({
       v.removeEventListener("canplay", onCan);
       v.removeEventListener("canplaythrough", onCan);
       v.removeEventListener("error", onErr);
+      v.removeEventListener("progress", onProg);
       document.removeEventListener("fullscreenchange", onFS);
     };
   }, [videoRef, videoUrl, sourceType]);
@@ -209,15 +218,21 @@ export default function NativeVideoPlayer({
         </div>
       )}
 
+      {chatOverlay}
+
       <div
         className={`absolute inset-x-0 bottom-0 z-20 transition-all duration-400
         ${ctrlVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"}`}
       >
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
         <div className="relative px-4 pb-4 pt-8 space-y-2">
-          <div className="relative h-1.5 bg-white/15 rounded-full hover:h-2 transition-all duration-150 cursor-pointer">
+          <div className="relative h-1.5 bg-white/15 rounded-full hover:h-2 transition-all duration-150 cursor-pointer overflow-hidden group/seek">
             <div
-              className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-600 to-amber-400 rounded-full"
+              className="absolute inset-y-0 left-0 bg-white/20 transition-all duration-200"
+              style={{ width: `${bufferedPct}%` }}
+            />
+            <div
+              className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-600 to-amber-400 rounded-full transition-all duration-150"
               style={{ width: `${progressPct}%` }}
             />
             <input
@@ -259,17 +274,23 @@ export default function NativeVideoPlayer({
                   <VolumeIcon className="w-4 h-4" />
                 )}
               </button>
-              <div className="w-0 group-hover/vol:w-20 transition-all duration-300 overflow-hidden">
-                <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.05}
-                  value={muted ? 0 : volume}
-                  onChange={handleVolumeChange}
-                  aria-label="Volume"
-                  className="w-18 ml-2"
-                />
+              <div className="w-0 group-hover/vol:w-20 transition-all duration-300 overflow-hidden flex items-center h-9">
+                <div className="relative w-18 h-1.5 ml-2 bg-white/15 rounded-full cursor-pointer overflow-hidden">
+                  <div
+                    className="absolute inset-y-0 left-0 bg-white/80 rounded-full pointer-events-none transition-all duration-150"
+                    style={{ width: `${(muted ? 0 : volume) * 100}%` }}
+                  />
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    value={muted ? 0 : volume}
+                    onChange={handleVolumeChange}
+                    aria-label="Volume"
+                    className="absolute inset-0 w-full opacity-0 cursor-pointer"
+                  />
+                </div>
               </div>
             </div>
 
