@@ -25,6 +25,7 @@ async function queryWsSidecar(id) {
     return {
       roomId: data.roomId,
       videoUrl: data.video || "", // publicState uses "video" not "videoUrl"
+      subtitleUrl: data.subtitleUrl || "",
       isPlaying: data.paused === false, // publicState uses "paused" not "isPlaying"
       currentTime: data.videoTS ?? 0, // publicState uses "videoTS" not "currentTime"
       lastUpdated: data.lastUpdated ?? Date.now(),
@@ -44,6 +45,7 @@ export async function GET(_req, { params }) {
     return NextResponse.json({
       roomId: id,
       videoUrl: live?.videoUrl ?? stored.videoUrl ?? "",
+      subtitleUrl: live?.subtitleUrl ?? stored.subtitleUrl ?? "",
       isPlaying: live?.isPlaying ?? stored.isPlaying ?? false,
       currentTime: live?.currentTime ?? stored.currentTime ?? 0,
       lastUpdated: live?.lastUpdated ?? stored.lastUpdated ?? stored.createdAt,
@@ -57,6 +59,7 @@ export async function GET(_req, { params }) {
     return NextResponse.json({
       roomId: live.roomId,
       videoUrl: live.videoUrl,
+      subtitleUrl: live.subtitleUrl,
       isPlaying: live.isPlaying,
       currentTime: live.currentTime,
       lastUpdated: live.lastUpdated,

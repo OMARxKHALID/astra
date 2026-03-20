@@ -250,7 +250,7 @@ export default function SyncEngine({
       if (s.isPlaying && v.paused) v.play().catch(() => {});
       else if (!s.isPlaying && !v.paused) v.pause();
     }, SYNC_CHECK_INTERVAL);
-  }, []);
+  }, [isBufferingNow]);
 
   const connect = useCallback(() => {
     const {
