@@ -164,6 +164,7 @@ async function saveRoom(room) {
       {
         roomId: room.roomId,
         video: room.video,
+        subtitleUrl: room.subtitleUrl || "",
         paused: room.paused,
         videoTS: room.videoTS,
         lastUpdated: room.lastUpdated,
@@ -226,6 +227,7 @@ io.on("connection", (socket) => {
           );
           room.paused = stored.paused ?? true;
           room.videoTS = stored.videoTS ?? 0;
+          room.subtitleUrl = stored.subtitleUrl || "";
           room.playbackRate = stored.playbackRate ?? 1;
           room.hostOnlyControls = stored.hostOnlyControls ?? false;
           room.strictVideoUrlMode = stored.strictVideoUrlMode ?? false;

@@ -21,6 +21,7 @@ async function getRoomMeta(id) {
     return {
       roomId: id,
       videoUrl: stored.videoUrl ?? stored.video ?? "",
+      subtitleUrl: stored.subtitleUrl || "",
       createdAt: stored.createdAt,
     };
   }
@@ -39,6 +40,7 @@ async function getRoomMeta(id) {
     return {
       roomId: data.roomId ?? id,
       videoUrl: data.video || data.videoUrl || "",
+      subtitleUrl: data.subtitleUrl || "",
       createdAt: data.lastUpdated ?? Date.now(),
     };
   } catch {
