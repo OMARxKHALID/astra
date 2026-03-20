@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import SyncEngine from "./SyncEngine";
-import VideoPlayer from "./VideoPlayer";
+import VideoPlayer from "./video-player";
 import VideoUrlInput from "./VideoUrlInput";
 import ChatPanel from "./ChatPanel";
 import ParticipantList from "./ParticipantList";
@@ -61,6 +61,9 @@ export default function RoomClient({ roomId, initialMeta }) {
   const [messages, setMessages] = useState([]);
   const [mobileSheet, setMobileSheet] = useState(null);
 
+  const displayNamesRef = useRef(displayNames);
+  displayNamesRef.current = displayNames;
+
   const [showSidebar, setShowSidebar] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -117,7 +120,7 @@ export default function RoomClient({ roomId, initialMeta }) {
         }
         break;
       case "user_left":
-        const leaverName = displayNames[event.userId] || "Someone";
+        const leaverName = displayNamesRef.current[event.userId] || "Someone";
         setParticipants((prev) => prev.filter((id) => id !== event.userId));
         addToast(`${leaverName} left.`, "info");
         break;
@@ -162,6 +165,10 @@ export default function RoomClient({ roomId, initialMeta }) {
     (tid) => sendRef.current?.({ type: "kick", targetUserId: tid }),
     [],
   );
+  const handleToggleHostControls = useCallback(
+    () => sendRef.current?.({ type: "toggle_host_controls" }),
+    [],
+  );
 
   const handleShare = useCallback(() => {
     addToast("Link copied!", "success");
@@ -179,6 +186,8 @@ export default function RoomClient({ roomId, initialMeta }) {
   const isPlaying = serverState?.isPlaying ?? false;
   const playbackRate = serverState?.playbackRate ?? 1;
   const videoUrl = serverState?.videoUrl ?? initialMeta?.videoUrl ?? "";
+  const hostOnlyControls = serverState?.hostOnlyControls ?? false;
+  const canControl = !hostOnlyControls || isHost;
 
   const nameLabel = nameReady ? displayName : "";
 
@@ -212,7 +221,7 @@ export default function RoomClient({ roomId, initialMeta }) {
       <ReconnectBanner connStatus={connStatus} />
       <ToastContainer toasts={toasts} />
 
-      <nav className="relative z-10 shrink-0 px-4 py-3 flex items-center justify-between gap-3">
+      <nav className="relative z-10 shrink-0 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
           <button
             onClick={() => router.push("/")}
@@ -226,9 +235,10 @@ export default function RoomClient({ roomId, initialMeta }) {
             </span>
           </button>
 
-          <div className="flex items-center gap-2 px-3 py-2 rounded-2xl glass-card text-[10px] font-mono uppercase tracking-[0.2em] shrink-0">
+          <div className="flex items-center gap-2 px-2.5 py-2 rounded-2xl glass-card text-[10px] font-mono uppercase tracking-[0.2em] shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-jade/70 animate-pulse" />
-            <span className="text-white/70 font-black">{roomId}</span>
+            <span className="text-white/70 font-black hidden xs:inline">{roomId}</span>
+            <span className="text-white/70 font-black xs:hidden">{roomId.slice(0, 4)}</span>
           </div>
 
           {nameReady &&
@@ -300,10 +310,29 @@ export default function RoomClient({ roomId, initialMeta }) {
             />
           </div>
 
+          {isHost ? (
+            <button
+              onClick={handleToggleHostControls}
+              title={hostOnlyControls ? "Unlock playback for everyone" : "Lock playback to host only"}
+              className={`w-9 h-9 flex items-center justify-center rounded-xl glass-card
+                         transition-all active:scale-95
+                         ${hostOnlyControls ? "text-amber-400 border-amber-500/30" : "text-muted hover:text-white/80"}`}
+            >
+              {hostOnlyControls ? <LockIcon className="w-4 h-4" /> : <UnlockIcon className="w-4 h-4" />}
+            </button>
+          ) : hostOnlyControls ? (
+            <div
+              title="Host-only playback controls"
+              className="w-9 h-9 flex items-center justify-center rounded-xl glass-card text-amber-400/60 border-amber-500/20"
+            >
+              <LockIcon className="w-4 h-4" />
+            </div>
+          ) : null}
+
           <button
             onClick={handleShare}
             aria-label="Copy invite link"
-            className="h-10 px-4 rounded-2xl bg-amber-500 text-void font-black text-[11px] uppercase tracking-widest
+            className="h-9 sm:h-10 px-3 sm:px-4 rounded-2xl bg-amber-500 text-void font-black text-[10px] sm:text-[11px] uppercase tracking-widest
                        hover:bg-amber-400 active:scale-95 transition-all shadow-lg shadow-amber-500/10
                        flex items-center gap-1.5 ring-1 ring-amber-400/60"
           >
@@ -314,7 +343,7 @@ export default function RoomClient({ roomId, initialMeta }) {
       </nav>
 
       <main
-        className={`relative z-10 flex-1 min-h-0 bento-grid px-4 pb-4 ${showSidebar ? "sidebar-open" : "sidebar-closed"}`}
+        className={`relative z-10 flex-1 min-h-0 bento-grid px-2 sm:px-4 pb-2 sm:pb-4 ${showSidebar ? "sidebar-open" : "sidebar-closed"}`}
       >
         <section className="bento-video glass-card overflow-hidden">
           <VideoPlayer
@@ -327,6 +356,7 @@ export default function RoomClient({ roomId, initialMeta }) {
             onPause={handlePause}
             onSeek={handleSeek}
             onSpeed={handleSpeed}
+            canControl={canControl}
           />
         </section>
 
@@ -494,6 +524,22 @@ function SidebarIcon({ className }) {
         strokeLinejoin="round"
         d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5"
       />
+    </svg>
+  );
+}
+function LockIcon({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path strokeLinecap="round" d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
+function UnlockIcon({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path strokeLinecap="round" d="M7 11V7a5 5 0 0 1 5-5 5 5 0 0 1 5 5" />
     </svg>
   );
 }

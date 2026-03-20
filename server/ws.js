@@ -30,6 +30,7 @@ async function persistRoom(room) {
       hostId: room.hostId,
       hostToken: room.hostToken,
       playbackRate: room.playbackRate,
+      hostOnlyControls: room.hostOnlyControls ?? false,
     }, { ex: 86400 }); 
   } catch (err) {
     console.error(`[redis] Save failed for ${room.roomId}: ${err.message}`);
@@ -63,6 +64,7 @@ function publicState(room) {
     lastUpdated: room.lastUpdated,
     hostId: room.hostId,
     playbackRate: room.playbackRate,
+    hostOnlyControls: room.hostOnlyControls ?? false,
   };
 }
 
@@ -78,6 +80,7 @@ function getOrCreateRoom(roomId, videoUrl, hostId, hostToken) {
       hostId,
       hostToken,
       playbackRate: 1,
+      hostOnlyControls: false,
       clients: new Set(),
       joinOrder: [],
     });
@@ -200,6 +203,7 @@ wss.on("connection", (ws, req) => {
             room.isPlaying = stored.isPlaying ?? false;
             room.currentTime = stored.currentTime ?? 0;
             room.playbackRate = stored.playbackRate ?? 1;
+            room.hostOnlyControls = stored.hostOnlyControls ?? false;
             room.lastUpdated = stored.lastUpdated ?? Date.now();
           }
         } catch (err) {
@@ -233,6 +237,14 @@ wss.on("connection", (ws, req) => {
         broadcastAll(roomId, { type: "host_changed", newHostId: userId });
       }
 
+      // Clean up old connections for the same user (e.g. flaky reconnect)
+      for (const [oldWs, oldMeta] of clientMeta) {
+        if (oldMeta.roomId === roomId && oldMeta.userId === userId && oldWs !== ws) {
+          room.clients.delete(oldWs);
+          clientMeta.delete(oldWs);
+          try { oldWs.close(1000, "Replaced"); } catch {}
+        }
+      }
       room.clients.add(ws);
       if (!room.joinOrder.includes(userId)) room.joinOrder.push(userId);
       clientMeta.set(ws, {
@@ -273,7 +285,7 @@ wss.on("connection", (ws, req) => {
     if (!room) return;
 
     if (msg.type === "ping") {
-      send(ws, { type: "pong", serverTime: Date.now() });
+      send(ws, { type: "pong", serverTime: Date.now(), clientTs: msg.clientTs });
       return;
     }
 
@@ -327,6 +339,22 @@ wss.on("connection", (ws, req) => {
       return;
     }
 
+    if (msg.type === "toggle_host_controls") {
+      if (!meta.isHost) return;
+      room.hostOnlyControls = !room.hostOnlyControls;
+      console.log(`[ws] [${meta.roomId}] Host-only controls: ${room.hostOnlyControls} by ${meta.username}`);
+      broadcastAll(meta.roomId, { type: "state_update", state: publicState(room) });
+      broadcastAll(meta.roomId, {
+        type: "chat", senderId: "system", senderName: "System",
+        text: room.hostOnlyControls
+          ? "\ud83d\udd12 Host-only playback controls enabled."
+          : "\ud83d\udd13 Everyone can now control playback.",
+        ts: Date.now(),
+      });
+      persistRoom(room);
+      return;
+    }
+
     if (msg.type === "change_video") {
       if (!meta.isHost) return;
       const newUrl = String(msg.videoUrl || "").trim();
@@ -351,6 +379,8 @@ wss.on("connection", (ws, req) => {
       persistRoom(room);
       return;
     }
+
+    if (room.hostOnlyControls && !meta.isHost) return;
 
     const currentTime = Number(msg.currentTime ?? room.currentTime);
     if (msg.type === "play") {
@@ -452,6 +482,8 @@ setInterval(() => {
   for (const [roomId, room] of rooms) {
     if (room.clients.size === 0 || !room.isPlaying) continue;
     if (now - room.lastUpdated < 6_000) continue;
+    room.currentTime += (now - room.lastUpdated) / 1000 * (room.playbackRate || 1);
+    room.lastUpdated = now;
     broadcastAll(roomId, { type: "state_update", state: publicState(room) });
   }
 }, 5_000);
@@ -463,7 +495,14 @@ setInterval(() => {
 }, 30_000);
 
 setInterval(() => {
+  const now = Date.now();
   for (const room of rooms.values()) {
-    if (room.clients.size > 0) persistRoom(room);
+    if (room.clients.size > 0) {
+      if (room.isPlaying) {
+        room.currentTime += (now - room.lastUpdated) / 1000 * (room.playbackRate || 1);
+        room.lastUpdated = now;
+      }
+      persistRoom(room);
+    }
   }
 }, 30_000);

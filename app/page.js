@@ -8,7 +8,7 @@ export const metadata = {
 
 export default function HomePage() {
   return (
-    <main className="min-h-dvh flex flex-col items-center justify-center px-4 py-16 relative overflow-hidden">
+    <main className="h-dvh flex flex-col items-center justify-center px-4 py-8 relative overflow-hidden">
       <div
         aria-hidden
         className="pointer-events-none fixed inset-0 overflow-hidden"
@@ -32,7 +32,7 @@ export default function HomePage() {
           }}
         />
       </div>
-      <div className="relative z-10 text-center mb-10 max-w-xl">
+      <div className="relative z-10 text-center mb-6 max-w-xl">
         <div
           className="inline-flex items-center justify-center w-16 h-16 rounded-2xl
                         bg-amber-500 shadow-2xl shadow-amber-500/20 mb-6
@@ -41,7 +41,7 @@ export default function HomePage() {
           <FilmIcon className="w-8 h-8 text-void" />
         </div>
 
-        <h1 className="font-display text-4xl sm:text-5xl font-bold text-bright tracking-tight leading-tight mb-4">
+        <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-bright tracking-tight leading-tight mb-3">
           Watch Together,
           <br />
           <span className="text-amber-400">perfectly in sync</span>
@@ -52,7 +52,7 @@ export default function HomePage() {
           friends — all in real time.
         </p>
       </div>
-      <div className="relative z-10 w-full max-w-md mb-10">
+      <div className="relative z-10 w-full max-w-md mb-6">
         <CreateRoomForm />
       </div>
       <div className="relative z-10 w-full max-w-md grid grid-cols-2 gap-3">
@@ -77,7 +77,7 @@ export default function HomePage() {
           desc="One link — no account needed"
         />
       </div>
-      <p className="relative z-10 mt-8 text-xs text-muted/60 font-mono text-center">
+      <p className="relative z-10 mt-4 text-xs text-muted/60 font-mono text-center">
         Supports MP4 · WebM · HLS · YouTube · Vimeo
       </p>
     </main>
