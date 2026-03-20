@@ -3,7 +3,7 @@
 const STATUS_CONFIG = {
   connecting:   { dot: "bg-amber-400 animate-pulse",  label: "Connecting",   color: "text-amber-400/70" },
   reconnecting: { dot: "bg-danger animate-ping",      label: "Reconnecting", color: "text-danger/70"    },
-  connected:    null, // handled by syncStatus below
+  connected:    null,
 };
 
 const SYNC_CONFIG = {

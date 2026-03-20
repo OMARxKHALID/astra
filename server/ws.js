@@ -106,18 +106,15 @@ function makeRateLimiter(max = 5) {
   return { allow: () => ++n <= max, destroy: () => clearInterval(iv) };
 }
 
-// ── HTTP server ─────────────────────────────────────────────────────────────
 const httpServer = http.createServer((req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Content-Type", "application/json");
 
-  // Health check
   if (req.url === "/health" || req.url === "/") {
     res.writeHead(200);
     return res.end(JSON.stringify({ ok: true, rooms: rooms.size }));
   }
 
-  // Room metadata query
   const m = req.url?.match(/^\/rooms\/([^/?]+)/);
   if (m) {
     const rId = m[1];
@@ -135,7 +132,6 @@ const httpServer = http.createServer((req, res) => {
   res.end("{}");
 });
 
-// ── WebSocket server (using shared HTTP server) ───────────────────────────
 const wss = new WebSocketServer({
   server: httpServer,
   verifyClient: ({ req }, done) => {
@@ -365,7 +361,7 @@ wss.on("connection", (ws, req) => {
       room.clients.delete(ws);
       room.joinOrder = room.joinOrder.filter((id) => id !== meta.userId);
       console.log(`[ws] [${meta.roomId}] ${meta.username} left (${room.clients.size} total). Code: ${code} Reason: ${reason}`);
-      
+
       if (room.clients.size === 0) {
         console.log(`[ws] [${meta.roomId}] Room empty. Scheduling deletion in 10 minutes...`);
         setTimeout(() => {
@@ -407,7 +403,6 @@ httpServer.listen(PORT, "0.0.0.0", () =>
   console.log(`\n🚀 [ws] SERVER ONLINE: 0.0.0.0:${PORT}\n`),
 );
 
-// State Heartbeat
 setInterval(() => {
   const now = Date.now();
   for (const [roomId, room] of rooms) {
@@ -417,7 +412,6 @@ setInterval(() => {
   }
 }, 5_000);
 
-// Ping Heartbeat
 setInterval(() => {
   for (const ws of wss.clients) {
     if (ws.readyState === WebSocket.OPEN) ws.ping();

@@ -18,7 +18,6 @@ export default function RoomClient({ roomId, initialMeta }) {
   const router = useRouter();
   const { toasts, addToast } = useToast();
 
-  // ── Persistent userId ─────────────────────────────────────────────────────
   const [userId] = useState(() => {
     if (typeof window === "undefined") return "";
     const key = "wt_userId";
@@ -29,11 +28,6 @@ export default function RoomClient({ roomId, initialMeta }) {
     return id;
   });
 
-  // ── Display name ──────────────────────────────────────────────────────────
-  // FIX: Hydration error — displayName uses Math.random() which produces
-  // different values on SSR vs client. Solution: start with empty string on
-  // both server and client, then populate from localStorage in useEffect
-  // (which only runs client-side, after hydration is complete).
   const [displayName, setDisplayName] = useState("");
   const [nameReady, setNameReady] = useState(false);
 
@@ -59,7 +53,6 @@ export default function RoomClient({ roomId, initialMeta }) {
     setEditingName(false);
   }, []);
 
-  // ── UI state ──────────────────────────────────────────────────────────────
   const [serverState, setServerState] = useState(null);
   const [syncStatus, setSyncStatus] = useState("synced");
   const [connStatus, setConnStatus] = useState("connecting");
@@ -67,16 +60,14 @@ export default function RoomClient({ roomId, initialMeta }) {
   const [displayNames, setDisplayNames] = useState({});
   const [messages, setMessages] = useState([]);
   const [mobileSheet, setMobileSheet] = useState(null);
-  // Sidebar visible by default on desktop
+
   const [showSidebar, setShowSidebar] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
 
   const videoRef = useRef(null);
 
-  // ── State handlers ────────────────────────────────────────────────────────
   const handleStateUpdate = useCallback((stOrFn) => setServerState(stOrFn), []);
 
-  // Handle message arrive logic
   const handleChatMessage = useCallback(
     (msg) => {
       setMessages((prev) => {
@@ -84,7 +75,6 @@ export default function RoomClient({ roomId, initialMeta }) {
         return next;
       });
 
-      // Check visibility to decide if unread count should be incremented
       const isMobile =
         typeof window !== "undefined" && window.innerWidth < 1024;
       const isVisible = isMobile ? mobileSheet === "chat" : showSidebar;
@@ -144,7 +134,6 @@ export default function RoomClient({ roomId, initialMeta }) {
     router.push("/?kicked=1");
   }, [router]);
 
-  // ── Outbound WS ───────────────────────────────────────────────────────────
   const handleSendChat = useCallback(
     (text) => sendRef.current?.({ type: "chat", text }),
     [],

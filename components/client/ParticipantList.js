@@ -38,7 +38,6 @@ export default function ParticipantList({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
       <div className="flex items-center gap-3 px-5 py-4 border-b border-white/5 shrink-0">
         <div className="w-9 h-9 rounded-xl bg-jade/10 flex items-center justify-center border border-jade/20 shrink-0">
           <UsersIcon className="w-4 h-4 text-jade/70" />
@@ -54,7 +53,7 @@ export default function ParticipantList({
         </div>
       </div>
 
-      {/* List */}
+      {}
       <div
         className="flex-1 overflow-y-auto px-4 py-3 space-y-1"
         style={{ scrollbarWidth: "none" }}
@@ -95,7 +94,6 @@ export default function ParticipantList({
                 )}
               </div>
 
-              {/* Kick button — host only, non-self, non-host */}
               {canKick && (
                 <button
                   onClick={() => onKick?.(uid)}

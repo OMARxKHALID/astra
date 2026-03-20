@@ -11,8 +11,6 @@ import {
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3001";
 const backoff = (attempt) => Math.min(1000 * 2 ** attempt, 30_000);
 
-// After any seek (local or remote), how long to suppress drift corrections.
-// This prevents the loop from fighting the browser's buffering process.
 const SEEK_COOLDOWN_MS = 1500;
 
 export default function SyncEngine({
@@ -52,7 +50,7 @@ export default function SyncEngine({
   const attempt = useRef(0);
   const rTimer = useRef(null);
   const off = useRef(false);
-  // FIX: track when the last seek happened so the correction loop can cool down
+
   const lastSeekAt = useRef(0);
 
   const send = useCallback((payload) => {
@@ -63,7 +61,6 @@ export default function SyncEngine({
     if (sendRef) sendRef.current = send;
   }, [send, sendRef]);
 
-  // ── Drift-correction loop ─────────────────────────────────────────────────
   const loop = useCallback(() => {
     clearInterval(timer.current);
     timer.current = setInterval(() => {
@@ -73,10 +70,8 @@ export default function SyncEngine({
       if (!v || !s) return;
       if (v.readyState < 1) return;
 
-      // FIX: if we recently seeked, stay quiet — the browser is buffering.
-      // Applying another correction while buffering causes the "stuck" symptom.
       if (Date.now() - lastSeekAt.current < SEEK_COOLDOWN_MS) {
-        od?.("synced"); // look synced while cooling down
+        od?.("synced");
         return;
       }
 
@@ -88,7 +83,7 @@ export default function SyncEngine({
       if (c.action === "hard") {
         try {
           v.currentTime = c.seekTo;
-          lastSeekAt.current = Date.now(); // record that we just seeked
+          lastSeekAt.current = Date.now();
         } catch {}
         if (v.readyState >= 3) v.playbackRate = s.playbackRate || 1;
       } else if (c.action === "soft") {
@@ -104,7 +99,6 @@ export default function SyncEngine({
     }, SYNC_CHECK_INTERVAL);
   }, []);
 
-  // ── Apply server state to video element ───────────────────────────────────
   const sync = useCallback((s) => {
     p.current.onStateUpdate?.(s);
     serverLine.current = s;
@@ -116,7 +110,7 @@ export default function SyncEngine({
       if (Math.abs(target - v.currentTime) > 0.5) {
         try {
           v.currentTime = target;
-          lastSeekAt.current = Date.now(); // record seek, start cooldown
+          lastSeekAt.current = Date.now();
         } catch {}
       }
     }
@@ -124,7 +118,6 @@ export default function SyncEngine({
     else if (!s.isPlaying && !v.paused) v.pause();
   }, []);
 
-  // ── Connect ───────────────────────────────────────────────────────────────
   const connect = useCallback(() => {
     if (off.current) return;
     const { roomId, userId, hostToken, videoUrl, displayName, onConnStatus } =

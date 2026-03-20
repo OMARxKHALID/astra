@@ -15,7 +15,6 @@ function formatTime(s) {
     : `${m}:${String(sec).padStart(2, "0")}`;
 }
 
-// Custom speed picker — avoids native <select> rendering issues in dark themes
 function SpeedPicker({ value, onChange }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -126,7 +125,6 @@ function useVideoHotkeys({
   }, [videoRef, handlePlayPause, handleFullscreen, onSeek, setMuted]);
 }
 
-// ── YouTube API ───────────────────────────────────────────────────────────────
 let ytReady = false;
 let ytCbs = [];
 function onYTReady(cb) {
@@ -148,7 +146,6 @@ function onYTReady(cb) {
   };
 }
 
-// ── Vimeo API ─────────────────────────────────────────────────────────────────
 let vmReady = false;
 let vmCbs = [];
 function onVMReady(cb) {
@@ -170,7 +167,6 @@ function onVMReady(cb) {
   }
 }
 
-// ── Main VideoPlayer ──────────────────────────────────────────────────────────
 export default function VideoPlayer({
   videoRef,
   videoUrl,
@@ -240,7 +236,6 @@ export default function VideoPlayer({
   );
 }
 
-// ── NativeVideoPlayer ─────────────────────────────────────────────────────────
 function NativeVideoPlayer({
   videoRef,
   videoUrl,
@@ -277,7 +272,6 @@ function NativeVideoPlayer({
     return () => clearTimeout(hideTimer.current);
   }, [showCtrl]);
 
-  // HLS
   useEffect(() => {
     const v = videoRef.current;
     if (!v || sourceType !== "hls") return;
@@ -298,7 +292,6 @@ function NativeVideoPlayer({
     return () => hls?.destroy();
   }, [videoUrl, sourceType, videoRef]);
 
-  // Events
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
@@ -339,7 +332,6 @@ function NativeVideoPlayer({
     v.muted = muted;
   }, [volume, muted, videoRef]);
 
-  // All users can control — no isHost guard
   function handlePlayPause() {
     const v = videoRef.current;
     if (!v) return;
@@ -429,14 +421,13 @@ function NativeVideoPlayer({
         </div>
       )}
 
-      {/* Controls overlay */}
+      {}
       <div
         className={`absolute inset-x-0 bottom-0 z-20 transition-all duration-400
         ${ctrlVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"}`}
       >
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
         <div className="relative px-4 pb-4 pt-8 space-y-2">
-          {/* Seek bar */}
           <div className="relative h-1.5 bg-white/15 rounded-full hover:h-2 transition-all duration-150 cursor-pointer">
             <div
               className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-600 to-amber-400 rounded-full"
@@ -455,7 +446,6 @@ function NativeVideoPlayer({
               className="absolute inset-0 w-full opacity-0 cursor-pointer py-3"
             />
           </div>
-          {/* Button row */}
           <div className="flex items-center gap-2.5">
             <button
               onClick={handlePlayPause}
@@ -521,7 +511,6 @@ function NativeVideoPlayer({
   );
 }
 
-// ── YouTubePlayer ─────────────────────────────────────────────────────────────
 function YouTubePlayer({
   videoRef,
   videoId,
@@ -708,7 +697,6 @@ function YouTubePlayer({
   );
 }
 
-// ── VimeoPlayer ───────────────────────────────────────────────────────────────
 function VimeoPlayer({
   videoRef,
   videoId,
@@ -859,7 +847,6 @@ function VimeoPlayer({
   );
 }
 
-// ── Shared embed controls ─────────────────────────────────────────────────────
 function EmbedControls({
   visible,
   isPlaying,
@@ -932,7 +919,6 @@ function EmbedControls({
   );
 }
 
-// ── Icons ─────────────────────────────────────────────────────────────────────
 function PlayIcon({ className }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">

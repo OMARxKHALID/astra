@@ -23,7 +23,6 @@ export default function VideoUrlInput({ isHost, currentUrl, onLoad }) {
     if (e.key === "Enter") handleSubmit();
   }
 
-  // --- Visitor View ---
   if (!isHost) {
     return (
       <div className="flex items-center gap-4 w-full h-full">
@@ -45,7 +44,6 @@ export default function VideoUrlInput({ isHost, currentUrl, onLoad }) {
     );
   }
 
-  // --- Host View ---
   return (
     <div className="flex items-center gap-4 w-full h-full">
       <div className={`flex items-center justify-center w-9 h-9 rounded-xl border transition-all duration-300 shrink-0
@@ -69,7 +67,7 @@ export default function VideoUrlInput({ isHost, currentUrl, onLoad }) {
                        font-mono outline-none truncate"
           />
           {showDetected && (
-            <span className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg bg-jade/10 border border-jade/20 
+            <span className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg bg-jade/10 border border-jade/20
                              text-[9px] font-black text-jade uppercase tracking-tighter shrink-0 animate-in fade-in zoom-in-95">
               <span className="w-1 h-1 rounded-full bg-jade animate-pulse" />
               {SOURCE_LABELS[inputSource.type]}

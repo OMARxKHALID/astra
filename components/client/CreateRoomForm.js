@@ -26,8 +26,7 @@ export default function CreateRoomForm() {
       }
       const { roomId, hostToken } = await res.json();
       localStorage.setItem(`host_${roomId}`, hostToken);
-      // FIX: pass videoUrl as ?url= so room page can render even if roomStore
-      // isn't visible in the server component (Next.js module isolation in dev)
+
       router.push(`/room/${roomId}?url=${encodeURIComponent(url.trim())}`);
     } catch (err) {
       setError(err.message);
