@@ -58,6 +58,7 @@ export default function SyncEngine({
   const lastStatus = useRef("synced");
   const preventUpdateEnd = useRef(0); // timestamp until which sync corrections are suppressed
   const clockOffset = useRef(0); // ms offset between local and server clocks
+  const initialSeekDone = useRef(false);
 
   const preventSync = useCallback((ms = 1000) => {
     preventUpdateEnd.current = Date.now() + ms;
@@ -203,6 +204,12 @@ export default function SyncEngine({
       }
 
       // Apply soft correction (playback rate only — no automatic hard-seeks)
+      // EXCEPT for the very first join if the initial seek failed
+      if (!initialSeekDone.current && Math.abs(drift) > 1) {
+        v.currentTime = leaderTime;
+        initialSeekDone.current = true;
+      }
+
       const correction = computeCorrection(myTime, leaderTime, s.isPlaying);
       if (Math.abs(v.playbackRate - correction.playbackRate) > 0.005) {
         v.playbackRate = correction.playbackRate;
@@ -279,10 +286,13 @@ export default function SyncEngine({
         serverLine.current = state;
         onStateUpdate?.(state);
 
+        if (wasInitial) initialSeekDone.current = false;
+
         if (Date.now() < preventUpdateEnd.current) return;
         const v = p.current.videoRef?.current;
         if (wasInitial && v && state.currentTime > 0) {
           v.currentTime = state.currentTime;
+          initialSeekDone.current = true;
           if (state.isPlaying) v.play().catch(() => {});
         }
       },
@@ -343,10 +353,19 @@ export default function SyncEngine({
       },
 
       chat: (m) => onChatMessage?.(m),
-      chat_history: (m) => onChatMessage?.(m),
+      chat_history: (m) => onChatMessage?.({ type: "chat_history", ...m }),
 
       "REC:error": (m) => {
-        if (m.message === "Invalid host token") onKicked?.();
+        if (
+          m.message === "Invalid host token" ||
+          m.message === "You have been removed from the room."
+        ) {
+          if (socketRef.current) {
+            socketRef.current.io.opts.reconnection = false;
+            socketRef.current.disconnect();
+          }
+          onKicked?.();
+        }
       },
     };
 

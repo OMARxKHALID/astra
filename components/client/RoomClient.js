@@ -135,9 +135,11 @@ export default function RoomClient({ roomId, initialMeta }) {
   const handleChatMessage = useCallback(
     (msg) => {
       if (msg.type === "chat_history") {
-        setMessages(msg.messages);
+        setMessages(msg.messages || []);
         return;
       }
+      if (!msg.text && msg.type !== "chat_history" && msg.senderId !== "system") return;
+
       if (msg.senderId === "system") {
         let icon = null;
         let type = "info";
@@ -171,7 +173,7 @@ export default function RoomClient({ roomId, initialMeta }) {
       });
       const isMobile = typeof window !== "undefined" && window.innerWidth < 1024;
       const isVisible = document.fullscreenElement ? playerChatOpen : (isMobile ? mobileSheet === "chat" : showSidebar);
-      if (!isVisible) {
+      if (!isVisible && msg.type !== "chat_history") {
         setUnreadCount((prev) => prev + 1);
       }
     },

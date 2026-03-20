@@ -120,15 +120,16 @@ export default function ChatPanel({
 }
 
 function ChatMessage({ msg, isOwn, displayNames = {} }) {
-  const time = new Date(msg.ts).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const time = msg.ts
+    ? new Date(msg.ts).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "--:--";
   const name =
     msg.senderName ||
     displayNames[msg.senderId] ||
-    msg.senderId?.slice(0, 6) ||
-    "???";
+    (msg.senderId ? msg.senderId.slice(0, 6) : "Guest");
 
   if (msg.senderId === "system") {
     let icon = null;

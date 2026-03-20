@@ -265,7 +265,10 @@ io.on("connection", (socket) => {
     socket.emit("REC:host", room.publicState());
     socket.emit("REC:tsMap", room.tsMap);
     if (room.messages.length > 0)
-      socket.emit("chat_history", { messages: room.messages });
+      socket.emit("chat_history", {
+        type: "chat_history",
+        messages: room.messages,
+      });
 
     // Broadcast updated roster to everyone in the room.
     // Also notify existing clients that someone new arrived so they can
