@@ -75,7 +75,7 @@ export default function EmbedControls({
             onClick={onPlayPause}
             aria-label={isPlaying ? "Pause" : "Play"}
             disabled={!canControl}
-            className={`w-11 h-11 flex items-center justify-center rounded-xl border border-white/8 transition-all active:scale-90 backdrop-blur-sm
+            className={`w-11 h-11 flex items-center justify-center rounded-[2rem] border border-white/8 transition-all active:scale-90 backdrop-blur-sm
               ${canControl ? "bg-white/8 hover:bg-white/18 text-white" : "bg-white/4 text-white/30 cursor-not-allowed"}`}
           >
             {isPlaying ? (
@@ -89,7 +89,7 @@ export default function EmbedControls({
               <button
                 onClick={onMuteToggle}
                 aria-label={muted ? "Unmute" : "Mute"}
-                className="w-9 h-9 flex items-center justify-center rounded-xl text-white/60 hover:text-white transition-colors"
+                className="w-9 h-9 flex items-center justify-center rounded-[2rem] text-white/60 hover:text-white transition-colors"
               >
                 {muted || volume === 0 ? (
                   <MuteIcon className="w-4 h-4" />
@@ -117,7 +117,7 @@ export default function EmbedControls({
               </div>
             </div>
           )}
-          <span className="text-[11px] font-mono text-white/80 tabular-nums bg-white/5 px-2.5 py-1 rounded-lg border border-white/5">
+          <span className="text-[11px] font-mono text-white/80 tabular-nums bg-white/5 px-2.5 py-1 rounded-[2rem] border border-white/5">
             {formatTime(localTime)} / {formatTime(duration)}
           </span>
           {!canControl && (

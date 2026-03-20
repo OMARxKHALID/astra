@@ -1,11 +1,12 @@
 "use client";
+import { CrownIcon } from "./Icons";
 
 function Avatar({ name, isMe, isHost }) {
   const initials = name.slice(0, 2).toUpperCase();
   return (
     <div
       title={isMe ? "You" : name}
-      className={`relative w-9 h-9 rounded-xl flex items-center justify-center
+      className={`relative w-9 h-9 rounded-[2rem] flex items-center justify-center
                   text-[11px] font-bold font-mono shrink-0 select-none
                   ${
                     isMe
@@ -15,12 +16,11 @@ function Avatar({ name, isMe, isHost }) {
     >
       {initials}
       {isHost && (
-        <span
-          aria-label="Host"
-          className="absolute -top-1 -right-1 text-[9px] leading-none"
+        <div 
+          className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center border border-void shadow-[0_0_8px_rgba(245,158,11,0.5)]"
         >
-          👑
-        </span>
+          <CrownIcon className="w-2 h-2 text-void" />
+        </div>
       )}
     </div>
   );
@@ -39,7 +39,7 @@ export default function ParticipantList({
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-3 px-5 py-4 border-b border-white/5 shrink-0">
-        <div className="w-9 h-9 rounded-xl bg-jade/10 flex items-center justify-center border border-jade/20 shrink-0">
+        <div className="w-9 h-9 rounded-[2rem] bg-jade/10 flex items-center justify-center border border-jade/20 shrink-0">
           <UsersIcon className="w-4 h-4 text-jade/70" />
         </div>
         <div>
@@ -75,7 +75,7 @@ export default function ParticipantList({
           return (
             <div
               key={uid}
-              className="group flex items-center gap-3 py-2 px-2 rounded-xl hover:bg-white/[0.04] transition-colors"
+              className="group flex items-center gap-3 py-2 px-2 rounded-[2rem] hover:bg-white/[0.04] transition-colors"
             >
               <Avatar name={name} isMe={isMe} isHost={isThisHost} />
               <div className="flex flex-col min-w-0 flex-1">
@@ -99,7 +99,7 @@ export default function ParticipantList({
                   onClick={() => onKick?.(uid)}
                   title={`Kick ${name}`}
                   className="opacity-0 group-hover:opacity-100 transition-opacity
-                             w-7 h-7 flex items-center justify-center rounded-lg
+                             w-7 h-7 flex items-center justify-center rounded-[2rem]
                              bg-danger/10 hover:bg-danger/20 border border-danger/20
                              text-danger/60 hover:text-danger text-xs shrink-0"
                 >

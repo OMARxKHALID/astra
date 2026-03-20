@@ -10,7 +10,7 @@ import ParticipantList from "./ParticipantList";
 import SyncStatusIndicator from "./SyncStatusIndicator";
 import ReconnectBanner from "./ReconnectBanner";
 import ToastContainer, { useToast } from "./Toast";
-import { ShareIcon } from "./Icons";
+import { ShareIcon, CrownIcon, FilmIcon, LockSmallIcon, UnlockSmallIcon } from "./Icons";
 
 const MAX_MESSAGES = 200;
 
@@ -65,6 +65,41 @@ export default function RoomClient({ roomId, initialMeta }) {
   displayNamesRef.current = displayNames;
 
   const [showSidebar, setShowSidebar] = useState(true);
+  const [sidebarWidth, setSidebarWidth] = useState(300);
+  const isDraggingSidebar = useRef(false);
+  const startX = useRef(0);
+  const startWidth = useRef(0);
+
+  const handleSidebarDragStart = useCallback((e) => {
+    isDraggingSidebar.current = true;
+    startX.current = e.clientX;
+    startWidth.current = sidebarWidth;
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  }, [sidebarWidth]);
+
+  useEffect(() => {
+    const handleUp = () => {
+      if (isDraggingSidebar.current) {
+        isDraggingSidebar.current = false;
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      }
+    };
+    const handleMove = (e) => {
+      if (!isDraggingSidebar.current) return;
+      const dx = startX.current - e.clientX;
+      const newWidth = Math.max(250, Math.min(startWidth.current + dx, 600));
+      setSidebarWidth(newWidth);
+    };
+    window.addEventListener("mouseup", handleUp);
+    window.addEventListener("mousemove", handleMove);
+    return () => {
+      window.removeEventListener("mouseup", handleUp);
+      window.removeEventListener("mousemove", handleMove);
+    };
+  }, []);
+
   const [playerChatOpen, setPlayerChatOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -91,6 +126,32 @@ export default function RoomClient({ roomId, initialMeta }) {
         return;
       }
 
+      if (msg.senderId === "system") {
+        let icon = null;
+        let type = "info";
+        let cleanText = msg.text;
+
+        if (msg.text.includes("👑")) {
+          icon = <CrownIcon className="w-3 h-3 text-amber-500" />;
+          cleanText = msg.text.replace("👑", "").trim();
+        } else if (msg.text.includes("🎬")) {
+          icon = <FilmIcon className="w-3 h-3 text-jade" />;
+          cleanText = msg.text.replace("🎬", "").trim();
+          type = "success";
+        } else if (msg.text.includes("\ud83d\udd12")) {
+          icon = <LockSmallIcon className="w-3 h-3 text-danger" />;
+          cleanText = msg.text.replace("\ud83d\udd12", "").trim();
+          type = "error";
+        } else if (msg.text.includes("\ud83d\udd13")) {
+          icon = <UnlockSmallIcon className="w-3 h-3 text-jade" />;
+          cleanText = msg.text.replace("\ud83d\udd13", "").trim();
+          type = "success";
+        }
+
+        addToast(cleanText, type, 4000, icon);
+        return; // Don't add to chat history as per user request
+      }
+
       setMessages((prev) => {
         const next = [...prev, msg].slice(-MAX_MESSAGES);
         return next;
@@ -105,7 +166,7 @@ export default function RoomClient({ roomId, initialMeta }) {
         setUnreadCount((prev) => prev + 1);
       }
     },
-    [mobileSheet, showSidebar, playerChatOpen],
+    [mobileSheet, showSidebar, playerChatOpen, addToast],
   );
 
   const handleUserChange = useCallback((event) => {
@@ -233,7 +294,7 @@ export default function RoomClient({ roomId, initialMeta }) {
             return !v;
           });
         }}
-        className="pointer-events-auto w-10 h-10 flex items-center justify-center rounded-xl bg-black/40 backdrop-blur-md text-white/70 hover:text-white transition-all ring-1 ring-white/10 shadow-xl"
+        className="pointer-events-auto w-10 h-10 flex items-center justify-center rounded-[2rem] bg-black/40 backdrop-blur-md text-white/70 hover:text-white transition-all ring-1 ring-white/10 shadow-xl"
         title={playerChatOpen ? "Close Chat" : "Open Chat"}
       >
         <ChatIcon className="w-5 h-5" />
@@ -243,7 +304,7 @@ export default function RoomClient({ roomId, initialMeta }) {
       </button>
       {playerChatOpen && (
         <div 
-          className="pointer-events-auto mt-2 w-80 sm:w-96 h-[450px] sm:h-[550px] max-h-[85vh] rounded-[1.5rem] border border-white/10 bg-black/30 backdrop-blur-2xl overflow-hidden flex flex-col shadow-2xl animate-fadeIn"
+          className="pointer-events-auto mt-2 w-80 sm:w-96 h-[450px] sm:h-[550px] max-h-[85vh] rounded-[2.5rem] border border-white/10 bg-black/30 backdrop-blur-2xl overflow-hidden flex flex-col shadow-2xl animate-fadeIn"
           onClick={(e) => e.stopPropagation()}
           onDoubleClick={(e) => e.stopPropagation()}
         >
@@ -303,9 +364,9 @@ export default function RoomClient({ roomId, initialMeta }) {
         <div className="flex items-center gap-1.5 min-w-0">
           <button
             onClick={() => router.push("/")}
-            className="flex items-center gap-2 px-3 py-2 rounded-2xl glass-card hover:border-white/15 transition-all active:scale-95 shrink-0"
+            className="flex items-center gap-2 px-3 py-2 rounded-[2rem] glass-card hover:border-white/15 transition-all active:scale-95 shrink-0"
           >
-            <div className="w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center font-display font-black text-void text-[10px]">
+            <div className="w-7 h-7 rounded-[2rem] bg-amber-500 flex items-center justify-center font-display font-black text-void text-[10px]">
               WT
             </div>
             <span className="font-display font-bold text-base tracking-tight text-white/90 hidden md:block">
@@ -313,7 +374,7 @@ export default function RoomClient({ roomId, initialMeta }) {
             </span>
           </button>
 
-          <div className="flex items-center gap-2 px-2.5 py-2 rounded-2xl glass-card text-[10px] font-mono uppercase tracking-[0.2em] shrink-0">
+          <div className="flex items-center gap-2 px-2.5 py-2 rounded-[2rem] glass-card text-[10px] font-mono uppercase tracking-[0.2em] shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-jade/70 animate-pulse" />
             <span className="text-white/70 font-black hidden xs:inline">{roomId}</span>
             <span className="text-white/70 font-black xs:hidden">{roomId.slice(0, 4)}</span>
@@ -326,7 +387,7 @@ export default function RoomClient({ roomId, initialMeta }) {
                   e.preventDefault();
                   commitName(nameInput);
                 }}
-                className="flex items-center gap-2 px-3 py-2 rounded-2xl glass-card min-w-0"
+                className="flex items-center gap-2 px-3 py-2 rounded-[2rem] glass-card min-w-0"
               >
                 <input
                   autoFocus
@@ -350,7 +411,7 @@ export default function RoomClient({ roomId, initialMeta }) {
                   setEditingName(true);
                 }}
                 title="Click to edit your name"
-                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-2xl glass-card
+                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-[2rem] glass-card
                            hover:border-white/15 transition-all text-[10px] font-mono
                            text-white/50 hover:text-white/80 max-w-[140px] min-w-0"
               >
@@ -367,7 +428,7 @@ export default function RoomClient({ roomId, initialMeta }) {
               if (!showSidebar) setUnreadCount(0);
             }}
             title={showSidebar ? "Hide sidebar" : "Show sidebar"}
-            className="hidden lg:flex w-9 h-9 items-center justify-center rounded-xl glass-card
+            className="hidden lg:flex w-9 h-9 items-center justify-center rounded-[2rem] glass-card
                        text-muted hover:text-white/80 transition-all active:scale-95 relative"
           >
             <SidebarIcon className="w-4 h-4" />
@@ -381,7 +442,7 @@ export default function RoomClient({ roomId, initialMeta }) {
             )}
           </button>
 
-          <div className="px-3 py-2 rounded-2xl glass-card">
+          <div className="px-3 py-2 rounded-[2rem] glass-card">
             <SyncStatusIndicator
               syncStatus={syncStatus}
               connStatus={connStatus}
@@ -392,7 +453,7 @@ export default function RoomClient({ roomId, initialMeta }) {
             <button
               onClick={handleToggleHostControls}
               title={hostOnlyControls ? "Unlock playback for everyone" : "Lock playback to host only"}
-              className={`w-9 h-9 flex items-center justify-center rounded-xl glass-card
+              className={`w-9 h-9 flex items-center justify-center rounded-[2rem] glass-card
                          transition-all active:scale-95
                          ${hostOnlyControls ? "text-amber-400 border-amber-500/30" : "text-muted hover:text-white/80"}`}
             >
@@ -401,7 +462,7 @@ export default function RoomClient({ roomId, initialMeta }) {
           ) : hostOnlyControls ? (
             <div
               title="Host-only playback controls"
-              className="w-9 h-9 flex items-center justify-center rounded-xl glass-card text-amber-400/60 border-amber-500/20"
+              className="w-9 h-9 flex items-center justify-center rounded-[2rem] glass-card text-amber-400/60 border-amber-500/20"
             >
               <LockIcon className="w-4 h-4" />
             </div>
@@ -410,7 +471,7 @@ export default function RoomClient({ roomId, initialMeta }) {
           <button
             onClick={handleShare}
             aria-label="Copy invite link"
-            className="h-9 sm:h-10 px-3 sm:px-4 rounded-2xl bg-amber-500 text-void font-black text-[10px] sm:text-[11px] uppercase tracking-widest
+            className="h-9 sm:h-10 px-3 sm:px-4 rounded-[2rem] bg-amber-500 text-void font-black text-[10px] sm:text-[11px] uppercase tracking-widest
                        hover:bg-amber-400 active:scale-95 transition-all shadow-lg shadow-amber-500/10
                        flex items-center gap-1.5 ring-1 ring-amber-400/60"
           >
@@ -422,6 +483,7 @@ export default function RoomClient({ roomId, initialMeta }) {
 
       <main
         className={`relative z-10 flex-1 min-h-0 bento-grid px-2 sm:px-4 pb-2 sm:pb-4 ${showSidebar ? "sidebar-open" : "sidebar-closed"}`}
+        style={{ "--sidebar-width": `${sidebarWidth}px` }}
       >
         <section className="bento-video glass-card overflow-hidden">
           <VideoPlayer
@@ -448,7 +510,13 @@ export default function RoomClient({ roomId, initialMeta }) {
         </section>
 
         {showSidebar && (
-          <aside className="bento-sidebar hidden lg:flex">
+          <aside className="bento-sidebar hidden lg:flex relative">
+            <div 
+              className="absolute -left-[10px] top-0 bottom-0 w-5 cursor-col-resize z-50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity group" 
+              onMouseDown={handleSidebarDragStart}
+            >
+              <div className="w-1 h-12 bg-white/20 rounded-full group-hover:bg-amber-400/80 transition-colors shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+            </div>
             <div className="flex-[2] min-h-0 glass-card overflow-hidden flex flex-col">
               <ChatPanel
                 messages={messages}
@@ -519,7 +587,7 @@ export default function RoomClient({ roomId, initialMeta }) {
           />
           <div
             className="lg:hidden fixed bottom-0 inset-x-0 z-40 h-[72vh] flex flex-col
-                          bg-surface/95 backdrop-blur-3xl border-t border-white/10 rounded-t-3xl overflow-hidden"
+                          bg-surface/95 backdrop-blur-3xl border-t border-white/10 rounded-t-[3rem] overflow-hidden"
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 shrink-0">
               <span className="font-display font-semibold text-white/80">
@@ -563,7 +631,7 @@ function MobileTabBtn({ label, active, onClick, icon }) {
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center gap-1 px-4 py-1.5 rounded-xl transition-all text-[10px] font-bold uppercase tracking-wider
+      className={`flex flex-col items-center gap-1 px-4 py-1.5 rounded-[2rem] transition-all text-[10px] font-bold uppercase tracking-wider
         ${active ? "text-amber-400 bg-amber-500/10" : "text-muted hover:text-white/60"}`}
     >
       {icon}

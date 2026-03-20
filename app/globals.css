@@ -101,7 +101,7 @@
   .glass-card {
     background: rgba(255, 255, 255, 0.028);
     border: 1px solid rgba(255, 255, 255, 0.075);
-    border-radius: 1.5rem;
+    border-radius: 2rem;
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     box-shadow:
@@ -128,7 +128,7 @@
     grid-template-areas:
       "video  sidebar"
       "url    sidebar";
-    grid-template-columns: 1fr 300px;
+    grid-template-columns: 1fr var(--sidebar-width, 300px);
     grid-template-rows: 1fr 60px;
   }
 
@@ -178,7 +178,7 @@
   .card {
     background: var(--color-card);
     border: 1px solid var(--color-border);
-    border-radius: 1.5rem;
+    border-radius: 2rem;
     box-shadow: 0 4px 32px rgba(0, 0, 0, 0.35);
   }
 
@@ -188,7 +188,7 @@
     justify-content: center;
     gap: 0.5rem;
     padding: 0.6rem 1.5rem;
-    border-radius: 0.875rem;
+    border-radius: 9999px;
     background: #f59e0b;
     color: var(--color-void);
     font-weight: 700;

@@ -26,13 +26,13 @@ export default function VideoUrlInput({ isHost, currentUrl, onLoad }) {
   if (!isHost) {
     return (
       <div className="flex items-center gap-4 w-full h-full">
-        <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-jade/10 border border-jade/20 shrink-0">
+        <div className="flex items-center justify-center w-8 h-8 rounded-[2rem] bg-jade/10 border border-jade/20 shrink-0">
           <LinkIcon className="w-4 h-4 text-jade/70" />
         </div>
         <div className="flex-1 min-w-0 px-1 overflow-hidden">
           <div className="flex items-center gap-2 mb-0.5">
             <span className="text-[10px] font-mono font-bold text-jade uppercase tracking-wider">Now Playing</span>
-            <span className="text-[10px] font-mono text-white/20 px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 uppercase tracking-tight">
+            <span className="text-[10px] font-mono text-white/20 px-1.5 py-0.5 rounded-full bg-white/5 border border-white/10 uppercase tracking-tight">
               {SOURCE_LABELS[source.type]}
             </span>
           </div>
@@ -46,7 +46,7 @@ export default function VideoUrlInput({ isHost, currentUrl, onLoad }) {
 
   return (
     <div className="flex items-center gap-4 w-full h-full">
-      <div className={`flex items-center justify-center w-9 h-9 rounded-xl border transition-all duration-300 shrink-0
+      <div className={`flex items-center justify-center w-9 h-9 rounded-[2rem] border transition-all duration-300 shrink-0
          ${focused ? "bg-amber-500/10 border-amber-500/40" : "bg-white/5 border-white/10"}`}>
         <LinkIcon className={`w-4.5 h-4.5 transition-colors duration-300 ${focused ? "text-amber-400" : "text-white/30"}`} />
       </div>
@@ -67,7 +67,7 @@ export default function VideoUrlInput({ isHost, currentUrl, onLoad }) {
                        font-mono outline-none truncate"
           />
           {showDetected && (
-            <span className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg bg-jade/10 border border-jade/20
+            <span className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-[2rem] bg-jade/10 border border-jade/20
                              text-[9px] font-black text-jade uppercase tracking-tighter shrink-0 animate-in fade-in zoom-in-95">
               <span className="w-1 h-1 rounded-full bg-jade animate-pulse" />
               {SOURCE_LABELS[inputSource.type]}
@@ -80,7 +80,7 @@ export default function VideoUrlInput({ isHost, currentUrl, onLoad }) {
         onClick={handleSubmit}
         disabled={!input.trim()}
         title="Load video for all participants"
-        className="shrink-0 h-10 px-6 rounded-xl bg-amber-500 text-void
+        className="shrink-0 h-10 px-6 rounded-[2rem] bg-amber-500 text-void
                    text-[11px] font-black uppercase tracking-widest
                    hover:bg-amber-400 active:scale-95 disabled:opacity-30 disabled:pointer-events-none disabled:bg-white/10 disabled:text-white/30
                    transition-all duration-200 shadow-lg shadow-amber-500/10 border border-amber-400/50"

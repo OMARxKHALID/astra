@@ -197,7 +197,7 @@ export default function YouTubePlayer({
         </div>
       )}
       {chatOverlay}
-      <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-red-600/80 text-[10px] font-bold text-white backdrop-blur-sm z-20 pointer-events-none opacity-0 group-hover/yt:opacity-100 transition-opacity">
+      <div className="absolute top-3 left-3 px-2 py-1 rounded-[2rem] bg-red-600/80 text-[10px] font-bold text-white backdrop-blur-sm z-20 pointer-events-none opacity-0 group-hover/yt:opacity-100 transition-opacity">
         YouTube
       </div>
       <EmbedControls

@@ -32,7 +32,7 @@ export function SpeedPicker({ value, onChange }) {
       <button
         onClick={() => setOpen((o) => !o)}
         aria-label="Playback speed"
-        className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/8 hover:bg-white/15
+        className="flex items-center gap-1 px-3 py-1.5 rounded-[2rem] bg-white/8 hover:bg-white/15
                    border border-white/8 text-xs font-bold text-white/80 transition-all active:scale-95
                    backdrop-blur-sm min-w-[60px] justify-between"
       >
@@ -45,7 +45,7 @@ export function SpeedPicker({ value, onChange }) {
       {open && (
         <div
           className="absolute bottom-full right-0 mb-2 py-1
-                        bg-black/60 border border-white/10 rounded-xl shadow-2xl 
+                        bg-black/60 border border-white/10 rounded-[2rem] shadow-2xl 
                         backdrop-blur-xl z-50 min-w-[76px] overflow-hidden"
         >
           {SPEEDS.map((s) => (

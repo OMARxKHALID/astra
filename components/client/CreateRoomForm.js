@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function CreateRoomForm() {
@@ -8,6 +8,15 @@ export default function CreateRoomForm() {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [recentRooms, setRecentRooms] = useState([]);
+
+  useEffect(() => {
+    try {
+      setRecentRooms(JSON.parse(localStorage.getItem("recent_rooms") || "[]"));
+    } catch {
+      setRecentRooms([]);
+    }
+  }, []);
 
   async function handleCreate(e) {
     e.preventDefault();
@@ -26,6 +35,12 @@ export default function CreateRoomForm() {
       }
       const { roomId, hostToken } = await res.json();
       localStorage.setItem(`host_${roomId}`, hostToken);
+
+      try {
+        const currentRecent = JSON.parse(localStorage.getItem("recent_rooms") || "[]");
+        const newRecent = [{ id: roomId, url: url.trim(), time: Date.now() }, ...currentRecent.filter(r => r.id !== roomId)].slice(0, 3);
+        localStorage.setItem("recent_rooms", JSON.stringify(newRecent));
+      } catch (e) {}
 
       router.push(`/room/${roomId}?url=${encodeURIComponent(url.trim())}`);
     } catch (err) {
@@ -60,7 +75,7 @@ export default function CreateRoomForm() {
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://example.com/video.mp4"
             required
-            className="w-full bg-void/60 border border-white/8 rounded-xl px-4 py-3
+            className="w-full bg-void/60 border border-white/8 rounded-[2rem] px-4 py-3
                        text-sm text-text placeholder:text-white/15 font-mono
                        outline-none transition-all duration-200
                        focus:border-amber-500/40
@@ -69,7 +84,7 @@ export default function CreateRoomForm() {
         </div>
 
         {error && (
-          <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-danger/8 border border-danger/20">
+          <div className="flex items-start gap-2.5 px-4 py-3 rounded-[2rem] bg-danger/8 border border-danger/20">
             <span className="text-danger text-base leading-none mt-0.5">⚠</span>
             <p className="text-sm text-danger/80 font-mono">{error}</p>
           </div>
@@ -78,7 +93,7 @@ export default function CreateRoomForm() {
         <button
           type="submit"
           disabled={loading || !url.trim()}
-          className="w-full h-12 rounded-xl bg-amber-500 text-void font-black text-sm
+          className="w-full h-12 rounded-[2rem] bg-amber-500 text-void font-black text-sm
                      uppercase tracking-widest flex items-center justify-center gap-2
                      hover:bg-amber-400 active:scale-[0.98] transition-all
                      disabled:opacity-40 disabled:pointer-events-none
@@ -97,10 +112,31 @@ export default function CreateRoomForm() {
           )}
         </button>
       </form>
-
-      <p className="mt-5 text-[11px] text-muted/50 text-center font-mono">
+      <p className="mt-5 text-[11px] text-muted/50 text-center font-mono pb-2">
         Supports MP4 · WebM · HLS · YouTube · Vimeo
       </p>
+
+      {recentRooms.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-white/5 animate-fadeIn">
+          <p className="text-[10px] font-mono text-muted/60 uppercase tracking-widest mb-2 px-1">Your Recent Rooms</p>
+          <div className="flex flex-col gap-1.5">
+            {recentRooms.map((r) => (
+              <button
+                key={r.id}
+                onClick={() => router.push(`/room/${r.id}`)}
+                className="w-full text-left flex items-center gap-3 px-3 py-2 rounded-[2rem] hover:bg-white/5 transition-colors border border-transparent hover:border-white/5 group"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-amber-500/50 group-hover:bg-amber-400 group-hover:shadow-[0_0_8px_rgba(245,158,11,0.5)] transition-all" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-white/90 truncate font-display">Room <span className="font-mono font-medium text-white/50 bg-white/10 px-1 py-0.5 rounded ml-1 text-[10px]">{r.id.slice(0, 6)}</span></p>
+                  <p className="text-[10px] text-muted truncate leading-tight mt-0.5 max-w-[90%]">{r.url}</p>
+                </div>
+                <div className="shrink-0 text-[10px] font-mono font-bold text-amber-500/0 group-hover:text-amber-500 transition-colors uppercase">Join &rarr;</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

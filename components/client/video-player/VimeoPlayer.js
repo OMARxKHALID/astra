@@ -156,7 +156,7 @@ export default function VimeoPlayer({
         </div>
       )}
       {chatOverlay}
-      <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-[#1ab7ea]/80 text-[10px] font-bold text-white backdrop-blur-sm z-20 pointer-events-none opacity-0 group-hover/vm:opacity-100 transition-opacity">
+      <div className="absolute top-3 left-3 px-2 py-1 rounded-[2rem] bg-[#1ab7ea]/80 text-[10px] font-bold text-white backdrop-blur-sm z-20 pointer-events-none opacity-0 group-hover/vm:opacity-100 transition-opacity">
         Vimeo
       </div>
       <EmbedControls

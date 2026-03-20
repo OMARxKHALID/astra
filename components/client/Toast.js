@@ -35,9 +35,9 @@ const TYPE_MAP = {
 export function useToast() {
   const [toasts, setToasts] = useState([]);
 
-  const addToast = useCallback((message, type = "success", duration = 3000) => {
+  const addToast = useCallback((message, type = "success", duration = 3000, icon = null) => {
     const id = typeof crypto !== "undefined" ? crypto.randomUUID() : Date.now().toString();
-    setToasts((prev) => [...prev, { id, message, type }]);
+    setToasts((prev) => [...prev, { id, message, type, icon }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, duration);
@@ -61,7 +61,7 @@ export default function ToastContainer({ toasts }) {
             key={t.id}
             role="status"
             style={{ animation: "toastIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards" }}
-            className="px-6 py-3 rounded-[20px]
+            className="px-6 py-3 rounded-full
                        bg-[#0d1018]/90 backdrop-blur-2xl
                        border border-white/10
                        text-[13px] font-semibold text-white/95
@@ -69,7 +69,7 @@ export default function ToastContainer({ toasts }) {
                        flex items-center gap-3 transition-all"
           >
             <div className={`w-5 h-5 rounded-full ${theme.bg} ${theme.border} flex items-center justify-center shrink-0`}>
-              {theme.icon}
+              {t.icon || theme.icon}
             </div>
             <span className="tracking-tight">{t.message}</span>
           </div>

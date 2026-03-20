@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ChatBubbleIcon, SendIcon } from "./Icons";
+import { ChatBubbleIcon, SendIcon, CrownIcon, FilmIcon, LockSmallIcon, UnlockSmallIcon } from "./Icons";
 
 export default function ChatPanel({
   messages = [],
@@ -42,7 +42,7 @@ export default function ChatPanel({
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="flex items-center gap-3 px-5 py-4 border-b border-white/5 shrink-0">
-        <div className="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 shrink-0">
+        <div className="w-9 h-9 rounded-[2rem] bg-amber-500/10 flex items-center justify-center border border-amber-500/20 shrink-0">
           <ChatBubbleIcon className="w-4 h-4 text-amber-500" />
         </div>
         <div>
@@ -95,7 +95,7 @@ export default function ChatPanel({
             placeholder="Write a message…"
             maxLength={500}
             autoComplete="off"
-            className="w-full bg-void/60 border border-white/6 rounded-[1.75rem] pl-5 pr-14 py-3.5
+            className="w-full bg-void/60 border border-white/6 rounded-full pl-5 pr-14 py-3.5
                        text-sm text-text placeholder:text-white/15 font-body outline-none
                        transition-all duration-200
                        focus:border-amber-500/25 focus:bg-void/90
@@ -106,7 +106,7 @@ export default function ChatPanel({
             disabled={!input.trim()}
             aria-label="Send message"
             className="absolute right-2.5 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center
-                       rounded-xl bg-amber-500 text-void transition-all duration-150
+                       rounded-[2rem] bg-amber-500 text-void transition-all duration-150
                        hover:bg-amber-400 active:scale-90
                        disabled:opacity-0 disabled:scale-75
                        shadow-md shadow-amber-500/20"
@@ -131,13 +131,32 @@ function ChatMessage({ msg, isOwn, displayNames = {} }) {
     "???";
 
   if (msg.senderId === "system") {
+    let icon = null;
+    let cleanText = msg.text;
+
+    if (msg.text.includes("👑")) {
+      icon = <CrownIcon className="w-3 h-3 text-amber-500" />;
+      cleanText = msg.text.replace("👑", "").trim();
+    } else if (msg.text.includes("🎬")) {
+      icon = <FilmIcon className="w-3 h-3 text-jade" />;
+      cleanText = msg.text.replace("🎬", "").trim();
+    } else if (msg.text.includes("\ud83d\udd12")) {
+      icon = <LockSmallIcon className="w-3 h-3 text-danger" />;
+      cleanText = msg.text.replace("\ud83d\udd12", "").trim();
+    } else if (msg.text.includes("\ud83d\udd13")) {
+      icon = <UnlockSmallIcon className="w-3 h-3 text-jade" />;
+      cleanText = msg.text.replace("\ud83d\udd13", "").trim();
+    }
+
     return (
       <div className="flex justify-center">
         <div
           className="bg-void/60 px-4 py-1.5 rounded-full border border-white/5
-                        text-[10px] font-mono text-muted/70 uppercase tracking-wider"
+                        text-[10px] font-mono text-muted/70 uppercase tracking-wider
+                        flex items-center gap-2"
         >
-          {msg.text}
+          {icon}
+          {cleanText}
         </div>
       </div>
     );
@@ -153,11 +172,11 @@ function ChatMessage({ msg, isOwn, displayNames = {} }) {
         </span>
       )}
       <div
-        className={`max-w-[85%] px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-2xl text-[12px] sm:text-[13px] font-body leading-relaxed break-words border transition-colors duration-200
+        className={`max-w-[85%] px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-[2rem] text-[12px] sm:text-[13px] font-body leading-relaxed break-words border transition-colors duration-200
           ${
             isOwn
-              ? "bg-amber-500 text-void border-transparent rounded-br-md shadow-[0_4px_12px_-4px_rgba(245,158,11,0.5)] ring-1 ring-amber-400/50"
-              : "bg-white/5 border-white/6 text-white/90 rounded-bl-md hover:border-white/15"
+              ? "bg-amber-500 text-void border-transparent rounded-br-2xl shadow-[0_4px_12px_-4px_rgba(245,158,11,0.5)] ring-1 ring-amber-400/50"
+              : "bg-white/5 border-white/6 text-white/90 rounded-bl-2xl hover:border-white/15"
           }`}
       >
         {msg.text}
