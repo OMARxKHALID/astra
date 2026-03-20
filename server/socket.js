@@ -6,6 +6,21 @@ import pkg from "@next/env";
 const { loadEnvConfig } = pkg;
 loadEnvConfig(process.cwd());
 
+// Strict video URL validation — inlined here so socket.js stays fully
+// self-contained and deployable from the server/ subdirectory (render.yaml
+// sets rootDir:server, so imports from ../lib/ would fail on Render).
+// Must be kept in sync with isStrictVideoUrl() in lib/videoSource.js.
+const STRICT_VIDEO_EXTENSIONS = /\.(mp4|webm|ogg|mkv|mov|avi)$/i;
+function isStrictVideoUrl(raw) {
+  if (!raw || typeof raw !== "string") return false;
+  try {
+    const { pathname } = new URL(raw.trim());
+    return STRICT_VIDEO_EXTENSIONS.test(pathname.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
 // Support both Upstash's own env var names (UPSTASH_REDIS_REST_*) and the
 // Vercel KV / legacy names (REDIS_KV_REST_API_*). The .env.local and
 // .env.example both use REDIS_KV_REST_API_* — so the old code that only
@@ -53,6 +68,7 @@ class Room {
     this.hostToken = hostToken;
     this.playbackRate = 1;
     this.hostOnlyControls = false;
+    this.strictVideoUrlMode = false;
     this.clients = new Set();
     this.joinOrder = [];
     this.messages = [];
@@ -122,6 +138,7 @@ class Room {
       hostId: this.hostId,
       playbackRate: this.playbackRate,
       hostOnlyControls: this.hostOnlyControls ?? false,
+      strictVideoUrlMode: this.strictVideoUrlMode ?? false,
     };
   }
 
@@ -154,6 +171,7 @@ async function saveRoom(room) {
         hostToken: room.hostToken,
         playbackRate: room.playbackRate,
         hostOnlyControls: room.hostOnlyControls ?? false,
+        strictVideoUrlMode: room.strictVideoUrlMode ?? false,
         messages: room.messages || [],
       },
       { ex: 86400 },
@@ -210,6 +228,7 @@ io.on("connection", (socket) => {
           room.videoTS = stored.videoTS ?? 0;
           room.playbackRate = stored.playbackRate ?? 1;
           room.hostOnlyControls = stored.hostOnlyControls ?? false;
+          room.strictVideoUrlMode = stored.strictVideoUrlMode ?? false;
           room.messages = stored.messages || [];
           room.lastUpdated = stored.lastUpdated ?? Date.now();
           rooms.set(roomId, room);
@@ -379,6 +398,21 @@ io.on("connection", (socket) => {
     if (meta?.isHost) {
       const room = rooms.get(meta.roomId);
       if (room) {
+        // Server-side strict video URL validation.
+        // When strictVideoUrlMode is enabled, reject any video URL whose
+        // pathname does not end with a recognised direct-video extension.
+        // This is a security backstop — the client validates first, but we
+        // never rely solely on client-side checks.
+        if (room.strictVideoUrlMode && data.video) {
+          if (!isStrictVideoUrl(data.video)) {
+            socket.emit("REC:error", {
+              message:
+                "Unsupported URL: Only direct video file links are allowed in this room.",
+              code: "STRICT_VIDEO_MODE",
+            });
+            return;
+          }
+        }
         room.changeVideo(
           data.video,
           data.videoTS || 0,
@@ -389,6 +423,20 @@ io.on("connection", (socket) => {
         saveRoom(room);
       }
     }
+  });
+
+  // Toggle strict video URL mode — host only.
+  // When enabled, only direct video file links (.mp4, .webm, etc.) are
+  // accepted; YouTube, Vimeo, HLS and embed pages are rejected with a clear
+  // error message rather than a cryptic codec failure.
+  socket.on("CMD:strictVideoUrlMode", () => {
+    const meta = clientMeta.get(socket.id);
+    if (!meta?.isHost) return;
+    const room = rooms.get(meta.roomId);
+    if (!room) return;
+    room.strictVideoUrlMode = !room.strictVideoUrlMode;
+    io.to(room.roomId).emit("REC:host", room.publicState());
+    saveRoom(room);
   });
 
   socket.on("CMD:subtitle", (url) => {

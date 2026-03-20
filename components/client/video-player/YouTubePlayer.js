@@ -249,11 +249,6 @@ export default function YouTubePlayer({
     else document.exitFullscreen();
   }
 
-  function handleFullscreen() {
-    if (!document.fullscreenElement) containerRef.current?.requestFullscreen();
-    else document.exitFullscreen();
-  }
-
   useEffect(() => {
     const onFS = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", onFS);
