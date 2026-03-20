@@ -138,12 +138,10 @@ export default function RoomClient({ roomId, initialMeta }) {
         setMessages(msg.messages);
         return;
       }
-
       if (msg.senderId === "system") {
         let icon = null;
         let type = "info";
         let cleanText = msg.text;
-
         if (msg.text.includes("[HOST]")) {
           icon = <CrownIcon className="w-4 h-4 text-amber-500" />;
           cleanText = msg.text.replace("[HOST]", "").trim();
@@ -164,21 +162,15 @@ export default function RoomClient({ roomId, initialMeta }) {
           cleanText = msg.text.replace("[UNLOCK]", "").trim();
           type = "success";
         }
-
         addToast(cleanText, type, 4000, icon);
         return;
       }
-
       setMessages((prev) => {
         const next = [...prev, msg].slice(-MAX_MESSAGES);
         return next;
       });
-
-      const isMobile =
-        typeof window !== "undefined" && window.innerWidth < 1024;
-      const isVisible = document.fullscreenElement
-        ? playerChatOpen
-        : (isMobile ? mobileSheet === "chat" : showSidebar);
+      const isMobile = typeof window !== "undefined" && window.innerWidth < 1024;
+      const isVisible = document.fullscreenElement ? playerChatOpen : (isMobile ? mobileSheet === "chat" : showSidebar);
       if (!isVisible) {
         setUnreadCount((prev) => prev + 1);
       }
@@ -197,21 +189,14 @@ export default function RoomClient({ roomId, initialMeta }) {
         setParticipants((event.users || []).map((u) => u.userId));
         setDisplayNames((prev) => {
           const next = { ...prev };
-          (event.users || []).forEach((u) => {
-            next[u.userId] = u.username;
-          });
+          (event.users || []).forEach((u) => { next[u.userId] = u.username; });
           return next;
         });
         break;
       case "user_joined":
-        setParticipants((prev) =>
-          prev.includes(event.userId) ? prev : [...prev, event.userId],
-        );
+        setParticipants((prev) => prev.includes(event.userId) ? prev : [...prev, event.userId]);
         if (event.username) {
-          setDisplayNames((prev) => ({
-            ...prev,
-            [event.userId]: event.username,
-          }));
+          setDisplayNames((prev) => ({ ...prev, [event.userId]: event.username }));
           if (event.userId !== userId) {
             addToast(`${event.username} joined!`, "info");
           }
@@ -223,72 +208,34 @@ export default function RoomClient({ roomId, initialMeta }) {
         addToast(`${leaverName} left.`, "info");
         break;
       case "name_changed":
-        setDisplayNames((prev) => ({
-          ...prev,
-          [event.userId]: event.username,
-        }));
+        setDisplayNames((prev) => ({ ...prev, [event.userId]: event.username }));
         break;
     }
   }, [userId, addToast]);
 
-  const handleKicked = useCallback(() => {
-    router.push("/?kicked=1");
-  }, [router]);
-
-  const handleSendChat = useCallback(
-    (text) => sendRef.current?.({ type: "chat", text }),
-    [],
-  );
-  const handleLoadUrl = useCallback(
-    (url, subUrl) => sendRef.current?.({ type: "change_video", videoUrl: url, subtitleUrl: subUrl }),
-    [],
-  );
-  const handleSubtitleChange = useCallback(
-    (subUrl) => sendRef.current?.({ type: "set_subtitle", url: subUrl }),
-    [],
-  );
-  const handlePlay = useCallback(
-    (time) => {
-      setServerState((s) => ({ ...(s || {}), isPlaying: true, currentTime: time }));
-      sendRef.current?.({ type: "play", currentTime: time });
-    },
-    [],
-  );
-  const handlePause = useCallback(
-    (time) => {
-      setServerState((s) => ({ ...(s || {}), isPlaying: false, currentTime: time }));
-      sendRef.current?.({ type: "pause", currentTime: time });
-    },
-    [],
-  );
-  const handleSeek = useCallback(
-    (time) => {
-      setServerState((s) => ({ ...(s || {}), currentTime: time }));
-      sendRef.current?.({ type: "seek", currentTime: time });
-    },
-    [],
-  );
-  const handleSpeed = useCallback(
-    (rate) => {
-      const time = videoRef.current?.currentTime || 0;
-      setServerState((s) => ({ 
-        ...(s || {}), 
-        playbackRate: rate,
-        currentTime: time,
-        lastUpdated: Date.now()
-      }));
-      sendRef.current?.({ type: "speed", rate, currentTime: time });
-    },
-    [],
-  );
-  const handleKick = useCallback(
-    (tid) => sendRef.current?.({ type: "kick", targetUserId: tid }),
-    [],
-  );
-  const handleToggleHostControls = useCallback(
-    () => sendRef.current?.({ type: "toggle_host_controls" }),
-    [],
-  );
+  const handleKicked = useCallback(() => { router.push("/?kicked=1"); }, [router]);
+  const handleSendChat = useCallback((text) => sendRef.current?.({ type: "chat", text }), []);
+  const handleLoadUrl = useCallback((url, subUrl) => sendRef.current?.({ type: "change_video", videoUrl: url, subtitleUrl: subUrl }), []);
+  const handleSubtitleChange = useCallback((subUrl) => sendRef.current?.({ type: "set_subtitle", url: subUrl }), []);
+  const handlePlay = useCallback((time) => {
+    setServerState((s) => ({ ...(s || {}), isPlaying: true, currentTime: time }));
+    sendRef.current?.({ type: "play", currentTime: time });
+  }, []);
+  const handlePause = useCallback((time) => {
+    setServerState((s) => ({ ...(s || {}), isPlaying: false, currentTime: time }));
+    sendRef.current?.({ type: "pause", currentTime: time });
+  }, []);
+  const handleSeek = useCallback((time) => {
+    setServerState((s) => ({ ...(s || {}), currentTime: time }));
+    sendRef.current?.({ type: "seek", currentTime: time });
+  }, []);
+  const handleSpeed = useCallback((rate) => {
+    const time = videoRef.current?.currentTime || 0;
+    setServerState((s) => ({ ...(s || {}), playbackRate: rate, currentTime: time, lastUpdated: Date.now() }));
+    sendRef.current?.({ type: "speed", rate, currentTime: time });
+  }, []);
+  const handleKick = useCallback((tid) => sendRef.current?.({ type: "kick", targetUserId: tid }), []);
+  const handleToggleHostControls = useCallback(() => sendRef.current?.({ type: "toggle_host_controls" }), []);
 
   const handleShare = useCallback(() => {
     addToast("Link copied!", "success");
@@ -315,10 +262,7 @@ export default function RoomClient({ roomId, initialMeta }) {
       <button
         onClick={(e) => {
           e.stopPropagation();
-          setPlayerChatOpen((v) => {
-            if (!v) setUnreadCount(0);
-            return !v;
-          });
+          setPlayerChatOpen((v) => { if (!v) setUnreadCount(0); return !v; });
         }}
         className="pointer-events-auto w-10 h-10 flex items-center justify-center rounded-[2rem] bg-black/40 backdrop-blur-md text-white/70 hover:text-white transition-all ring-1 ring-white/10 shadow-xl"
         title={playerChatOpen ? "Close Chat" : "Open Chat"}
@@ -336,20 +280,10 @@ export default function RoomClient({ roomId, initialMeta }) {
         >
           <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0 bg-white/5">
             <span className="font-display font-bold text-sm text-white/90 tracking-wide">Room Chat</span>
-            <button 
-              onClick={() => setPlayerChatOpen(false)}
-              className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors"
-            >
-              ✕
-            </button>
+            <button onClick={() => setPlayerChatOpen(false)} className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors">✕</button>
           </div>
           <div className="flex-1 min-h-0 relative">
-            <ChatPanel
-              messages={messages}
-              userId={userId}
-              displayNames={displayNames}
-              onSend={handleSendChat}
-            />
+            <ChatPanel messages={messages} userId={userId} displayNames={displayNames} onSend={handleSendChat} />
           </div>
         </div>
       )}
@@ -358,184 +292,68 @@ export default function RoomClient({ roomId, initialMeta }) {
 
   return (
     <div className="h-dvh bg-void flex flex-col overflow-hidden text-text font-body antialiased">
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 z-0
-        bg-[radial-gradient(ellipse_at_15%_20%,rgba(245,158,11,0.07),transparent_50%),
-            radial-gradient(ellipse_at_85%_80%,rgba(16,185,129,0.05),transparent_50%)]"
-      />
-
+      <div aria-hidden className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(ellipse_at_15%_20%,rgba(245,158,11,0.07),transparent_50%),radial-gradient(ellipse_at_85%_80%,rgba(16,185,129,0.05),transparent_50%)]" />
       {userId && nameReady && (
         <SyncEngine
-          roomId={roomId}
-          userId={userId}
-          hostToken={hostToken}
-          videoUrl={videoUrl}
-          displayName={displayName}
-          videoRef={videoRef}
-          onStateUpdate={handleStateUpdate}
-          onChatMessage={handleChatMessage}
-          onUserChange={handleUserChange}
-          onDriftStatus={setSyncStatus}
-          onConnStatus={setConnStatus}
-          onKicked={handleKicked}
-          sendRef={sendRef}
+          roomId={roomId} userId={userId} hostToken={hostToken} videoUrl={videoUrl} displayName={displayName} videoRef={videoRef}
+          onStateUpdate={handleStateUpdate} onChatMessage={handleChatMessage} onUserChange={handleUserChange}
+          participants={participants} onDriftStatus={setSyncStatus} onConnStatus={setConnStatus} onKicked={handleKicked} sendRef={sendRef}
         />
       )}
-
       <ReconnectBanner connStatus={connStatus} />
       <ToastContainer toasts={toasts} />
-
       <RoomNavbar 
-          roomId={roomId}
-          displayName={displayName}
-          nameReady={nameReady}
-          editingName={editingName}
-          nameInput={nameInput}
-          setNameInput={setNameInput}
-          setEditingName={setEditingName}
-          commitName={commitName}
-          showSidebar={showSidebar}
-          setShowSidebar={setShowSidebar}
-          unreadCount={unreadCount}
-          setUnreadCount={setUnreadCount}
-          syncStatus={syncStatus}
-          connStatus={connStatus}
-          isHost={isHost}
-          hostOnlyControls={hostOnlyControls}
-          handleToggleHostControls={handleToggleHostControls}
-          handleShare={handleShare}
-          router={router}
+          roomId={roomId} displayName={displayName} nameReady={nameReady} editingName={editingName} nameInput={nameInput}
+          setNameInput={setNameInput} setEditingName={setEditingName} commitName={commitName} showSidebar={showSidebar}
+          setShowSidebar={setShowSidebar} unreadCount={unreadCount} setUnreadCount={setUnreadCount} syncStatus={syncStatus}
+          connStatus={connStatus} isHost={isHost} hostOnlyControls={hostOnlyControls} handleToggleHostControls={handleToggleHostControls}
+          handleShare={handleShare} router={router}
       />
-
-      <main
-        className={`relative z-10 flex-1 min-h-0 min-w-0 bento-grid px-2 sm:px-4 pb-2 sm:pb-4 ${showSidebar ? "sidebar-open" : "sidebar-closed"}`}
-        style={{ "--sidebar-width": `${sidebarWidth}px` }}
-      >
+      <main className={`relative z-10 flex-1 min-h-0 min-w-0 bento-grid px-2 sm:px-4 pb-2 sm:pb-4 ${showSidebar ? "sidebar-open" : "sidebar-closed"}`} style={{ "--sidebar-width": `${sidebarWidth}px` }}>
         <section className="bento-video glass-card overflow-hidden">
           <VideoPlayer
-            videoRef={videoRef}
-            videoUrl={videoUrl}
-            subtitleUrl={subtitleUrl}
-            isHost={isHost}
-            isPlaying={isPlaying}
-            playbackRate={playbackRate}
-            onPlay={handlePlay}
-            onPause={handlePause}
-            onSeek={handleSeek}
-            onSpeed={handleSpeed}
-            canControl={canControl}
-            chatOverlay={chatOverlay}
-            onLoad={handleLoadUrl}
-            onSubtitleChange={handleSubtitleChange}
+            videoRef={videoRef} videoUrl={videoUrl} subtitleUrl={subtitleUrl} isHost={isHost} isPlaying={isPlaying}
+            playbackRate={playbackRate} onPlay={handlePlay} onPause={handlePause} onSeek={handleSeek} onSpeed={handleSpeed}
+            canControl={canControl} chatOverlay={chatOverlay} onLoad={handleLoadUrl} onSubtitleChange={handleSubtitleChange}
           />
         </section>
-
         <section className="bento-url glass-card">
-          <VideoUrlInput
-            isHost={isHost}
-            currentUrl={videoUrl}
-            currentSubtitleUrl={subtitleUrl}
-            onLoad={handleLoadUrl}
-          />
+          <VideoUrlInput isHost={isHost} currentUrl={videoUrl} currentSubtitleUrl={subtitleUrl} onLoad={handleLoadUrl} />
         </section>
-
         {showSidebar && (
           <aside className="bento-sidebar hidden lg:flex relative">
-            <div 
-              className="absolute -left-[10px] top-0 bottom-0 w-5 cursor-col-resize z-50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity group" 
-              onMouseDown={handleSidebarDragStart}
-            >
+            <div className="absolute -left-[10px] top-0 bottom-0 w-5 cursor-col-resize z-50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity group" onMouseDown={handleSidebarDragStart}>
               <div className="w-1 h-12 bg-white/20 rounded-full group-hover:bg-amber-400/80 transition-colors shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
             </div>
             <div className="flex-[2] min-h-0 glass-card overflow-hidden flex flex-col">
-              <ChatPanel
-                messages={messages}
-                userId={userId}
-                displayNames={displayNames}
-                onSend={handleSendChat}
-              />
+              <ChatPanel messages={messages} userId={userId} displayNames={displayNames} onSend={handleSendChat} />
             </div>
             <div className="flex-1 min-h-0 glass-card overflow-hidden flex flex-col">
-              <ParticipantList
-                participants={participants}
-                myUserId={userId}
-                hostId={hostId}
-                isHost={isHost}
-                displayNames={displayNames}
-                onKick={handleKick}
-              />
+              <ParticipantList participants={participants} myUserId={userId} hostId={hostId} isHost={isHost} displayNames={displayNames} onKick={handleKick} />
             </div>
           </aside>
         )}
       </main>
-
       <div className="lg:hidden shrink-0 relative z-20 flex items-center justify-around px-6 py-3 pb-safe border-t border-white/5 bg-void/85 backdrop-blur-xl">
         <MobileTabBtn
-          label={`Chat${unreadCount > 0 ? ` (${unreadCount})` : ""}`}
-          active={mobileSheet === "chat"}
-          onClick={() => {
-            setMobileSheet(mobileSheet === "chat" ? null : "chat");
-            if (mobileSheet !== "chat") setUnreadCount(0);
-          }}
-          icon={
-            <div className="relative">
-              <ChatIcon className="w-5 h-5" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1.5 w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
-              )}
-            </div>
-          }
+          label={`Chat${unreadCount > 0 ? ` (${unreadCount})` : ""}`} active={mobileSheet === "chat"}
+          onClick={() => { setMobileSheet(mobileSheet === "chat" ? null : "chat"); if (mobileSheet !== "chat") setUnreadCount(0); }}
+          icon={<div className="relative"><ChatIcon className="w-5 h-5" />{unreadCount > 0 && <span className="absolute -top-1 -right-1.5 w-2 h-2 bg-amber-500 rounded-full animate-pulse" />}</div>}
         />
-
-        <MobileTabBtn
-          label={`People (${participants.length})`}
-          active={mobileSheet === "users"}
-          onClick={() => setMobileSheet(mobileSheet === "users" ? null : "users")}
-          icon={<UsersIcon className="w-5 h-5" />}
-        />
-        {nameReady && (
-          <MobileTabBtn
-            label={displayName.slice(0, 10)}
-            active={editingName}
-            onClick={() => {
-              setNameInput(displayName);
-              setEditingName(true);
-            }}
-            icon={<PencilIcon className="w-5 h-5" />}
-          />
-        )}
+        <MobileTabBtn label={`People (${participants.length})`} active={mobileSheet === "users"} onClick={() => setMobileSheet(mobileSheet === "users" ? null : "users")} icon={<UsersIcon className="w-5 h-5" />} />
+        {nameReady && <MobileTabBtn label={displayName.slice(0, 10)} active={editingName} onClick={() => { setNameInput(displayName); setEditingName(true); }} icon={<PencilIcon className="w-5 h-5" />} />}
       </div>
-
       {mobileSheet && (
         <>
           <div className="lg:hidden fixed inset-0 z-30 bg-black/50 backdrop-blur-sm" onClick={() => setMobileSheet(null)} />
           <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 h-[72vh] flex flex-col bg-surface/95 backdrop-blur-3xl border-t border-white/10 rounded-t-[3rem] overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 shrink-0">
-              <span className="font-display font-semibold text-white/80">
-                {mobileSheet === "chat" ? "Chat" : "Participants"}
-              </span>
-              <button
-                onClick={() => setMobileSheet(null)}
-                className="w-8 h-8 flex items-center justify-center rounded-full glass-card text-muted hover:text-white"
-              >
-                ✕
-              </button>
+              <span className="font-display font-semibold text-white/80">{mobileSheet === "chat" ? "Chat" : "Participants"}</span>
+              <button onClick={() => setMobileSheet(null)} className="w-8 h-8 flex items-center justify-center rounded-full glass-card text-muted hover:text-white">✕</button>
             </div>
             <div className="flex-1 min-h-0 overflow-hidden">
-              {mobileSheet === "chat" && (
-                <ChatPanel messages={messages} userId={userId} displayNames={displayNames} onSend={handleSendChat} />
-              )}
-              {mobileSheet === "users" && (
-                <ParticipantList
-                  participants={participants}
-                  myUserId={userId}
-                  hostId={hostId}
-                  isHost={isHost}
-                  displayNames={displayNames}
-                  onKick={handleKick}
-                />
-              )}
+              {mobileSheet === "chat" && <ChatPanel messages={messages} userId={userId} displayNames={displayNames} onSend={handleSendChat} />}
+              {mobileSheet === "users" && <ParticipantList participants={participants} myUserId={userId} hostId={hostId} isHost={isHost} displayNames={displayNames} onKick={handleKick} />}
             </div>
           </div>
         </>
@@ -545,133 +363,49 @@ export default function RoomClient({ roomId, initialMeta }) {
 }
 
 function RoomNavbar({
-  roomId,
-  displayName,
-  nameReady,
-  editingName,
-  nameInput,
-  setNameInput,
-  setEditingName,
-  commitName,
-  showSidebar,
-  setShowSidebar,
-  unreadCount,
-  setUnreadCount,
-  syncStatus,
-  connStatus,
-  isHost,
-  hostOnlyControls,
-  handleToggleHostControls,
-  handleShare,
-  router,
+  roomId, displayName, nameReady, editingName, nameInput, setNameInput, setEditingName, commitName, showSidebar,
+  setShowSidebar, unreadCount, setUnreadCount, syncStatus, connStatus, isHost, hostOnlyControls, handleToggleHostControls,
+  handleShare, router,
 }) {
   return (
     <nav className="relative z-10 shrink-0 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2">
       <div className="flex items-center gap-1.5 min-w-0">
-        <button
-          onClick={() => router.push("/")}
-          className="flex items-center gap-2 px-3 py-2 rounded-[2rem] glass-card hover:border-white/15 transition-all active:scale-95 shrink-0"
-        >
-          <div className="w-7 h-7 rounded-[2rem] bg-amber-500 flex items-center justify-center font-display font-black text-void text-[10px]">
-            WT
-          </div>
-          <span className="font-display font-bold text-base tracking-tight text-white/90 hidden md:block">
-            WatchTogether
-          </span>
+        <button onClick={() => router.push("/")} className="flex items-center gap-2 px-3 py-2 rounded-[2rem] glass-card hover:border-white/15 transition-all active:scale-95 shrink-0">
+          <div className="w-7 h-7 rounded-[2rem] bg-amber-500 flex items-center justify-center font-display font-black text-void text-[10px]">WT</div>
+          <span className="font-display font-bold text-base tracking-tight text-white/90 hidden md:block">WatchTogether</span>
         </button>
-
         <div className="flex items-center gap-2 px-2.5 py-2 rounded-[2rem] glass-card text-[10px] font-mono uppercase tracking-[0.2em] shrink-0">
           <span className="w-1.5 h-1.5 rounded-full bg-jade/70 animate-pulse" />
           <span className="text-white/70 font-black hidden xs:inline">{roomId}</span>
           <span className="text-white/70 font-black xs:hidden">{roomId.slice(0, 4)}</span>
         </div>
-
         {nameReady && (
           editingName ? (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                commitName(nameInput);
-              }}
-              className="flex items-center gap-2 px-3 py-2 rounded-[2rem] glass-card min-w-0"
-            >
-              <input
-                autoFocus
-                value={nameInput}
-                onChange={(e) => setNameInput(e.target.value)}
-                onBlur={() => commitName(nameInput || displayName)}
-                onKeyDown={(e) => e.key === "Escape" && setEditingName(false)}
-                maxLength={24}
-                className="w-28 bg-transparent text-xs font-mono text-white/80 outline-none"
-                placeholder="Your name…"
-              />
+            <form onSubmit={(e) => { e.preventDefault(); commitName(nameInput); }} className="flex items-center gap-2 px-3 py-2 rounded-[2rem] glass-card min-w-0">
+              <input autoFocus value={nameInput} onChange={(e) => setNameInput(e.target.value)} onBlur={() => commitName(nameInput || displayName)} onKeyDown={(e) => e.key === "Escape" && setEditingName(false)} maxLength={24} className="w-28 bg-transparent text-xs font-mono text-white/80 outline-none" placeholder="Your name…" />
             </form>
           ) : (
-            <button
-              onClick={() => {
-                setNameInput(displayName);
-                setEditingName(true);
-              }}
-              title="Click to edit your name"
-              className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-[2rem] glass-card
-                         hover:border-white/15 transition-all text-[10px] font-mono
-                         text-white/50 hover:text-white/80 max-w-[140px] min-w-0"
-            >
+            <button onClick={() => { setNameInput(displayName); setEditingName(true); }} title="Click to edit your name" className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-[2rem] glass-card hover:border-white/15 transition-all text-[10px] font-mono text-white/50 hover:text-white/80 max-w-[140px] min-w-0">
               <PencilIcon className="w-3 h-3 shrink-0" />
               <span className="truncate">{displayName}</span>
             </button>
           )
         )}
       </div>
-
       <div className="flex items-center gap-2 shrink-0">
-        <button
-          onClick={() => {
-            setShowSidebar(!showSidebar);
-            if (!showSidebar) setUnreadCount(0);
-          }}
-          title={showSidebar ? "Hide sidebar" : "Show sidebar"}
-          className="hidden lg:flex w-9 h-9 items-center justify-center rounded-[2rem] glass-card
-                     text-muted hover:text-white/80 transition-all active:scale-95 relative"
-        >
+        <button onClick={() => { setShowSidebar(!showSidebar); if (!showSidebar) setUnreadCount(0); }} title={showSidebar ? "Hide sidebar" : "Show sidebar"} className="hidden lg:flex w-9 h-9 items-center justify-center rounded-[2rem] glass-card text-muted hover:text-white/80 transition-all active:scale-95 relative">
           <SidebarIcon className="w-4 h-4" />
           {!showSidebar && unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-500 rounded-full border-2 border-void
-                             flex items-center justify-center text-[8px] font-bold text-void">
-              {unreadCount > 9 ? "9+" : unreadCount}
-            </span>
+            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-500 rounded-full border-2 border-void flex items-center justify-center text-[8px] font-bold text-void">{unreadCount > 9 ? "9+" : unreadCount}</span>
           )}
         </button>
-
-        <div className="px-3 py-2 rounded-[2rem] glass-card">
-          <SyncStatusIndicator syncStatus={syncStatus} connStatus={connStatus} />
-        </div>
-
+        <div className="px-3 py-2 rounded-[2rem] glass-card"><SyncStatusIndicator syncStatus={syncStatus} connStatus={connStatus} /></div>
         {isHost ? (
-          <button
-            onClick={handleToggleHostControls}
-            title={hostOnlyControls ? "Unlock playback for everyone" : "Lock playback to host only"}
-            className={`w-9 h-9 flex items-center justify-center rounded-[2rem] glass-card transition-all active:scale-95
-                       ${hostOnlyControls ? "text-amber-400 border-amber-500/30" : "text-muted hover:text-white/80"}`}
-          >
-            {hostOnlyControls ? <LockIcon className="w-4 h-4" /> : <UnlockIcon className="w-4 h-4" />}
-          </button>
+          <button onClick={handleToggleHostControls} title={hostOnlyControls ? "Unlock playback for everyone" : "Lock playback to host only"} className={`w-9 h-9 flex items-center justify-center rounded-[2rem] glass-card transition-all active:scale-95 ${hostOnlyControls ? "text-amber-400 border-amber-500/30" : "text-muted hover:text-white/80"}`}>{hostOnlyControls ? <LockIcon className="w-4 h-4" /> : <UnlockIcon className="w-4 h-4" />}</button>
         ) : hostOnlyControls ? (
-          <div title="Host-only playback controls" className="w-9 h-9 flex items-center justify-center rounded-[2rem] glass-card text-amber-400/60 border-amber-500/20">
-            <LockIcon className="w-4 h-4" />
-          </div>
+          <div title="Host-only playback controls" className="w-9 h-9 flex items-center justify-center rounded-[2rem] glass-card text-amber-400/60 border-amber-500/20"><LockIcon className="w-4 h-4" /></div>
         ) : null}
-
-        <button
-          onClick={handleShare}
-          aria-label="Copy invite link"
-          className="h-9 sm:h-10 px-3 sm:px-4 rounded-[2rem] bg-amber-500 text-void font-black text-[10px] sm:text-[11px] uppercase tracking-widest
-                     hover:bg-amber-400 active:scale-95 transition-all shadow-lg shadow-amber-500/10
-                     flex items-center gap-1.5 ring-1 ring-amber-400/60"
-        >
-          <ShareIcon className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Invite</span>
-        </button>
+        <button onClick={handleShare} aria-label="Copy invite link" className="h-9 sm:h-10 px-3 sm:px-4 rounded-[2rem] bg-amber-500 text-void font-black text-[10px] sm:text-[11px] uppercase tracking-widest hover:bg-amber-400 active:scale-95 transition-all shadow-lg shadow-amber-500/10 flex items-center gap-1.5 ring-1 ring-amber-400/60"><ShareIcon className="w-3.5 h-3.5" /><span className="hidden sm:inline">Invite</span></button>
       </div>
     </nav>
   );
@@ -679,11 +413,7 @@ function RoomNavbar({
 
 function MobileTabBtn({ label, active, onClick, icon }) {
   return (
-    <button
-      onClick={onClick}
-      className={`flex flex-col items-center gap-1 px-4 py-1.5 rounded-[2rem] transition-all text-[10px] font-bold uppercase tracking-wider
-        ${active ? "text-amber-400 bg-amber-500/10" : "text-muted hover:text-white/60"}`}
-    >
+    <button onClick={onClick} className={`flex flex-col items-center gap-1 px-4 py-1.5 rounded-[2rem] transition-all text-[10px] font-bold uppercase tracking-wider ${active ? "text-amber-400 bg-amber-500/10" : "text-muted hover:text-white/60"}`}>
       {icon}
       {label}
     </button>
