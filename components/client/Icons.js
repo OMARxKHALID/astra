@@ -438,3 +438,20 @@ export function PipIcon({ className }) {
     </svg>
   );
 }
+
+export function TheatreIcon({ className }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="2" y="3" width="20" height="18" rx="2" ry="2" />
+      <path d="M7 3v18M17 3v18M2 8h5M2 16h5M17 8h5M17 16h5" />
+    </svg>
+  );
+}

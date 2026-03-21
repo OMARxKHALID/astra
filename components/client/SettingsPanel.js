@@ -1,12 +1,15 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
-import { ShieldIcon, LockIcon, UnlockIcon } from "./Icons";
 
+import { useState, useRef, useEffect } from "react";
+import { ShieldIcon, LockIcon, UnlockIcon, TheatreIcon } from "./Icons";
+
+// ─── Toggle switch ────────────────────────────────────────────────────────────
 function Toggle({ enabled, onToggle, disabled = false }) {
   return (
     <button
       onClick={onToggle}
       disabled={disabled}
+      aria-pressed={enabled}
       className={`relative w-10 h-5 rounded-full transition-colors duration-200 shrink-0
         ${enabled ? "bg-amber-500" : "bg-white/10"}
         ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
@@ -19,17 +22,18 @@ function Toggle({ enabled, onToggle, disabled = false }) {
   );
 }
 
-function SettingRow({ label, description, enabled, onToggle, disabled, icon }) {
+// ─── Row ──────────────────────────────────────────────────────────────────────
+function Row({ label, description, enabled, onToggle, disabled, icon }) {
   return (
     <div className="flex items-center justify-between gap-3 py-3 border-b border-white/5 last:border-0">
-      <div className="flex items-center gap-2 min-w-0">
-        {icon && <div className="text-white/40 shrink-0">{icon}</div>}
+      <div className="flex items-center gap-2.5 min-w-0">
+        {icon && <div className="text-white/35 shrink-0">{icon}</div>}
         <div className="min-w-0">
           <p className="text-sm font-semibold text-white/80 leading-tight">
             {label}
           </p>
           {description && (
-            <p className="text-[10px] text-white/35 font-mono mt-0.5 leading-snug">
+            <p className="text-[10px] text-white/30 font-mono mt-0.5 leading-snug">
               {description}
             </p>
           )}
@@ -40,35 +44,41 @@ function SettingRow({ label, description, enabled, onToggle, disabled, icon }) {
   );
 }
 
+// ─── Section label ────────────────────────────────────────────────────────────
+function Section({ children }) {
+  return (
+    <p className="text-[9px] font-black text-white/20 uppercase tracking-[0.28em] mt-4 mb-0.5">
+      {children}
+    </p>
+  );
+}
+
+// ─── SettingsPanel ────────────────────────────────────────────────────────────
 export default function SettingsPanel({
   isOpen,
   onClose,
   isHost,
-  // current values
+  // Room settings
   hostOnlyControls,
   strictVideoUrlMode,
+  onToggleHostControls,
+  onToggleStrictVideoUrlMode,
+  hasPassword,
+  onSetPassword,
+  // Player settings
   screenshotEnabled,
   setScreenshotEnabled,
   hlsQualityEnabled,
   setHlsQualityEnabled,
-  // host-only toggles
-  onToggleHostControls,
-  onToggleStrictVideoUrlMode,
-  // password
-  hasPassword,
-  onSetPassword,
-  // speed sync
   speedSyncEnabled,
   setSpeedSyncEnabled,
-  // ambilight
-  ambiEnabled,
-  setAmbiEnabled,
+  theatreMode,
+  onToggleTheatre,
 }) {
   const panelRef = useRef(null);
   const [pwInput, setPwInput] = useState("");
-  const [pwMode, setPwMode] = useState("idle"); // idle | set | remove
+  const [pwMode, setPwMode] = useState("idle"); // "idle" | "set" | "remove"
 
-  // Close on outside click
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e) => {
@@ -89,7 +99,6 @@ export default function SettingsPanel({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
@@ -105,8 +114,8 @@ export default function SettingsPanel({
             <h2 className="font-display font-bold text-base text-white/90">
               Room Settings
             </h2>
-            <p className="text-[10px] text-white/35 font-mono uppercase tracking-wider mt-0.5">
-              {isHost ? "You are the host" : "View only — host controls these"}
+            <p className="text-[10px] text-white/30 font-mono uppercase tracking-wider mt-0.5">
+              {isHost ? "You are the host" : "Read only — host controls these"}
             </p>
           </div>
           <button
@@ -118,17 +127,15 @@ export default function SettingsPanel({
         </div>
 
         <div
-          className="px-6 py-2 max-h-[70vh] overflow-y-auto"
+          className="px-6 py-2 max-h-[72vh] overflow-y-auto"
           style={{ scrollbarWidth: "none" }}
         >
-          {/* HOST-ONLY SECTION */}
-          <p className="text-[9px] font-black text-white/25 uppercase tracking-[0.25em] mt-3 mb-1">
-            Playback
-          </p>
+          {/* ── Playback ── */}
+          <Section>Playback</Section>
 
-          <SettingRow
+          <Row
             label="Lock to host only"
-            description="Only you can play, pause, and seek"
+            description="Only the host can play, pause, and seek"
             enabled={hostOnlyControls}
             onToggle={onToggleHostControls}
             disabled={!isHost}
@@ -141,9 +148,9 @@ export default function SettingsPanel({
             }
           />
 
-          <SettingRow
+          <Row
             label="Speed sync"
-            description="Force all viewers to match host speed"
+            description="Force all viewers to match host playback speed"
             enabled={speedSyncEnabled}
             onToggle={() => setSpeedSyncEnabled((v) => !v)}
             disabled={!isHost}
@@ -154,36 +161,33 @@ export default function SettingsPanel({
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"
-                />
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
               </svg>
             }
           />
 
-          <p className="text-[9px] font-black text-white/25 uppercase tracking-[0.25em] mt-4 mb-1">
-            Security
-          </p>
+          {/* ── Security ── */}
+          <Section>Security</Section>
 
-          <SettingRow
+          <Row
             label="Strict URL mode"
-            description="Only allow direct video file links"
+            description="Only allow direct video file links (.mp4, .m3u8…)"
             enabled={strictVideoUrlMode}
             onToggle={onToggleStrictVideoUrlMode}
             disabled={!isHost}
             icon={<ShieldIcon className="w-4 h-4" />}
           />
 
-          {/* Password */}
+          {/* Password — host only */}
           {isHost && (
             <div className="py-3 border-b border-white/5">
               <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-2.5 min-w-0">
                   <svg
-                    className="w-4 h-4 text-white/40 shrink-0"
+                    className="w-4 h-4 text-white/35 shrink-0"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -198,28 +202,28 @@ export default function SettingsPanel({
                     <p className="text-sm font-semibold text-white/80">
                       Room password
                     </p>
-                    <p className="text-[10px] text-white/35 font-mono mt-0.5">
+                    <p className="text-[10px] text-white/30 font-mono mt-0.5">
                       {hasPassword
                         ? "Password is set"
-                        : "No password — anyone with link can join"}
+                        : "Anyone with the link can join"}
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() =>
                     setPwMode(
-                      pwMode === "idle"
-                        ? hasPassword
+                      pwMode !== "idle"
+                        ? "idle"
+                        : hasPassword
                           ? "remove"
-                          : "set"
-                        : "idle",
+                          : "set",
                     )
                   }
-                  className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-[2rem] transition-all
+                  className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-[2rem] transition-all border
                     ${
                       hasPassword
-                        ? "bg-danger/15 text-danger border border-danger/20 hover:bg-danger/25"
-                        : "bg-jade/15 text-jade border border-jade/20 hover:bg-jade/25"
+                        ? "bg-danger/10 text-danger border-danger/20 hover:bg-danger/20"
+                        : "bg-jade/10 text-jade border-jade/20 hover:bg-jade/20"
                     }`}
                 >
                   {hasPassword ? "Remove" : "Set"}
@@ -230,17 +234,16 @@ export default function SettingsPanel({
                   onSubmit={submitPassword}
                   className="mt-3 flex gap-2 animate-in fade-in slide-in-from-top-1 duration-200"
                 >
-                  {pwMode === "set" && (
+                  {pwMode === "set" ? (
                     <input
                       autoFocus
                       value={pwInput}
                       onChange={(e) => setPwInput(e.target.value)}
-                      placeholder="Enter password…"
+                      placeholder="New password…"
                       maxLength={64}
                       className="flex-1 bg-void/60 border border-white/10 rounded-[2rem] px-4 py-2 text-sm text-white placeholder:text-white/20 outline-none focus:border-amber-500/40 font-mono"
                     />
-                  )}
-                  {pwMode === "remove" && (
+                  ) : (
                     <p className="flex-1 text-sm text-danger/80 font-mono py-2">
                       Remove room password?
                     </p>
@@ -257,13 +260,23 @@ export default function SettingsPanel({
             </div>
           )}
 
-          <p className="text-[9px] font-black text-white/25 uppercase tracking-[0.25em] mt-4 mb-1">
-            Player
-          </p>
+          {/* ── View ── */}
+          <Section>View</Section>
 
-          <SettingRow
+          <Row
+            label="Theatre mode"
+            description="Full-screen video, dim everything else (T)"
+            enabled={theatreMode}
+            onToggle={onToggleTheatre}
+            icon={<TheatreIcon className="w-4 h-4" />}
+          />
+
+          {/* ── Player ── */}
+          <Section>Player</Section>
+
+          <Row
             label="Screenshot to chat"
-            description="Camera button in video controls"
+            description="Camera button snaps a frame to the chat"
             enabled={screenshotEnabled}
             onToggle={() => setScreenshotEnabled((v) => !v)}
             icon={
@@ -282,9 +295,9 @@ export default function SettingsPanel({
             }
           />
 
-          <SettingRow
+          <Row
             label="HLS quality indicator"
-            description="Show resolution & bitrate for streams"
+            description="Shows resolution & bitrate for live streams"
             enabled={hlsQualityEnabled}
             onToggle={() => setHlsQualityEnabled((v) => !v)}
             icon={
@@ -298,18 +311,6 @@ export default function SettingsPanel({
                 strokeLinejoin="round"
               >
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-              </svg>
-            }
-          />
-          <SettingRow
-            label="Ambilight glow"
-            description="Dynamic background lighting"
-            enabled={ambiEnabled}
-            onToggle={() => setAmbiEnabled((v) => !v)}
-            icon={
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
               </svg>
             }
           />
