@@ -1,6 +1,38 @@
 "use client";
 import { CrownIcon } from "./Icons";
 
+// Connection quality: compare a user's last reported time vs the leader median
+function QualityDot({ deviation }) {
+  // deviation = |userTime - leaderTime| in seconds
+  if (deviation === null)
+    return (
+      <span
+        className="w-2 h-2 rounded-full bg-white/15 shrink-0"
+        title="No data"
+      />
+    );
+  if (deviation < 0.5)
+    return (
+      <span
+        className="w-2 h-2 rounded-full bg-jade shrink-0 shadow-[0_0_6px_rgba(16,185,129,0.6)]"
+        title="Excellent sync"
+      />
+    );
+  if (deviation < 2)
+    return (
+      <span
+        className="w-2 h-2 rounded-full bg-amber-400 shrink-0"
+        title="Minor drift"
+      />
+    );
+  return (
+    <span
+      className="w-2 h-2 rounded-full bg-danger shrink-0"
+      title="Large drift — may be buffering"
+    />
+  );
+}
+
 function Avatar({ name, isMe, isHost }) {
   const initials = name.slice(0, 2).toUpperCase();
   return (
@@ -31,6 +63,8 @@ export default function ParticipantList({
   isHost,
   displayNames = {},
   onKick,
+  tsMap = {}, // { userId: currentTimeSeconds }
+  leaderTime = 0, // median leader time from sync engine
 }) {
   const getName = (uid) => displayNames[uid] || `Guest-${uid.slice(0, 4)}`;
 
@@ -50,6 +84,7 @@ export default function ParticipantList({
           </p>
         </div>
       </div>
+
       <div
         className="flex-1 overflow-y-auto px-4 py-3 space-y-1"
         style={{ scrollbarWidth: "none" }}
@@ -66,6 +101,12 @@ export default function ParticipantList({
           const isThisHost = uid === hostId;
           const name = getName(uid);
           const canKick = isHost && !isMe && !isThisHost;
+          const userTime = tsMap[uid];
+          const deviation =
+            leaderTime > 0 && typeof userTime === "number"
+              ? Math.abs(userTime - leaderTime)
+              : null;
+
           return (
             <div
               key={uid}
@@ -87,6 +128,9 @@ export default function ParticipantList({
                   </span>
                 )}
               </div>
+
+              {/* Connection quality indicator */}
+              <QualityDot deviation={deviation} />
 
               {canKick && (
                 <button

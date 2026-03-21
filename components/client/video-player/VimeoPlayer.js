@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { onVMReady, useVideoHotkeys } from "./utils";
 import EmbedControls from "./EmbedControls";
+import ThumbnailPoster from "./ThumbnailPoster";
 
 export default function VimeoPlayer({
   videoRef,
@@ -16,6 +17,7 @@ export default function VimeoPlayer({
   onSpeed,
   canControl = true,
   chatOverlay,
+  onAmbiColors,
 }) {
   const containerRef = useRef(null);
   const iframeRef = useRef(null);
@@ -29,6 +31,25 @@ export default function VimeoPlayer({
   const [ccEnabled, setCcEnabled] = useState(false);
   const [volume, setVolume] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [thumbnailUrl, setThumbnailUrl] = useState(null);
+
+  // Fetch Vimeo thumbnail via our server-side proxy (avoids CORS).
+  useEffect(() => {
+    if (!videoId) return;
+    setThumbnailUrl(null);
+    const vimeoUrl = `https://vimeo.com/${videoId}`;
+    fetch(`/api/thumbnail?url=${encodeURIComponent(vimeoUrl)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.thumbnailUrl) setThumbnailUrl(d.thumbnailUrl);
+      })
+      .catch(() => {});
+  }, [videoId]);
+
+  // Ambilight: Vimeo is cross-origin — clear any glow from a previous native video.
+  useEffect(() => {
+    onAmbiColors?.(null);
+  }, [onAmbiColors]);
   const hideTimer = useRef(null);
 
   // Buffering state for the Vimeo proxy — read by SyncEngine's sync loop to
@@ -221,6 +242,11 @@ export default function VimeoPlayer({
           <div className="w-10 h-10 rounded-full border-2 border-amber-500/20 border-t-amber-500 animate-spin" />
         </div>
       )}
+      <ThumbnailPoster
+        visible={!ready}
+        thumbnailUrl={thumbnailUrl}
+        subtitle="Loading Vimeo…"
+      />
       {chatOverlay}
       <div className="absolute top-3 left-3 px-2 py-1 rounded-[2rem] bg-[#1ab7ea]/80 text-[10px] font-bold text-white backdrop-blur-sm z-20 pointer-events-none opacity-0 group-hover/vm:opacity-100 transition-opacity">
         Vimeo

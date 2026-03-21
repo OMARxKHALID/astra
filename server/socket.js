@@ -2,14 +2,12 @@ import { Server } from "socket.io";
 import http from "http";
 import { Redis } from "@upstash/redis";
 import pkg from "@next/env";
+import { createHash } from "crypto";
 
 const { loadEnvConfig } = pkg;
 loadEnvConfig(process.cwd());
 
-// Strict video URL validation — inlined here so socket.js stays fully
-// self-contained and deployable from the server/ subdirectory (render.yaml
-// sets rootDir:server, so imports from ../lib/ would fail on Render).
-// Must be kept in sync with isStrictVideoUrl() in lib/videoSource.js.
+// Strict video URL validation — inlined so socket.js is self-contained
 const STRICT_VIDEO_EXTENSIONS = /\.(mp4|webm|ogg|mkv|mov|avi)$/i;
 function isStrictVideoUrl(raw) {
   if (!raw || typeof raw !== "string") return false;
@@ -21,34 +19,30 @@ function isStrictVideoUrl(raw) {
   }
 }
 
-// Support both Upstash's own env var names (UPSTASH_REDIS_REST_*) and the
-// Vercel KV / legacy names (REDIS_KV_REST_API_*). The .env.local and
-// .env.example both use REDIS_KV_REST_API_* — so the old code that only
-// checked UPSTASH_REDIS_REST_* silently skipped Redis entirely.
+function hashPassword(pw) {
+  return createHash("sha256")
+    .update(pw + "wt-salt")
+    .digest("hex");
+}
+
 const redisUrl =
   process.env.UPSTASH_REDIS_REST_URL || process.env.REDIS_KV_REST_API_URL;
 const redisToken =
   process.env.UPSTASH_REDIS_REST_TOKEN || process.env.REDIS_KV_REST_API_TOKEN;
-
 const redis =
   redisUrl && redisToken
     ? new Redis({ url: redisUrl, token: redisToken })
     : null;
-
-if (!redis) {
+if (!redis)
   console.warn(
     "[socket.io] Redis not configured — room state will not persist.",
   );
-}
 
 const PORT = parseInt(process.env.PORT || process.env.WS_PORT || "3001", 10);
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "http://localhost:3000")
   .split(",")
   .map((o) => o.trim().replace(/\/$/, ""));
-
-// How long to wait before electing a new host after the current host disconnects.
 const HOST_RECONNECT_GRACE_MS = 6000;
-
 const rooms = new Map();
 
 console.log(`[socket.io] Starting server on port ${PORT}...`);
@@ -59,8 +53,6 @@ class Room {
     this.roomId = roomId;
     this.video = video;
     this.subtitleUrl = "";
-    // videoTS is updated only via explicit events (seek/play/pause) or
-    // client-reported timestamps. Never self-advanced by a server timer.
     this.videoTS = 0;
     this.paused = true;
     this.lastUpdated = Date.now();
@@ -69,10 +61,10 @@ class Room {
     this.playbackRate = 1;
     this.hostOnlyControls = false;
     this.strictVideoUrlMode = false;
+    this.passwordHash = ""; // "" = no password
     this.clients = new Set();
     this.joinOrder = [];
     this.messages = [];
-    // tsMap: { userId → currentTimeSeconds }, populated by CMD:ts
     this.tsMap = {};
     this.preventTSUpdate = false;
     this.broadcastInterval = null;
@@ -80,19 +72,11 @@ class Room {
 
   startBroadcast(io) {
     if (this.broadcastInterval) return;
-
-    // Broadcast every 1 second. The client drift-correction loop fires every
-    // 500ms — broadcasting every 5s (old bug) made all corrections stale.
     this.broadcastInterval = setInterval(() => {
       if (this.clients.size === 0) return;
-
-      // Prune tsMap entries for users no longer in the room so disconnected
-      // clients don't skew the leader time calculation.
       Object.keys(this.tsMap).forEach((uid) => {
         if (!this.joinOrder.includes(uid)) delete this.tsMap[uid];
       });
-
-      // Send raw timestamps — no artificial inflation.
       io.to(this.roomId).emit("REC:tsMap", { ...this.tsMap });
       io.to(this.roomId).emit("REC:host", this.publicState());
     }, 1000);
@@ -108,8 +92,6 @@ class Room {
   receiveTimestamp(userId, rawTime) {
     if (this.preventTSUpdate) return;
     if (typeof rawTime !== "number" || rawTime < 0) return;
-    // Advance canonical videoTS to furthest reported client time so newly
-    // joining clients seek to the right position.
     if (rawTime > this.videoTS) this.videoTS = rawTime;
     this.tsMap[userId] = rawTime;
   }
@@ -139,6 +121,7 @@ class Room {
       playbackRate: this.playbackRate,
       hostOnlyControls: this.hostOnlyControls ?? false,
       strictVideoUrlMode: this.strictVideoUrlMode ?? false,
+      hasPassword: Boolean(this.passwordHash),
     };
   }
 
@@ -173,6 +156,7 @@ async function saveRoom(room) {
         playbackRate: room.playbackRate,
         hostOnlyControls: room.hostOnlyControls ?? false,
         strictVideoUrlMode: room.strictVideoUrlMode ?? false,
+        passwordHash: room.passwordHash || "",
         messages: room.messages || [],
       },
       { ex: 86400 },
@@ -212,7 +196,7 @@ const clientMeta = new Map();
 
 io.on("connection", (socket) => {
   socket.on("JOIN_ROOM", async (msg) => {
-    const { roomId, token, clientId, videoUrl, username } = msg;
+    const { roomId, token, clientId, videoUrl, username, password } = msg;
     let room = rooms.get(roomId);
 
     if (!room && redis) {
@@ -231,6 +215,7 @@ io.on("connection", (socket) => {
           room.playbackRate = stored.playbackRate ?? 1;
           room.hostOnlyControls = stored.hostOnlyControls ?? false;
           room.strictVideoUrlMode = stored.strictVideoUrlMode ?? false;
+          room.passwordHash = stored.passwordHash || "";
           room.messages = stored.messages || [];
           room.lastUpdated = stored.lastUpdated ?? Date.now();
           rooms.set(roomId, room);
@@ -260,6 +245,18 @@ io.on("connection", (socket) => {
       return;
     }
 
+    // Password check — host is always exempt
+    if (room.passwordHash && !isHost) {
+      const provided = password ? hashPassword(String(password)) : "";
+      if (provided !== room.passwordHash) {
+        socket.emit("REC:error", {
+          message: "Wrong password",
+          code: "WRONG_PASSWORD",
+        });
+        return;
+      }
+    }
+
     if (isHost && token === room.hostToken && room.hostId !== clientId) {
       const prevHostId = room.hostId;
       room.hostId = clientId;
@@ -282,7 +279,6 @@ io.on("connection", (socket) => {
       username,
     });
 
-    // Send full state to the joining client
     socket.emit("REC:host", room.publicState());
     socket.emit("REC:tsMap", room.tsMap);
     if (room.messages.length > 0)
@@ -291,19 +287,13 @@ io.on("connection", (socket) => {
         messages: room.messages,
       });
 
-    // Broadcast updated roster to everyone in the room.
-    // Also notify existing clients that someone new arrived so they can
-    // show a "X joined" toast (user_joined is emitted to others only).
     io.to(roomId).emit("REC:roster", room.getParticipants(clientMeta));
-    if (isNewParticipant) {
+    if (isNewParticipant)
       socket.to(roomId).emit("user_joined", { userId: clientId, username });
-    }
 
     if (!room.hostId) electNewHost(room);
   });
 
-  // handleCmd is only for playback control events. CMD:ts MUST bypass it —
-  // see that handler below for the reason why.
   const handleCmd = (socket) => {
     const meta = clientMeta.get(socket.id);
     if (!meta) return null;
@@ -313,12 +303,6 @@ io.on("connection", (socket) => {
     return { room, meta };
   };
 
-  // CMD:ts: record this client's current playback position.
-  //
-  // MUST NOT go through handleCmd(). handleCmd checks hostOnlyControls and
-  // returns null for viewers when it's enabled. That would silently drop all
-  // viewer timestamps → the server is blind to their positions → sync breaks.
-  // Timestamp reporting is always permitted regardless of room lock state.
   socket.on("CMD:ts", (rId, payload) => {
     const meta = clientMeta.get(socket.id);
     if (!meta) return;
@@ -351,10 +335,6 @@ io.on("connection", (socket) => {
     if (ctx) {
       ctx.room.paused = true;
       ctx.room.lastUpdated = Date.now();
-      // Store the exact timestamp the client was at when it paused so that
-      // any user who rejoins a paused room seeks to the correct position.
-      // Previously this handler accepted no arguments, leaving room.videoTS
-      // at a stale seek-position value.
       if (msg && typeof msg.videoTS === "number")
         ctx.room.videoTS = msg.videoTS;
       ctx.room.tsMap = {};
@@ -400,11 +380,6 @@ io.on("connection", (socket) => {
     if (meta?.isHost) {
       const room = rooms.get(meta.roomId);
       if (room) {
-        // Server-side strict video URL validation.
-        // When strictVideoUrlMode is enabled, reject any video URL whose
-        // pathname does not end with a recognised direct-video extension.
-        // This is a security backstop — the client validates first, but we
-        // never rely solely on client-side checks.
         if (room.strictVideoUrlMode && data.video) {
           if (!isStrictVideoUrl(data.video)) {
             socket.emit("REC:error", {
@@ -427,20 +402,6 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Toggle strict video URL mode — host only.
-  // When enabled, only direct video file links (.mp4, .webm, etc.) are
-  // accepted; YouTube, Vimeo, HLS and embed pages are rejected with a clear
-  // error message rather than a cryptic codec failure.
-  socket.on("CMD:strictVideoUrlMode", () => {
-    const meta = clientMeta.get(socket.id);
-    if (!meta?.isHost) return;
-    const room = rooms.get(meta.roomId);
-    if (!room) return;
-    room.strictVideoUrlMode = !room.strictVideoUrlMode;
-    io.to(room.roomId).emit("REC:host", room.publicState());
-    saveRoom(room);
-  });
-
   socket.on("CMD:subtitle", (url) => {
     const ctx = handleCmd(socket);
     if (ctx) {
@@ -460,7 +421,28 @@ io.on("connection", (socket) => {
     saveRoom(room);
   });
 
-  // Kick a viewer from the room. Only the host can do this.
+  socket.on("CMD:strictVideoUrlMode", () => {
+    const meta = clientMeta.get(socket.id);
+    if (!meta?.isHost) return;
+    const room = rooms.get(meta.roomId);
+    if (!room) return;
+    room.strictVideoUrlMode = !room.strictVideoUrlMode;
+    io.to(room.roomId).emit("REC:host", room.publicState());
+    saveRoom(room);
+  });
+
+  // Set/remove room password — host only
+  socket.on("CMD:setPassword", (msg) => {
+    const meta = clientMeta.get(socket.id);
+    if (!meta?.isHost) return;
+    const room = rooms.get(meta.roomId);
+    if (!room) return;
+    const pw = msg?.password ? String(msg.password).trim().slice(0, 64) : "";
+    room.passwordHash = pw ? hashPassword(pw) : "";
+    io.to(room.roomId).emit("REC:host", room.publicState());
+    saveRoom(room);
+  });
+
   socket.on("CMD:kick", (msg) => {
     const meta = clientMeta.get(socket.id);
     if (!meta?.isHost) return;
@@ -468,8 +450,6 @@ io.on("connection", (socket) => {
     if (!room) return;
     const { targetUserId } = msg || {};
     if (!targetUserId || targetUserId === meta.userId) return;
-
-    // Find the target's socket and disconnect them
     for (const [sid, m] of clientMeta.entries()) {
       if (m.roomId === meta.roomId && m.userId === targetUserId) {
         io.to(sid).emit("REC:error", {
@@ -493,6 +473,16 @@ io.on("connection", (socket) => {
     });
   });
 
+  // Typing indicators — broadcast to others in room only
+  socket.on("CMD:typing", () => {
+    const meta = clientMeta.get(socket.id);
+    if (!meta) return;
+    socket.to(meta.roomId).emit("user_typing", {
+      userId: meta.userId,
+      username: meta.username,
+    });
+  });
+
   socket.on("chat", (msg) => {
     const meta = clientMeta.get(socket.id);
     if (!meta) return;
@@ -506,8 +496,10 @@ io.on("connection", (socket) => {
         .slice(0, 500)
         .trim(),
       ts: Date.now(),
+      // Screenshot messages carry a dataUrl field
+      dataUrl: msg.dataUrl ? String(msg.dataUrl).slice(0, 300000) : undefined,
     };
-    if (chatMsg.text) {
+    if (chatMsg.text || chatMsg.dataUrl) {
       room.messages.push(chatMsg);
       if (room.messages.length > 200) room.messages = room.messages.slice(-200);
       io.to(meta.roomId).emit("chat", chatMsg);
@@ -519,12 +511,10 @@ io.on("connection", (socket) => {
     const meta = clientMeta.get(socket.id);
     if (!meta) return;
     const room = rooms.get(meta.roomId);
-
     if (room) {
       room.clients.delete(socket.id);
       room.joinOrder = room.joinOrder.filter((id) => id !== meta.userId);
       delete room.tsMap[meta.userId];
-
       if (room.clients.size === 0) {
         saveRoom(room);
         setTimeout(() => {
@@ -539,9 +529,7 @@ io.on("connection", (socket) => {
           username: meta.username,
           count: room.clients.size,
         });
-        // Re-broadcast the full roster so all clients have an accurate list.
         io.to(room.roomId).emit("REC:roster", room.getParticipants(clientMeta));
-
         if (meta.isHost) {
           setTimeout(() => {
             const r = rooms.get(meta.roomId);
@@ -555,7 +543,6 @@ io.on("connection", (socket) => {
         }
       }
     }
-
     clientMeta.delete(socket.id);
   });
 });

@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { onYTReady, useVideoHotkeys } from "./utils";
 import EmbedControls from "./EmbedControls";
+import ThumbnailPoster from "./ThumbnailPoster";
 
 export default function YouTubePlayer({
   videoRef,
@@ -16,6 +17,7 @@ export default function YouTubePlayer({
   onSpeed,
   canControl = true,
   chatOverlay,
+  onAmbiColors,
 }) {
   const containerRef = useRef(null);
   const iframeContainerRef = useRef(null);
@@ -29,6 +31,16 @@ export default function YouTubePlayer({
   const [ccEnabled, setCcEnabled] = useState(false);
   const [volume, setVolume] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  // YouTube thumbnails are free from the CDN — no server round-trip needed.
+  const thumbnailUrl = videoId
+    ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
+    : null;
+
+  // Ambilight: YouTube is cross-origin so canvas pixel reads are blocked.
+  // Clear any glow from a previous native video when YT player mounts.
+  useEffect(() => {
+    onAmbiColors?.(null);
+  }, [onAmbiColors]);
   const hideTimer = useRef(null);
 
   // Keep a ref that always holds the latest ccEnabled value.
@@ -284,6 +296,11 @@ export default function YouTubePlayer({
           <div className="w-10 h-10 rounded-full border-2 border-amber-500/20 border-t-amber-500 animate-spin" />
         </div>
       )}
+      <ThumbnailPoster
+        visible={!ready}
+        thumbnailUrl={thumbnailUrl}
+        subtitle="Loading YouTube…"
+      />
       {chatOverlay}
       <div className="absolute top-3 left-3 px-2 py-1 rounded-[2rem] bg-red-600/80 text-[10px] font-bold text-white backdrop-blur-sm z-20 pointer-events-none opacity-0 group-hover/yt:opacity-100 transition-opacity">
         YouTube

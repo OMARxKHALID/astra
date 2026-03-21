@@ -4,7 +4,6 @@ import { classifyUrl } from "@/lib/videoSource";
 import NativeVideoPlayer from "./NativeVideoPlayer";
 import YouTubePlayer from "./YouTubePlayer";
 import VimeoPlayer from "./VimeoPlayer";
-import { ExclamationIcon } from "./utils";
 
 export default function VideoPlayer({
   videoRef,
@@ -21,6 +20,10 @@ export default function VideoPlayer({
   chatOverlay,
   onLoad,
   onSubtitleChange,
+  onAmbiColors,
+  screenshotEnabled = true,
+  hlsQualityEnabled = true,
+  onSendScreenshot,
 }) {
   const source = classifyUrl(videoUrl);
 
@@ -42,6 +45,10 @@ export default function VideoPlayer({
         chatOverlay={chatOverlay}
         onLoad={onLoad}
         onSubtitleChange={onSubtitleChange}
+        onAmbiColors={onAmbiColors}
+        screenshotEnabled={screenshotEnabled}
+        hlsQualityEnabled={hlsQualityEnabled}
+        onSendScreenshot={onSendScreenshot}
       />
     );
 
@@ -60,6 +67,7 @@ export default function VideoPlayer({
         canControl={canControl}
         chatOverlay={chatOverlay}
         onLoad={onLoad}
+        onAmbiColors={onAmbiColors}
       />
     );
 
@@ -78,17 +86,40 @@ export default function VideoPlayer({
         canControl={canControl}
         chatOverlay={chatOverlay}
         onLoad={onLoad}
+        onAmbiColors={onAmbiColors}
       />
     );
 
   return (
-    <div className="relative w-full h-full bg-black flex flex-col items-center justify-center gap-3">
-      <ExclamationIcon className="w-10 h-10 text-muted/40" />
-      <p className="text-sm text-dim/50 text-center px-8 max-w-xs leading-relaxed">
-        {videoUrl
-          ? "Unsupported URL. Paste a direct MP4, HLS stream, YouTube, or Vimeo link."
-          : "No video loaded. Paste a URL above."}
-      </p>
+    <div className="relative w-full h-full bg-black flex flex-col items-center justify-center gap-4">
+      <div className="absolute inset-0 bg-gradient-to-br from-void via-surface/60 to-void" />
+      <div className="relative z-10 flex flex-col items-center gap-3 text-center px-8">
+        <div className="w-14 h-14 rounded-[2rem] bg-white/4 border border-white/8 flex items-center justify-center mb-1">
+          <svg
+            className="w-7 h-7 text-white/20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="2" y="2" width="20" height="20" rx="2.18" />
+            <line x1="7" y1="2" x2="7" y2="22" />
+            <line x1="17" y1="2" x2="17" y2="22" />
+            <line x1="2" y1="12" x2="22" y2="12" />
+            <line x1="2" y1="7" x2="7" y2="7" />
+            <line x1="2" y1="17" x2="7" y2="17" />
+            <line x1="17" y1="17" x2="22" y2="17" />
+            <line x1="17" y1="7" x2="22" y2="7" />
+          </svg>
+        </div>
+        <p className="text-sm text-dim/50 max-w-xs leading-relaxed">
+          {videoUrl
+            ? "Unsupported URL. Paste a direct MP4, HLS stream, YouTube, or Vimeo link."
+            : "No video loaded. Paste a URL above to start watching together."}
+        </p>
+      </div>
     </div>
   );
 }

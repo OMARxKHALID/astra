@@ -1,19 +1,31 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ChatBubbleIcon, SendIcon, CrownIcon, FilmIcon, LockSmallIcon, UnlockSmallIcon, CcIcon } from "./Icons";
+import {
+  ChatBubbleIcon,
+  SendIcon,
+  CrownIcon,
+  FilmIcon,
+  LockSmallIcon,
+  UnlockSmallIcon,
+  CcIcon,
+} from "./Icons";
 
 export default function ChatPanel({
   messages = [],
   userId,
   displayNames = {},
   onSend,
+  typingUsers = {}, // { userId: { username, ts } }
+  onTyping, // callback to notify parent user is typing
 }) {
   const [input, setInput] = useState("");
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const atBottomRef = useRef(true);
   const scrollRef = useRef(null);
+  const typingTimerRef = useRef(null);
+
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -21,10 +33,9 @@ export default function ChatPanel({
   }, []);
 
   useEffect(() => {
-    if (atBottomRef.current) {
+    if (atBottomRef.current)
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages]);
+  }, [messages, typingUsers]);
 
   function handleSubmit() {
     if (!input.trim()) return;
@@ -38,6 +49,21 @@ export default function ChatPanel({
       handleSubmit();
     }
   }
+
+  function handleInputChange(e) {
+    setInput(e.target.value);
+    // Debounced typing indicator
+    if (onTyping) {
+      onTyping();
+      clearTimeout(typingTimerRef.current);
+    }
+  }
+
+  // Active typers (exclude self, expire after 3s)
+  const now = Date.now();
+  const activeTypers = Object.entries(typingUsers)
+    .filter(([uid, d]) => uid !== userId && now - d.ts < 3000)
+    .map(([, d]) => d.username);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -54,6 +80,7 @@ export default function ChatPanel({
           </p>
         </div>
       </div>
+
       <div
         ref={scrollRef}
         onScroll={handleScroll}
@@ -68,7 +95,6 @@ export default function ChatPanel({
             </p>
           </div>
         )}
-
         {messages.map((msg, i) => (
           <ChatMessage
             key={`${msg.ts ?? i}-${i}`}
@@ -78,8 +104,28 @@ export default function ChatPanel({
           />
         ))}
 
+        {/* Typing indicator */}
+        {activeTypers.length > 0 && (
+          <div className="flex items-center gap-2 px-1">
+            <div className="flex gap-0.5">
+              {[0, 1, 2].map((i) => (
+                <span
+                  key={i}
+                  className="w-1 h-1 rounded-full bg-white/40 animate-bounce"
+                  style={{ animationDelay: `${i * 150}ms` }}
+                />
+              ))}
+            </div>
+            <span className="text-[10px] text-white/40 font-mono italic">
+              {activeTypers.length === 1
+                ? `${activeTypers[0]} is typing…`
+                : `${activeTypers.slice(0, -1).join(", ")} & ${activeTypers.at(-1)} are typing…`}
+            </span>
+          </div>
+        )}
         <div ref={bottomRef} className="h-2" />
       </div>
+
       <div className="px-5 py-4 border-t border-white/5 shrink-0">
         <div className="relative">
           <label htmlFor="chat-input" className="sr-only">
@@ -90,15 +136,14 @@ export default function ChatPanel({
             ref={inputRef}
             type="text"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder="Write a message…"
             maxLength={500}
             autoComplete="off"
             className="w-full bg-void/60 border border-white/6 rounded-full pl-5 pr-14 py-3.5
                        text-sm text-text placeholder:text-white/15 font-body outline-none
-                       transition-all duration-200
-                       focus:border-amber-500/25 focus:bg-void/90
+                       transition-all duration-200 focus:border-amber-500/25 focus:bg-void/90
                        focus:shadow-[0_0_0_1px_rgba(245,158,11,0.15)]"
           />
           <button
@@ -107,8 +152,7 @@ export default function ChatPanel({
             aria-label="Send message"
             className="absolute right-2.5 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center
                        rounded-[2rem] bg-amber-500 text-void transition-all duration-150
-                       hover:bg-amber-400 active:scale-90
-                       disabled:opacity-0 disabled:scale-75
+                       hover:bg-amber-400 active:scale-90 disabled:opacity-0 disabled:scale-75
                        shadow-md shadow-amber-500/20"
           >
             <SendIcon className="w-4 h-4" />
@@ -133,35 +177,68 @@ function ChatMessage({ msg, isOwn, displayNames = {} }) {
 
   if (msg.senderId === "system") {
     let icon = null;
-    let cleanText = msg.text;
-
-    if (msg.text.includes("[HOST]")) {
+    let cleanText = msg.text || "";
+    if (cleanText.includes("[HOST]")) {
       icon = <CrownIcon className="w-3 h-3 text-amber-500" />;
-      cleanText = msg.text.replace("[HOST]", "").trim();
-    } else if (msg.text.includes("[VIDEO]")) {
+      cleanText = cleanText.replace("[HOST]", "").trim();
+    } else if (cleanText.includes("[VIDEO]")) {
       icon = <FilmIcon className="w-3 h-3 text-jade" />;
-      cleanText = msg.text.replace("[VIDEO]", "").trim();
-    } else if (msg.text.includes("[SUBS]")) {
+      cleanText = cleanText.replace("[VIDEO]", "").trim();
+    } else if (cleanText.includes("[SUBS]")) {
       icon = <CcIcon className="w-3 h-3 text-jade" />;
-      cleanText = msg.text.replace("[SUBS]", "").trim();
-    } else if (msg.text.includes("[LOCK]")) {
+      cleanText = cleanText.replace("[SUBS]", "").trim();
+    } else if (cleanText.includes("[LOCK]")) {
       icon = <LockSmallIcon className="w-3 h-3 text-danger" />;
-      cleanText = msg.text.replace("[LOCK]", "").trim();
-    } else if (msg.text.includes("[UNLOCK]")) {
+      cleanText = cleanText.replace("[LOCK]", "").trim();
+    } else if (cleanText.includes("[UNLOCK]")) {
       icon = <UnlockSmallIcon className="w-3 h-3 text-jade" />;
-      cleanText = msg.text.replace("[UNLOCK]", "").trim();
+      cleanText = cleanText.replace("[UNLOCK]", "").trim();
     }
-
     return (
       <div className="flex justify-center">
         <div
           className="bg-void/60 px-4 py-1.5 rounded-full border border-white/5
-                        text-[10px] font-mono text-muted/70 uppercase tracking-wider
-                        flex items-center gap-2"
+                        text-[10px] font-mono text-muted/70 uppercase tracking-wider flex items-center gap-2"
         >
           {icon}
           {cleanText}
         </div>
+      </div>
+    );
+  }
+
+  // Screenshot message
+  if (msg.dataUrl) {
+    return (
+      <div
+        className={`flex flex-col gap-1 ${isOwn ? "items-end" : "items-start"}`}
+      >
+        {!isOwn && (
+          <span className="text-[10px] font-mono font-bold text-amber-500/40 px-1 uppercase tracking-widest">
+            {name}
+          </span>
+        )}
+        <div
+          className={`max-w-[90%] rounded-[1.5rem] overflow-hidden border ${isOwn ? "border-amber-500/30" : "border-white/10"}`}
+        >
+          <img
+            src={msg.dataUrl}
+            alt="Screenshot"
+            className="w-full block"
+            style={{ maxHeight: 200, objectFit: "cover" }}
+          />
+        </div>
+        {msg.text && (
+          <div
+            className={`max-w-[85%] px-3 py-2 rounded-[2rem] text-[12px] font-body leading-relaxed break-words border
+            ${isOwn ? "bg-amber-500 text-void border-transparent rounded-br-2xl" : "bg-white/5 border-white/6 text-white/90 rounded-bl-2xl"}`}
+          >
+            {msg.text}
+          </div>
+        )}
+        <span className="text-[10px] font-medium text-white/50 px-1 mt-0.5">
+          {time}
+        </span>
       </div>
     );
   }
@@ -177,11 +254,11 @@ function ChatMessage({ msg, isOwn, displayNames = {} }) {
       )}
       <div
         className={`max-w-[85%] px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-[2rem] text-[12px] sm:text-[13px] font-body leading-relaxed break-words border transition-colors duration-200
-          ${
-            isOwn
-              ? "bg-amber-500 text-void border-transparent rounded-br-2xl shadow-[0_4px_12px_-4px_rgba(245,158,11,0.5)] ring-1 ring-amber-400/50"
-              : "bg-white/5 border-white/6 text-white/90 rounded-bl-2xl hover:border-white/15"
-          }`}
+        ${
+          isOwn
+            ? "bg-amber-500 text-void border-transparent rounded-br-2xl shadow-[0_4px_12px_-4px_rgba(245,158,11,0.5)] ring-1 ring-amber-400/50"
+            : "bg-white/5 border-white/6 text-white/90 rounded-bl-2xl hover:border-white/15"
+        }`}
       >
         {msg.text}
       </div>

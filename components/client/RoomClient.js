@@ -10,6 +10,8 @@ import ParticipantList from "./ParticipantList";
 import SyncStatusIndicator from "./SyncStatusIndicator";
 import ReconnectBanner from "./ReconnectBanner";
 import ToastContainer, { useToast } from "./Toast";
+import SettingsPanel from "./SettingsPanel";
+import KeyboardShortcutsModal from "./KeyboardShortcutsModal";
 import {
   ShareIcon,
   CrownIcon,
@@ -25,7 +27,10 @@ import {
   UsersIcon,
   ShieldIcon,
   SeekIcon,
+  SettingsGearIcon,
+  KeyboardIcon,
 } from "./Icons";
+import { getLeaderTime } from "@/lib/sync";
 
 const MAX_MESSAGES = 200;
 
@@ -33,19 +38,22 @@ export default function RoomClient({ roomId, initialMeta }) {
   const router = useRouter();
   const { toasts, addToast } = useToast();
 
+  // ── Identity — use localStorage so userId persists across tab closes ──
   const [userId] = useState(() => {
     if (typeof window === "undefined") return "";
     const key = "wt_userId";
-    const stored = sessionStorage.getItem(key);
-    if (stored) return stored;
+    const stored = localStorage.getItem(key) || sessionStorage.getItem(key);
+    if (stored) {
+      localStorage.setItem(key, stored); // migrate from sessionStorage
+      return stored;
+    }
     const id = crypto.randomUUID();
-    sessionStorage.setItem(key, id);
+    localStorage.setItem(key, id);
     return id;
   });
 
   const [displayName, setDisplayName] = useState("");
   const [nameReady, setNameReady] = useState(false);
-
   useEffect(() => {
     const stored = localStorage.getItem("wt_displayName");
     const name =
@@ -68,6 +76,7 @@ export default function RoomClient({ roomId, initialMeta }) {
     setEditingName(false);
   }, []);
 
+  // ── Core room state ───────────────────────────────────────────────────
   const [serverState, setServerState] = useState(null);
   const [syncStatus, setSyncStatus] = useState("synced");
   const [connStatus, setConnStatus] = useState("connecting");
@@ -75,10 +84,49 @@ export default function RoomClient({ roomId, initialMeta }) {
   const [displayNames, setDisplayNames] = useState({});
   const [messages, setMessages] = useState([]);
   const [mobileSheet, setMobileSheet] = useState(null);
-
+  const [tsMapState, setTsMapState] = useState({});
+  const [typingUsers, setTypingUsers] = useState({}); // { userId: { username, ts } }
+  const typingTimersRef = useRef({});
   const displayNamesRef = useRef(displayNames);
   displayNamesRef.current = displayNames;
 
+  // ── Password ──────────────────────────────────────────────────────────
+  const [roomPassword, setRoomPassword] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem(`pw_${roomId}`) || "";
+  });
+
+  // ── Settings ─────────────────────────────────────────────────────────
+  const [screenshotEnabled, setScreenshotEnabled] = useState(() =>
+    typeof window !== "undefined"
+      ? localStorage.getItem("wt_screenshot") !== "false"
+      : true,
+  );
+  const [hlsQualityEnabled, setHlsQualityEnabled] = useState(() =>
+    typeof window !== "undefined"
+      ? localStorage.getItem("wt_hlsquality") !== "false"
+      : true,
+  );
+  const [ambiEnabled, setAmbiEnabled] = useState(() =>
+    typeof window !== "undefined"
+      ? localStorage.getItem("wt_ambi") !== "false"
+      : true,
+  );
+  const [speedSyncEnabled, setSpeedSyncEnabled] = useState(true);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem("wt_screenshot", screenshotEnabled ? "true" : "false");
+  }, [screenshotEnabled]);
+  useEffect(() => {
+    localStorage.setItem("wt_hlsquality", hlsQualityEnabled ? "true" : "false");
+  }, [hlsQualityEnabled]);
+  useEffect(() => {
+    localStorage.setItem("wt_ambi", ambiEnabled ? "true" : "false");
+  }, [ambiEnabled]);
+
+  // ── Sidebar ───────────────────────────────────────────────────────────
   const [showSidebar, setShowSidebar] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(300);
   const isDraggingSidebar = useRef(false);
@@ -107,8 +155,7 @@ export default function RoomClient({ roomId, initialMeta }) {
     const handleMove = (e) => {
       if (!isDraggingSidebar.current) return;
       const dx = startX.current - e.clientX;
-      const newWidth = Math.max(250, Math.min(startWidth.current + dx, 600));
-      setSidebarWidth(newWidth);
+      setSidebarWidth(Math.max(250, Math.min(startWidth.current + dx, 600)));
     };
     window.addEventListener("mouseup", handleUp);
     window.addEventListener("mousemove", handleMove);
@@ -118,24 +165,51 @@ export default function RoomClient({ roomId, initialMeta }) {
     };
   }, []);
 
+  // ── Fullscreen / chat overlay ─────────────────────────────────────────
   const [playerChatOpen, setPlayerChatOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
-
   useEffect(() => {
     const onFS = () => {
       setIsFullscreen(!!document.fullscreenElement);
-      if (!document.fullscreenElement) {
-        setPlayerChatOpen(false);
-      }
+      if (!document.fullscreenElement) setPlayerChatOpen(false);
     };
     document.addEventListener("fullscreenchange", onFS);
     return () => document.removeEventListener("fullscreenchange", onFS);
   }, []);
 
+  // Global ? shortcut for keyboard help
+  useEffect(() => {
+    const handler = (e) => {
+      if (["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(e.target.tagName))
+        return;
+      if (e.target.isContentEditable) return;
+      if (e.key === "?") setShowShortcuts((v) => !v);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
   const videoRef = useRef(null);
 
+  // Ambilight
+  const bentoVideoRef = useRef(null);
+  const handleAmbiColors = useCallback((colors) => {
+    if (!bentoVideoRef.current) return;
+    if (!colors) {
+      bentoVideoRef.current.style.boxShadow = "";
+      return;
+    }
+    const { r, g, b } = colors;
+    bentoVideoRef.current.style.boxShadow = `0 0 80px 30px rgba(${r},${g},${b},0.18), inset 0 1px 0 rgba(255,255,255,0.055)`;
+  }, []);
+
+  // ── Handlers ──────────────────────────────────────────────────────────
   const handleStateUpdate = useCallback((stOrFn) => setServerState(stOrFn), []);
+
+  const handleTsMapUpdate = useCallback((data) => {
+    setTsMapState({ ...data });
+  }, []);
 
   const handleChatMessage = useCallback(
     (msg) => {
@@ -143,52 +217,57 @@ export default function RoomClient({ roomId, initialMeta }) {
         setMessages(msg.messages || []);
         return;
       }
-      if (!msg.text && msg.type !== "chat_history" && msg.senderId !== "system")
+      if (
+        !msg.text &&
+        !msg.dataUrl &&
+        msg.type !== "chat_history" &&
+        msg.senderId !== "system"
+      )
         return;
 
       if (msg.senderId === "system") {
-        let icon = null;
-        let type = "info";
-        let cleanText = msg.text;
-        if (msg.text.includes("[HOST]")) {
+        let icon = null,
+          type = "info",
+          cleanText = msg.text || "";
+        if (cleanText.includes("[HOST]")) {
           icon = <CrownIcon className="w-4 h-4 text-amber-500" />;
-          cleanText = msg.text.replace("[HOST]", "").trim();
-        } else if (msg.text.includes("[VIDEO]")) {
+          cleanText = cleanText.replace("[HOST]", "").trim();
+        } else if (cleanText.includes("[VIDEO]")) {
           icon = <FilmIcon className="w-4 h-4 text-jade" />;
-          cleanText = msg.text.replace("[VIDEO]", "").trim();
+          cleanText = cleanText.replace("[VIDEO]", "").trim();
           type = "success";
-        } else if (msg.text.includes("[SUBS]")) {
+        } else if (cleanText.includes("[SUBS]")) {
           icon = <CcIcon className="w-4 h-4 text-jade" />;
-          cleanText = msg.text.replace("[SUBS]", "").trim();
+          cleanText = cleanText.replace("[SUBS]", "").trim();
           type = "success";
-        } else if (msg.text.includes("[SHIELD]")) {
-          icon = <ShieldIcon className="w-4 h-4 text-amber-500" />;
-          cleanText = msg.text.replace("[SHIELD]", "").trim();
+        } else if (cleanText.includes("[LOCK]")) {
+          icon = <LockSmallIcon className="w-4 h-4 text-amber-400" />;
+          cleanText = cleanText.replace("[LOCK]", "").trim();
           type = "info";
-        } else if (msg.text.includes("[LOCK]")) {
-          icon = <LockSmallIcon className="w-4 h-4 text-danger" />;
-          cleanText = msg.text.replace("[LOCK]", "").trim();
-          type = "error";
-        } else if (msg.text.includes("[UNLOCK]")) {
+        } else if (cleanText.includes("[UNLOCK]")) {
           icon = <UnlockSmallIcon className="w-4 h-4 text-jade" />;
-          cleanText = msg.text.replace("[UNLOCK]", "").trim();
+          cleanText = cleanText.replace("[UNLOCK]", "").trim();
           type = "success";
-        } else if (msg.text.includes("[STRICT]")) {
-          icon = <ShieldIcon className="w-4 h-4 text-danger" />;
-          cleanText = msg.text.replace("[STRICT]", "").trim();
-          type = "error";
-        } else if (msg.text.includes("[SEEK]")) {
-          icon = <SeekIcon className="w-4 h-4 text-amber-500" />;
-          cleanText = msg.text.replace("[SEEK]", "").trim();
+        } else if (cleanText.includes("[STRICT_ON]")) {
+          icon = <ShieldIcon className="w-4 h-4 text-jade" />;
+          cleanText = cleanText.replace("[STRICT_ON]", "").trim();
+          type = "success";
+        } else if (cleanText.includes("[STRICT_OFF]")) {
+          icon = <ShieldIcon className="w-4 h-4 text-white/40" />;
+          cleanText = cleanText.replace("[STRICT_OFF]", "").trim();
           type = "info";
+        } else if (cleanText.includes("[STRICT]")) {
+          icon = <ShieldIcon className="w-4 h-4 text-danger" />;
+          cleanText = cleanText.replace("[STRICT]", "").trim();
+          type = "error";
+        } else if (cleanText.includes("[SEEK]")) {
+          icon = <SeekIcon className="w-4 h-4 text-amber-400" />;
+          cleanText = cleanText.replace("[SEEK]", "").trim();
         }
         addToast(cleanText, type, 4000, icon);
         return;
       }
-      setMessages((prev) => {
-        const next = [...prev, msg].slice(-MAX_MESSAGES);
-        return next;
-      });
+      setMessages((prev) => [...prev, msg].slice(-MAX_MESSAGES));
       const isMobile =
         typeof window !== "undefined" && window.innerWidth < 1024;
       const isVisible = document.fullscreenElement
@@ -196,9 +275,7 @@ export default function RoomClient({ roomId, initialMeta }) {
         : isMobile
           ? mobileSheet === "chat"
           : showSidebar;
-      if (!isVisible && msg.type !== "chat_history") {
-        setUnreadCount((prev) => prev + 1);
-      }
+      if (!isVisible) setUnreadCount((prev) => prev + 1);
     },
     [mobileSheet, showSidebar, playerChatOpen, addToast],
   );
@@ -230,21 +307,36 @@ export default function RoomClient({ roomId, initialMeta }) {
               ...prev,
               [event.userId]: event.username,
             }));
-            if (event.userId !== userId) {
+            if (event.userId !== userId)
               addToast(`${event.username} joined!`, "info");
-            }
           }
           break;
-        case "user_left":
-          const leaverName = displayNamesRef.current[event.userId] || "Someone";
+        case "user_left": {
+          const name = displayNamesRef.current[event.userId] || "Someone";
           setParticipants((prev) => prev.filter((id) => id !== event.userId));
-          addToast(`${leaverName} left.`, "info");
+          addToast(`${name} left.`, "info");
           break;
+        }
         case "name_changed":
           setDisplayNames((prev) => ({
             ...prev,
             [event.userId]: event.username,
           }));
+          break;
+        case "user_typing":
+          setTypingUsers((prev) => ({
+            ...prev,
+            [event.userId]: { username: event.username, ts: Date.now() },
+          }));
+          // Auto-expire after 3.5s
+          clearTimeout(typingTimersRef.current[event.userId]);
+          typingTimersRef.current[event.userId] = setTimeout(() => {
+            setTypingUsers((prev) => {
+              const n = { ...prev };
+              delete n[event.userId];
+              return n;
+            });
+          }, 3500);
           break;
       }
     },
@@ -255,7 +347,7 @@ export default function RoomClient({ roomId, initialMeta }) {
     router.push("/?kicked=1");
   }, [router]);
   const handleSendChat = useCallback(
-    (text) => sendRef.current?.({ type: "chat", text }),
+    (text, dataUrl) => sendRef.current?.({ type: "chat", text, dataUrl }),
     [],
   );
   const handleLoadUrl = useCallback(
@@ -271,6 +363,11 @@ export default function RoomClient({ roomId, initialMeta }) {
     (subUrl) => sendRef.current?.({ type: "set_subtitle", url: subUrl }),
     [],
   );
+  const handleTyping = useCallback(
+    () => sendRef.current?.({ type: "typing" }),
+    [],
+  );
+
   const handlePlay = useCallback((time) => {
     setServerState((s) => ({
       ...(s || {}),
@@ -309,15 +406,20 @@ export default function RoomClient({ roomId, initialMeta }) {
     () => sendRef.current?.({ type: "toggle_host_controls" }),
     [],
   );
-  const handleToggleStrictVideoUrlMode = useCallback(
+  const handleToggleStrictMode = useCallback(
     () => sendRef.current?.({ type: "toggle_strict_video_url_mode" }),
+    [],
+  );
+  const handleSetPassword = useCallback(
+    (pw) => sendRef.current?.({ type: "set_password", password: pw }),
     [],
   );
 
   const handleShare = useCallback(() => {
     addToast("Link copied!", "success");
-    const shareUrl = `${window.location.origin}/room/${roomId}`;
-    navigator.clipboard?.writeText(shareUrl).catch(() => {});
+    navigator.clipboard
+      ?.writeText(`${window.location.origin}/room/${roomId}`)
+      .catch(() => {});
   }, [addToast, roomId]);
 
   const hostToken = useMemo(() => {
@@ -325,6 +427,7 @@ export default function RoomClient({ roomId, initialMeta }) {
     return localStorage.getItem(`host_${roomId}`) || "";
   }, [roomId]);
 
+  // ── Derived state ─────────────────────────────────────────────────────
   const isHost = serverState?.hostId === userId;
   const hostId = serverState?.hostId ?? null;
   const isPlaying = serverState?.isPlaying ?? false;
@@ -337,8 +440,17 @@ export default function RoomClient({ roomId, initialMeta }) {
     serverState?.subtitleUrl ?? initialMeta?.subtitleUrl ?? "";
   const hostOnlyControls = serverState?.hostOnlyControls ?? false;
   const strictVideoUrlMode = serverState?.strictVideoUrlMode ?? false;
+  const hasPassword = serverState?.hasPassword ?? false;
   const canControl = !hostOnlyControls || isHost;
 
+  // Connection quality leader time
+  const leaderTime = useMemo(() => getLeaderTime(tsMapState), [tsMapState]);
+
+  // Speed sync: apply host's playbackRate to all viewers when speedSyncEnabled
+  // (server already broadcasts playbackRate in REC:host; the video player
+  //  applies it via the playbackRate prop — this is already handled)
+
+  // ── Chat overlay (fullscreen) ─────────────────────────────────────────
   const chatOverlay = isFullscreen ? (
     <div className="absolute top-3 right-4 sm:top-4 sm:right-6 lg:right-4 z-30 flex flex-col items-end pointer-events-none">
       <button
@@ -380,6 +492,8 @@ export default function RoomClient({ roomId, initialMeta }) {
               userId={userId}
               displayNames={displayNames}
               onSend={handleSendChat}
+              typingUsers={typingUsers}
+              onTyping={handleTyping}
             />
           </div>
         </div>
@@ -393,6 +507,7 @@ export default function RoomClient({ roomId, initialMeta }) {
         aria-hidden
         className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(ellipse_at_15%_20%,rgba(245,158,11,0.07),transparent_50%),radial-gradient(ellipse_at_85%_80%,rgba(16,185,129,0.05),transparent_50%)]"
       />
+
       {userId && nameReady && (
         <SyncEngine
           roomId={roomId}
@@ -409,10 +524,14 @@ export default function RoomClient({ roomId, initialMeta }) {
           onConnStatus={setConnStatus}
           onKicked={handleKicked}
           sendRef={sendRef}
+          onTsMapUpdate={handleTsMapUpdate}
+          roomPassword={roomPassword}
         />
       )}
+
       <ReconnectBanner connStatus={connStatus} />
       <ToastContainer toasts={toasts} />
+
       <RoomNavbar
         roomId={roomId}
         displayName={displayName}
@@ -432,15 +551,22 @@ export default function RoomClient({ roomId, initialMeta }) {
         hostOnlyControls={hostOnlyControls}
         handleToggleHostControls={handleToggleHostControls}
         strictVideoUrlMode={strictVideoUrlMode}
-        handleToggleStrictVideoUrlMode={handleToggleStrictVideoUrlMode}
+        handleToggleStrictMode={handleToggleStrictMode}
         handleShare={handleShare}
         router={router}
+        onOpenSettings={() => setShowSettings(true)}
+        onOpenShortcuts={() => setShowShortcuts(true)}
+        hasPassword={hasPassword}
       />
+
       <main
         className={`relative z-10 flex-1 min-h-0 min-w-0 bento-grid px-2 sm:px-4 pb-2 sm:pb-4 ${showSidebar ? "sidebar-open" : "sidebar-closed"}`}
         style={{ "--sidebar-width": `${sidebarWidth}px` }}
       >
-        <section className="bento-video glass-card overflow-hidden">
+        <section
+          ref={bentoVideoRef}
+          className="bento-video glass-card overflow-hidden"
+        >
           <VideoPlayer
             videoRef={videoRef}
             videoUrl={videoUrl}
@@ -456,6 +582,13 @@ export default function RoomClient({ roomId, initialMeta }) {
             chatOverlay={chatOverlay}
             onLoad={handleLoadUrl}
             onSubtitleChange={handleSubtitleChange}
+            onAmbiColors={handleAmbiColors}
+            screenshotEnabled={screenshotEnabled}
+            hlsQualityEnabled={hlsQualityEnabled}
+            ambiEnabled={ambiEnabled}
+            onSendScreenshot={(dataUrl) =>
+              handleSendChat("📸 Screenshot", dataUrl)
+            }
           />
         </section>
         <section className="bento-url glass-card">
@@ -481,6 +614,8 @@ export default function RoomClient({ roomId, initialMeta }) {
                 userId={userId}
                 displayNames={displayNames}
                 onSend={handleSendChat}
+                typingUsers={typingUsers}
+                onTyping={handleTyping}
               />
             </div>
             <div className="flex-1 min-h-0 glass-card overflow-hidden flex flex-col">
@@ -491,11 +626,15 @@ export default function RoomClient({ roomId, initialMeta }) {
                 isHost={isHost}
                 displayNames={displayNames}
                 onKick={handleKick}
+                tsMap={tsMapState}
+                leaderTime={leaderTime}
               />
             </div>
           </aside>
         )}
       </main>
+
+      {/* Mobile tab bar */}
       <div className="lg:hidden shrink-0 relative z-20 flex items-center justify-around px-6 py-3 pb-safe border-t border-white/5 bg-void/85 backdrop-blur-xl">
         <MobileTabBtn
           label={`Chat${unreadCount > 0 ? ` (${unreadCount})` : ""}`}
@@ -533,6 +672,8 @@ export default function RoomClient({ roomId, initialMeta }) {
           />
         )}
       </div>
+
+      {/* Mobile sheet */}
       {mobileSheet && (
         <>
           <div
@@ -558,6 +699,8 @@ export default function RoomClient({ roomId, initialMeta }) {
                   userId={userId}
                   displayNames={displayNames}
                   onSend={handleSendChat}
+                  typingUsers={typingUsers}
+                  onTyping={handleTyping}
                 />
               )}
               {mobileSheet === "users" && (
@@ -568,12 +711,41 @@ export default function RoomClient({ roomId, initialMeta }) {
                   isHost={isHost}
                   displayNames={displayNames}
                   onKick={handleKick}
+                  tsMap={tsMapState}
+                  leaderTime={leaderTime}
                 />
               )}
             </div>
           </div>
         </>
       )}
+
+      {/* Settings panel */}
+      <SettingsPanel
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        isHost={isHost}
+        hostOnlyControls={hostOnlyControls}
+        strictVideoUrlMode={strictVideoUrlMode}
+        screenshotEnabled={screenshotEnabled}
+        setScreenshotEnabled={setScreenshotEnabled}
+        hlsQualityEnabled={hlsQualityEnabled}
+        setHlsQualityEnabled={setHlsQualityEnabled}
+        speedSyncEnabled={speedSyncEnabled}
+        setSpeedSyncEnabled={setSpeedSyncEnabled}
+        onToggleHostControls={handleToggleHostControls}
+        onToggleStrictVideoUrlMode={handleToggleStrictMode}
+        hasPassword={hasPassword}
+        onSetPassword={handleSetPassword}
+        ambiEnabled={ambiEnabled}
+        setAmbiEnabled={setAmbiEnabled}
+      />
+
+      {/* Keyboard shortcuts modal */}
+      <KeyboardShortcutsModal
+        isOpen={showShortcuts}
+        onClose={() => setShowShortcuts(false)}
+      />
     </div>
   );
 }
@@ -597,9 +769,12 @@ function RoomNavbar({
   hostOnlyControls,
   handleToggleHostControls,
   strictVideoUrlMode,
-  handleToggleStrictVideoUrlMode,
+  handleToggleStrictMode,
   handleShare,
   router,
+  onOpenSettings,
+  onOpenShortcuts,
+  hasPassword,
 }) {
   return (
     <nav className="relative z-10 shrink-0 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2">
@@ -617,6 +792,14 @@ function RoomNavbar({
         </button>
         <div className="flex items-center gap-2 px-2.5 py-2 rounded-[2rem] glass-card text-[10px] font-mono uppercase tracking-[0.2em] shrink-0">
           <span className="w-1.5 h-1.5 rounded-full bg-jade/70 animate-pulse" />
+          {hasPassword && (
+            <span
+              title="Password protected"
+              className="text-amber-400/60 text-[9px]"
+            >
+              🔒
+            </span>
+          )}
           <span className="text-white/70 font-black hidden xs:inline">
             {roomId}
           </span>
@@ -658,6 +841,7 @@ function RoomNavbar({
             </button>
           ))}
       </div>
+
       <div className="flex items-center gap-2 shrink-0">
         <button
           onClick={() => {
@@ -681,53 +865,23 @@ function RoomNavbar({
           />
         </div>
 
-        {/* Host-only playback lock */}
-        {isHost ? (
-          <button
-            onClick={handleToggleHostControls}
-            title={
-              hostOnlyControls
-                ? "Unlock playback for everyone"
-                : "Lock playback to host only"
-            }
-            className={`w-9 h-9 flex items-center justify-center rounded-[2rem] glass-card transition-all active:scale-95 ${hostOnlyControls ? "text-amber-400 border-amber-500/30" : "text-muted hover:text-white/80"}`}
-          >
-            {hostOnlyControls ? (
-              <LockIcon className="w-4 h-4" />
-            ) : (
-              <UnlockIcon className="w-4 h-4" />
-            )}
-          </button>
-        ) : hostOnlyControls ? (
-          <div
-            title="Host-only playback controls"
-            className="w-9 h-9 flex items-center justify-center rounded-[2rem] glass-card text-amber-400/60 border-amber-500/20"
-          >
-            <LockIcon className="w-4 h-4" />
-          </div>
-        ) : null}
+        {/* Keyboard shortcuts */}
+        <button
+          onClick={onOpenShortcuts}
+          title="Keyboard shortcuts (?)"
+          className="w-9 h-9 flex items-center justify-center rounded-[2rem] glass-card text-muted hover:text-white/80 transition-all active:scale-95"
+        >
+          <KeyboardIcon className="w-4 h-4" />
+        </button>
 
-        {/* Strict video URL mode toggle — host only; viewers see a read-only indicator */}
-        {isHost ? (
-          <button
-            onClick={handleToggleStrictVideoUrlMode}
-            title={
-              strictVideoUrlMode
-                ? "Strict URL mode ON — click to allow all URLs"
-                : "Strict URL mode OFF — click to allow direct video files only"
-            }
-            className={`w-9 h-9 flex items-center justify-center rounded-[2rem] glass-card transition-all active:scale-95 ${strictVideoUrlMode ? "text-jade border-jade/30" : "text-muted hover:text-white/80"}`}
-          >
-            <ShieldIcon className="w-4 h-4" />
-          </button>
-        ) : strictVideoUrlMode ? (
-          <div
-            title="Strict URL mode — only direct video file links are accepted"
-            className="w-9 h-9 flex items-center justify-center rounded-[2rem] glass-card text-jade/60 border-jade/20"
-          >
-            <ShieldIcon className="w-4 h-4" />
-          </div>
-        ) : null}
+        {/* Settings */}
+        <button
+          onClick={onOpenSettings}
+          title="Room settings"
+          className="w-9 h-9 flex items-center justify-center rounded-[2rem] glass-card text-muted hover:text-white/80 transition-all active:scale-95"
+        >
+          <SettingsGearIcon className="w-4 h-4" />
+        </button>
 
         <button
           onClick={handleShare}
