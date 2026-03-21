@@ -18,6 +18,8 @@ export default function VimeoPlayer({
   canControl = true,
   chatOverlay,
   onAmbiColors,
+  theatreMode = false,
+  onToggleTheatre,
 }) {
   const containerRef = useRef(null);
   const iframeRef = useRef(null);
@@ -274,6 +276,8 @@ export default function VimeoPlayer({
         canControl={canControl}
         onFullscreen={handleFullscreen}
         isFullscreen={isFullscreen}
+        theatreMode={theatreMode}
+        onToggleTheatre={onToggleTheatre}
       />
     </div>
   );

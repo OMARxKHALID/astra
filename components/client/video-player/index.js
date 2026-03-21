@@ -25,6 +25,8 @@ export default function VideoPlayer({
   hlsQualityEnabled = true,
   onSendScreenshot,
   addToast,
+  theatreMode = false,
+  onToggleTheatre,
 }) {
   const source = classifyUrl(videoUrl);
 
@@ -51,6 +53,8 @@ export default function VideoPlayer({
         hlsQualityEnabled={hlsQualityEnabled}
         onSendScreenshot={onSendScreenshot}
         addToast={addToast}
+        theatreMode={theatreMode}
+        onToggleTheatre={onToggleTheatre}
       />
     );
 
@@ -70,6 +74,8 @@ export default function VideoPlayer({
         chatOverlay={chatOverlay}
         onLoad={onLoad}
         onAmbiColors={onAmbiColors}
+        theatreMode={theatreMode}
+        onToggleTheatre={onToggleTheatre}
       />
     );
 
@@ -89,9 +95,12 @@ export default function VideoPlayer({
         chatOverlay={chatOverlay}
         onLoad={onLoad}
         onAmbiColors={onAmbiColors}
+        theatreMode={theatreMode}
+        onToggleTheatre={onToggleTheatre}
       />
     );
 
+  // Empty / unsupported state
   return (
     <div className="relative w-full h-full bg-black flex flex-col items-center justify-center gap-4">
       <div className="absolute inset-0 bg-gradient-to-br from-void via-surface/60 to-void" />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ShieldIcon, LockIcon, UnlockIcon, TheatreIcon } from "./Icons";
+import { ShieldIcon, LockIcon, UnlockIcon } from "./Icons";
 
 // ─── Toggle switch ────────────────────────────────────────────────────────────
 function Toggle({ enabled, onToggle, disabled = false }) {
@@ -72,8 +72,6 @@ export default function SettingsPanel({
   setHlsQualityEnabled,
   speedSyncEnabled,
   setSpeedSyncEnabled,
-  theatreMode,
-  onToggleTheatre,
 }) {
   const panelRef = useRef(null);
   const [pwInput, setPwInput] = useState("");
@@ -259,17 +257,6 @@ export default function SettingsPanel({
               )}
             </div>
           )}
-
-          {/* ── View ── */}
-          <Section>View</Section>
-
-          <Row
-            label="Theatre mode"
-            description="Full-screen video, dim everything else (T)"
-            enabled={theatreMode}
-            onToggle={onToggleTheatre}
-            icon={<TheatreIcon className="w-4 h-4" />}
-          />
 
           {/* ── Player ── */}
           <Section>Player</Section>

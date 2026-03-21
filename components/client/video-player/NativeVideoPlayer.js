@@ -15,6 +15,7 @@ import {
   CcIcon,
   SearchIcon,
   SettingsIcon,
+  TheatreIcon,
 } from "../Icons";
 
 export default function NativeVideoPlayer({
@@ -38,6 +39,8 @@ export default function NativeVideoPlayer({
   hlsQualityEnabled = true,
   onSendScreenshot,
   addToast,
+  theatreMode = false,
+  onToggleTheatre,
 }) {
   const [localTime, setLocalTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -496,10 +499,34 @@ export default function NativeVideoPlayer({
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
               </button>
             )}
+            <div className="flex items-center gap-1.5 ml-1">
+              {onToggleTheatre && (
+                <button
+                  onClick={onToggleTheatre}
+                  title={theatreMode ? "Exit theatre mode (T)" : "Theatre mode (T)"}
+                  className={`w-9 h-9 flex items-center justify-center rounded-[2rem] border transition-all active:scale-95
+                    ${
+                      theatreMode
+                        ? "bg-amber-500/20 text-amber-400 border-amber-500/30"
+                        : "bg-white/8 hover:bg-white/18 text-white border-white/8"
+                    }`}
+                >
+                  <TheatreIcon className="w-4 h-4" />
+                </button>
+              )}
 
-            <button onClick={handleFullscreen} className="w-9 h-9 flex items-center justify-center rounded-[2rem] bg-white/8 hover:bg-white/18 text-white">
-              {fullscreen ? <CompressIcon className="w-4 h-4" /> : <ExpandIcon className="w-4 h-4" />}
-            </button>
+              <button
+                onClick={handleFullscreen}
+                title={fullscreen ? "Exit fullscreen" : "Fullscreen"}
+                className="w-9 h-9 flex items-center justify-center rounded-[2rem] bg-white/8 hover:bg-white/18 border border-white/8 text-white transition-all active:scale-95"
+              >
+                {fullscreen ? (
+                  <CompressIcon className="w-4 h-4" />
+                ) : (
+                  <ExpandIcon className="w-4 h-4" />
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
