@@ -151,6 +151,14 @@
     }
   }
 
+  /* When fullscreen: video fills entire grid, no URL bar, no gap */
+  .bento-grid.\!p-0 {
+    gap: 0;
+    grid-template-areas: "video";
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+  }
+
   .bento-video {
     grid-area: video;
     min-width: 0;

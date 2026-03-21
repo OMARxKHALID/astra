@@ -33,12 +33,11 @@ export default function NativeVideoPlayer({
   chatOverlay,
   onLoad,
   onSubtitleChange,
-  // Ambilight: callback receives {r,g,b} or null
   onAmbiColors,
-  ambiEnabled = true,
   screenshotEnabled = true,
   hlsQualityEnabled = true,
   onSendScreenshot,
+  addToast,
 }) {
   const [localTime, setLocalTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -59,16 +58,10 @@ export default function NativeVideoPlayer({
   const [posterVisible, setPosterVisible] = useState(true);
   const [isPip, setIsPip] = useState(false);
   const [canPip, setCanPip] = useState(false);
-  // HLS quality indicator: { level: string, bitrate: string }
   const [hlsQuality, setHlsQuality] = useState(null);
-  const [recentSubs, setRecentSubs] = useState([]);
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("wt_recentSubs");
-      if (saved) setRecentSubs(JSON.parse(saved));
-    } catch {}
-  }, []);
+  const [recentSubs, setRecentSubs] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("wt_recentSubs") || "[]"); } catch { return []; }
+  });
 
   const [subStyle, setSubStyle] = useState({
     fontSize: 100, color: "#ffffff", background: "rgba(0,0,0,0)",
@@ -77,8 +70,7 @@ export default function NativeVideoPlayer({
   const containerRef = useRef(null);
   const hideTimer    = useRef(null);
   const seekingRef   = useRef(false);
-  const hlsRef       = useRef(null); // keep hls instance for quality reading
-  // Ambilight internals
+  const hlsRef       = useRef(null);
   const canvasRef       = useRef(null);
   const ambiRafRef      = useRef(null);
   const ambiCurrentRef  = useRef({ r: 0, g: 0, b: 0 });
@@ -113,7 +105,6 @@ export default function NativeVideoPlayer({
       hls.attachMedia(v);
       v.dataset.lastUrl = videoUrl;
 
-      // HLS quality indicator
       hls.on(Hls.Events.LEVEL_SWITCHED, (_, data) => {
         const level = hls.levels[data.level];
         if (level) {
@@ -124,31 +115,29 @@ export default function NativeVideoPlayer({
       });
 
       hls.on(Hls.Events.ERROR, (_, d) => {
-        if (d.fatal) setVideoError(`HLS Stream Error: ${d.details || d.type || "Fatal Connection Error"}`);
+        if (d.fatal) setVideoError({
+          title: "Stream Error",
+          detail: `HLS stream failed: ${d.details || d.type || "Fatal connection error"}.`,
+        });
       });
     })();
     return () => { hls?.destroy(); hlsRef.current = null; setHlsQuality(null); };
   }, [videoUrl, sourceType, videoRef]);
 
-  // Apply server-commanded playbackRate to the video element
-  // This was missing — the SpeedPicker showed the right value but the video ignored it
   useEffect(() => {
     const v = videoRef.current;
-    if (!v || typeof v.playbackRate === "undefined") return;
+    if (!v) return;
     if (Math.abs(v.playbackRate - playbackRate) > 0.01) v.playbackRate = playbackRate;
   }, [playbackRate, videoRef]);
 
-  // PiP state sync
   useEffect(() => {
     const v = videoRef.current;
-    if (typeof document !== "undefined") {
-      setCanPip(!!document.pictureInPictureEnabled);
-    }
+    if (typeof document !== "undefined") setCanPip(!!document.pictureInPictureEnabled);
     if (!v) return;
-    const onEnterPip = () => setIsPip(true);
-    const onLeavePip = () => setIsPip(false);
-    v.addEventListener("enterpictureinpicture", onEnterPip);
-    v.addEventListener("leavepictureinpicture", onLeavePip);
+    const onEnterPip  = () => setIsPip(true);
+    const onLeavePip  = () => setIsPip(false);
+    v.addEventListener("enterpictureinpicture",  onEnterPip);
+    v.addEventListener("leavepictureinpicture",  onLeavePip);
     return () => {
       v.removeEventListener("enterpictureinpicture", onEnterPip);
       v.removeEventListener("leavepictureinpicture", onLeavePip);
@@ -162,49 +151,24 @@ export default function NativeVideoPlayer({
     setSubOptions(null);
     setSearchStatus("");
     try {
-      const res = await fetch(
-        `/api/subtitles/search?q=${encodeURIComponent(searchQuery.trim())}&url=${encodeURIComponent(videoUrl)}`,
-      );
+      const res = await fetch(`/api/subtitles/search?q=${encodeURIComponent(searchQuery.trim())}&url=${encodeURIComponent(videoUrl)}`);
       const data = await res.json();
-      if (data.subtitles) {
-        setSubOptions(data.subtitles);
-      } else {
-        setSearchStatus(data.error || "No results found.");
-      }
+      if (data.subtitles) setSubOptions(data.subtitles);
+      else setSearchStatus(data.error || "No results found.");
     } catch {
-      setSearchStatus("Connection failed. Try again.");
+      setSearchStatus("Connection failed.");
     } finally {
       setSearching(false);
     }
   }
 
   function handleSelectSub(sub) {
-    if (!sub?.url) return;
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-    let finalSubUrl = sub.url;
-    // If it's not already a processed proxy URL, process it
-    if (!sub.url.includes("/api/subtitles/download")) {
-      finalSubUrl = `${baseUrl}/api/subtitles/download?url=${encodeURIComponent(sub.url)}`;
-    }
-    
-    if (onSubtitleChange) {
-      onSubtitleChange(finalSubUrl);
-    } else {
-      onLoad?.(videoUrl, finalSubUrl);
-    }
-
-    // Save/Update recent subtitle history
-    setRecentSubs((prev) => {
-      const updated = [
-        { label: sub.label, url: finalSubUrl },
-        ...prev.filter((s) => s.url !== finalSubUrl),
-      ].slice(0, 5);
-      try {
-        localStorage.setItem("wt_recentSubs", JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-
+    const finalSubUrl = `${baseUrl}/api/subtitles/download?url=${encodeURIComponent(sub.url)}`;
+    onSubtitleChange?.(finalSubUrl);
+    const updated = [{ label: sub.label, url: finalSubUrl }, ...recentSubs.filter(s => s.url !== finalSubUrl)].slice(0, 5);
+    setRecentSubs(updated);
+    try { localStorage.setItem("wt_recentSubs", JSON.stringify(updated)); } catch {}
     setActivePanel(null);
     setSubOptions(null);
     setSearchQuery("");
@@ -214,195 +178,104 @@ export default function NativeVideoPlayer({
     const styleId = "sub-style-engine";
     let el = document.getElementById(styleId);
     if (!el) {
-      el = document.createElement("style");
-      el.id = styleId;
-      document.head.appendChild(el);
+      el = document.createElement("style"); el.id = styleId; document.head.appendChild(el);
     }
-    el.innerHTML = `
-      video::cue {
-        background: ${subStyle.background} !important;
-        color: ${subStyle.color} !important;
-        font-size: ${subStyle.fontSize}% !important;
-        text-shadow: 0 0 4px rgba(0,0,0,0.8);
-      }
-    `;
+    el.innerHTML = `video::cue { background: ${subStyle.background} !important; color: ${subStyle.color} !important; font-size: ${subStyle.fontSize}% !important; text-shadow: 0 0 4px rgba(0,0,0,0.8); }`;
   }, [subStyle]);
 
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
     if (sourceType === "mp4" && v.src !== videoUrl) v.src = videoUrl;
-    const onTime = () => {
-      if (!seekingRef.current) setLocalTime(v.currentTime);
-    };
-    const onMeta = () => {
-      setDuration(v.duration);
-      setVideoError(false);
-      setPosterVisible(false); // hide poster once video metadata is ready
-    };
+    const onTime = () => { if (!seekingRef.current) setLocalTime(v.currentTime); };
+    const onMeta = () => { setDuration(v.duration); setVideoError(false); setPosterVisible(false); };
     const onWait = () => setBuffering(true);
     const onCan = () => setBuffering(false);
     const onErr = () => {
-      if (!v.error) {
-        setVideoError(
-          "Unsupported format or iframe/embed webpage. You must provide a direct .mp4 or .m3u8 file.",
-        );
-        return;
-      }
-      let errStr = "";
+      if (!v.error) { setVideoError({ title: "Playback Error", detail: "Format not supported." }); return; }
+      let title = "Playback Error", detail = "";
       switch (v.error.code) {
-        case 1:
-          errStr = "Loading aborted.";
-          break;
-        case 2:
-          errStr = "Network error caused download to fail.";
-          break;
-        case 3:
-          errStr = "Corrupted video file.";
-          break;
-        case 4:
-          errStr =
-            "Source format not supported. If this is an iframe/embed webpage (like vidsrc), it cannot be synced. Paste a direct MP4/M3U8.";
-          break;
-        default:
-          errStr = `Unknown Native Error Code: ${v.error.code}`;
+        case 1: title = "Cancelled"; break;
+        case 2: title = "Network Error"; break;
+        case 3: title = "Decoding Error"; break;
+        case 4: title = "Format Not Supported"; break;
       }
-      if (v.error.message) errStr += ` - ${v.error.message}`;
-      setVideoError(errStr);
+      setVideoError({ title, detail: v.error.message || "Please check the source URL." });
     };
     const onProg = () => {
       if (v.buffered && v.buffered.length > 0) {
-        const end = v.buffered.end(v.buffered.length - 1);
-        setBufferedPct(v.duration > 0 ? (end / v.duration) * 100 : 0);
+        setBufferedPct(v.duration > 0 ? (v.buffered.end(v.buffered.length - 1) / v.duration) * 100 : 0);
       }
-    };
-    const onEnded = () => {
-      onPause?.(v.duration);
     };
     const onFS = () => setFullscreen(Boolean(document.fullscreenElement));
     v.addEventListener("timeupdate", onTime);
     v.addEventListener("loadedmetadata", onMeta);
     v.addEventListener("waiting", onWait);
     v.addEventListener("canplay", onCan);
-    v.addEventListener("canplaythrough", onCan);
     v.addEventListener("error", onErr);
     v.addEventListener("progress", onProg);
-    v.addEventListener("ended", onEnded);
+    v.addEventListener("ended", () => onPause?.(v.duration));
     document.addEventListener("fullscreenchange", onFS);
     return () => {
       v.removeEventListener("timeupdate", onTime);
       v.removeEventListener("loadedmetadata", onMeta);
       v.removeEventListener("waiting", onWait);
       v.removeEventListener("canplay", onCan);
-      v.removeEventListener("canplaythrough", onCan);
       v.removeEventListener("error", onErr);
       v.removeEventListener("progress", onProg);
-      v.removeEventListener("ended", onEnded);
       document.removeEventListener("fullscreenchange", onFS);
     };
   }, [videoRef, videoUrl, sourceType]);
 
   useEffect(() => {
-    const v = videoRef.current;
-    if (!v) return;
-    v.volume = volume;
-    v.muted = muted;
-  }, [volume, muted, videoRef]);
+    if (videoRef.current) {
+      videoRef.current.volume = volume;
+      videoRef.current.muted = muted;
+    }
+  }, [volume, muted]);
 
-  // Reset poster whenever the video URL changes (new video loading)
   useEffect(() => {
     setPosterVisible(true);
     ambiDisabledRef.current = false;
   }, [videoUrl]);
 
-  // ── Ambilight glow ─────────────────────────────────────────────────────
-  // Samples the <video> frame at ~12fps via a tiny 8×8 canvas, averaging
-  // edge-pixel colours and forwarding them via onAmbiColors(). The parent
-  // (RoomClient) applies the colour as a box-shadow on the player section.
-  // If the video is cross-origin (shouldn't happen for direct MP4/HLS but
-  // just in case), a SecurityError is caught and sampling is disabled.
   useEffect(() => {
-    if (!onAmbiColors || !ambiEnabled) {
-      onAmbiColors?.(null);
-      return;
-    }
-    const v = videoRef.current;
-    if (!v) return;
-
-    const CANVAS_W = 8;
-    const CANVAS_H = 8;
+    if (!onAmbiColors) return;
+    const v = videoRef.current; if (!v) return;
     const canvas = document.createElement("canvas");
-    canvas.width = CANVAS_W;
-    canvas.height = CANVAS_H;
-    canvasRef.current = canvas;
+    canvas.width = 8; canvas.height = 8;
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    let lastFrameTime = 0;
-    const FRAME_INTERVAL = 1000 / 12; // 12 fps
-
-    function lerp(a, b, t) { return a + (b - a) * t; }
-
+    let lastTime = 0;
     function sample(now) {
       ambiRafRef.current = requestAnimationFrame(sample);
-      if (now - lastFrameTime < FRAME_INTERVAL) return;
-      lastFrameTime = now;
-
-      if (ambiDisabledRef.current || v.paused || v.readyState < 2) return;
-
+      if (now - lastTime < 80 || ambiDisabledRef.current || v.paused || v.readyState < 2) return;
+      lastTime = now;
       try {
-        ctx.drawImage(v, 0, 0, CANVAS_W, CANVAS_H);
-        const pixels = ctx.getImageData(0, 0, CANVAS_W, CANVAS_H).data;
-        let r = 0, g = 0, b = 0, count = 0;
-        for (let i = 0; i < pixels.length; i += 4) {
-          r += pixels[i];
-          g += pixels[i + 1];
-          b += pixels[i + 2];
-          count++;
-        }
-        if (count === 0) return;
-        const nr = r / count;
-        const ng = g / count;
-        const nb = b / count;
-
-        // Smooth interpolation so colour transitions aren't jarring
+        ctx.drawImage(v, 0, 0, 8, 8);
+        const p = ctx.getImageData(0, 0, 8, 8).data;
+        let r=0, g=0, b=0;
+        for (let i=0; i<p.length; i+=4) { r+=p[i]; g+=p[i+1]; b+=p[i+2]; }
+        const count = p.length/4;
         const cur = ambiCurrentRef.current;
-        const sr = lerp(cur.r, nr, 0.08);
-        const sg = lerp(cur.g, ng, 0.08);
-        const sb = lerp(cur.b, nb, 0.08);
+        const sr = cur.r + (r/count - cur.r) * 0.08;
+        const sg = cur.g + (g/count - cur.g) * 0.08;
+        const sb = cur.b + (b/count - cur.b) * 0.08;
         ambiCurrentRef.current = { r: sr, g: sg, b: sb };
         onAmbiColors({ r: Math.round(sr), g: Math.round(sg), b: Math.round(sb) });
-      } catch (err) {
-        if (err instanceof DOMException && err.name === "SecurityError") {
-          // Cross-origin taint — disable permanently for this video
-          ambiDisabledRef.current = true;
-          onAmbiColors(null);
-        }
-      }
+      } catch (e) { if (e.name === "SecurityError") { ambiDisabledRef.current = true; onAmbiColors(null); } }
     }
-
     ambiRafRef.current = requestAnimationFrame(sample);
-
-    return () => {
-      if (ambiRafRef.current) cancelAnimationFrame(ambiRafRef.current);
-      onAmbiColors?.(null); // clear glow on unmount
-    };
+    return () => { cancelAnimationFrame(ambiRafRef.current); onAmbiColors?.(null); };
   }, [videoRef, videoUrl, onAmbiColors]);
 
   function handlePlayPause() {
-    if (!canControl) return;
-    const v = videoRef.current;
-    if (!v) return;
-    if (isPlaying) {
-      v.pause();
-      onPause?.(v.currentTime);
-    } else {
-      if (v.ended) v.currentTime = 0;
-      v.play().catch(() => {});
-      onPlay?.(v.currentTime);
-    }
+    if (!canControl || !videoRef.current) return;
+    if (isPlaying) { videoRef.current.pause(); onPause?.(videoRef.current.currentTime); }
+    else { videoRef.current.play().catch(()=>{}); onPlay?.(videoRef.current.currentTime); }
   }
 
   function handleSeekChange(e) {
-    if (!canControl) return; // viewers must not be able to scrub locally
+    if (!canControl) return;
     seekingRef.current = true;
     setLocalTime(Number(e.target.value));
   }
@@ -426,116 +299,55 @@ export default function NativeVideoPlayer({
     else document.exitFullscreen();
   }
 
-  function handleSpeedChange(rate) {
-    if (!canControl) return;
-    onSpeed?.(rate);
-  }
-
-  function handleRetry() {
-    setVideoError(false);
-    videoRef.current?.load();
-  }
+  function handleRetry() { setVideoError(false); videoRef.current?.load(); }
 
   async function handlePip() {
-    const v = videoRef.current;
-    if (!v) return;
     try {
-      if (document.pictureInPictureElement) {
-        await document.exitPictureInPicture();
-      } else if (document.pictureInPictureEnabled) {
-        await v.requestPictureInPicture();
-      }
+      if (document.pictureInPictureElement) await document.exitPictureInPicture();
+      else if (document.pictureInPictureEnabled) await videoRef.current?.requestPictureInPicture();
     } catch {}
   }
 
   function handleScreenshot() {
-    const v = videoRef.current;
-    if (!v || !onSendScreenshot) return;
+    const v = videoRef.current; if (!v || !onSendScreenshot) return;
     try {
       const canvas = document.createElement("canvas");
-      canvas.width  = v.videoWidth  || 320;
-      canvas.height = v.videoHeight || 180;
+      canvas.width = Math.min(v.videoWidth, 1280);
+      canvas.height = Math.round(v.videoHeight * (canvas.width / v.videoWidth));
       canvas.getContext("2d").drawImage(v, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
-      onSendScreenshot(dataUrl);
-    } catch {}
+      onSendScreenshot(canvas.toDataURL("image/jpeg", 0.75));
+      addToast?.("Screenshot sent!", "success");
+    } catch { addToast?.("Screenshot blocked (CORS).", "error"); }
   }
 
-  useVideoHotkeys({
-    videoRef,
-    handlePlayPause,
-    handleFullscreen,
-    onSeek,
-    setMuted,
-  });
+  useVideoHotkeys({ videoRef, handlePlayPause, handleFullscreen, onSeek, setMuted });
 
   const progressPct = duration > 0 ? (localTime / duration) * 100 : 0;
 
   return (
-    <div
-      ref={containerRef}
-      className="relative w-full h-full bg-black select-none"
-      onMouseMove={showCtrl}
-      onTouchStart={showCtrl}
-    >
-      <video
-        ref={videoRef}
-        className="w-full h-full object-contain"
-        playsInline
-        preload="metadata"
-        onClick={handlePlayPause}
-        onDoubleClick={handleFullscreen}
-        aria-label="Video player"
-        style={{ cursor: ctrlVis ? "pointer" : "none" }}
-      >
-        {subtitleUrl && showSubtitles && (
-          <track
-            kind="subtitles"
-            src={subtitleUrl}
-            srcLang="en"
-            label="English"
-            default
-          />
-        )}
+    <div ref={containerRef} className="relative w-full h-full bg-black select-none" onMouseMove={showCtrl} onTouchStart={showCtrl}>
+      <video ref={videoRef} className="w-full h-full object-contain" playsInline crossOrigin="anonymous" onClick={handlePlayPause} onDoubleClick={handleFullscreen}>
+        {subtitleUrl && showSubtitles && <track kind="subtitles" src={subtitleUrl} srcLang="en" label="English" default />}
       </video>
 
-      <ThumbnailPoster
-        visible={posterVisible && !videoError}
-        subtitle="Ready to Sync"
-      />
-
+      <ThumbnailPoster visible={posterVisible && !videoError} subtitle="Ready to Sync" />
       {buffering && !videoError && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
           <div className="w-14 h-14 rounded-full border-2 border-amber-500/20 border-t-amber-500 animate-spin" />
         </div>
       )}
 
-      <div
-        className={`absolute bottom-24 right-6 w-full max-w-[420px] h-[540px] bg-black/30 backdrop-blur-2xl border border-white/10 z-50 transition-all duration-200 shadow-2xl rounded-[2.5rem] overflow-hidden flex flex-col
-            ${activePanel ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
-      >
+      {/* Subtitle Panel */}
+      <div className={`absolute bottom-24 right-6 w-full max-w-[420px] h-[540px] bg-black/30 backdrop-blur-2xl border border-white/10 z-50 transition-all duration-200 shadow-2xl rounded-[2.5rem] overflow-hidden flex flex-col ${activePanel ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}>
         <div className="p-5 pb-1">
           <div className="flex items-center justify-between mb-5 px-1">
-            <div className="flex items-center gap-2">
-              <div className="w-1 h-1 rounded-full bg-amber-500/80" />
-              <h3 className="text-[10px] font-bold text-white/40 uppercase tracking-[0.25em]">Subtitles</h3>
-            </div>
-            <button onClick={() => setActivePanel(null)}
-              className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-white/5 text-white/20 hover:text-white transition-colors">
-              ✕
-            </button>
+            <h3 className="text-[10px] font-bold text-white/40 uppercase tracking-[0.25em]">Subtitles</h3>
+            <button onClick={() => setActivePanel(null)} className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-white/5 text-white/20 hover:text-white transition-colors">✕</button>
           </div>
-
           <div className="bg-white/5 p-1 rounded-2xl flex relative border border-white/5">
-            <div className="absolute top-1 bottom-1 bg-white/10 rounded-xl transition-all duration-200"
-              style={{
-                left: activePanel === "search" ? "4px" : activePanel === "recent" ? "calc(33.33% + 2px)" : "calc(66.66% + 2px)",
-                width: "calc(33.33% - 6px)",
-              }} />
-            {["search", "recent", "settings"].map((tab) => (
-              <button key={tab} onClick={() => setActivePanel(tab)}
-                className={`flex-1 relative z-10 py-2 text-[8px] font-black uppercase tracking-[0.2em] transition-all
-                  ${activePanel === tab ? "text-white" : "text-white/30 hover:text-white/60"}`}>
+            <div className="absolute top-1 bottom-1 bg-white/10 rounded-xl transition-all duration-200" style={{ left: activePanel === "search" ? "4px" : activePanel === "recent" ? "calc(33.33% + 2px)" : "calc(66.66% + 2px)", width: "calc(33.33% - 6px)" }} />
+            {["search", "recent", "settings"].map(tab => (
+              <button key={tab} onClick={() => setActivePanel(tab)} className={`flex-1 relative z-10 py-2 text-[8px] font-black uppercase tracking-[0.2em] transition-all ${activePanel === tab ? "text-white" : "text-white/30 hover:text-white/60"}`}>
                 {tab === "search" ? "Search" : tab === "recent" ? "Recent" : "Styles"}
               </button>
             ))}
@@ -546,38 +358,19 @@ export default function NativeVideoPlayer({
           {activePanel === "search" && (
             <div className="space-y-4">
               <form onSubmit={handleSearchSubs} className="relative">
-                <input autoFocus type="text" value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Find a track..."
-                  className="w-full bg-white/5 border border-white/10 rounded-[2rem] px-5 py-2.5 text-xs text-white placeholder:text-white/20 focus:border-amber-500/40 outline-none transition-all" />
-                <button disabled={searching || !searchQuery.trim()} type="submit"
-                  className="absolute right-1 top-1 bottom-1 w-8 rounded-full bg-amber-500 text-void transition-all disabled:opacity-30 active:scale-95">
-                  {searching
-                    ? <div className="w-3 h-3 border-2 border-void/30 border-t-void rounded-full animate-spin mx-auto" />
-                    : <SearchIcon className="w-3 h-3 mx-auto" />}
+                <input autoFocus type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Find a track..." className="w-full bg-white/5 border border-white/10 rounded-[2rem] px-5 py-2.5 text-xs text-white placeholder:text-white/20 focus:border-amber-500/40 outline-none transition-all" />
+                <button disabled={searching || !searchQuery.trim()} type="submit" className="absolute right-1 top-1 bottom-1 w-8 rounded-full bg-amber-500 text-void transition-all disabled:opacity-30 active:scale-95">
+                  {searching ? <div className="w-3 h-3 border-2 border-void/30 border-t-void rounded-full animate-spin mx-auto" /> : <SearchIcon className="w-3 h-3 mx-auto" />}
                 </button>
               </form>
-              {searchStatus && !subOptions && (
-                <div className="text-center py-12 opacity-40 text-[10px] uppercase font-bold tracking-widest px-4 leading-relaxed">{searchStatus}</div>
-              )}
+              {searchStatus && !subOptions && <div className="text-center py-12 opacity-40 text-[10px] uppercase font-bold tracking-widest leading-relaxed">{searchStatus}</div>}
               {subOptions && (
                 <div className="space-y-1">
-                  {subOptions.length === 0
-                    ? <div className="text-center py-12 opacity-20 text-[9px] uppercase font-bold tracking-widest">No Results</div>
-                    : subOptions.map((sub) => {
-                        const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-                        const subUrl  = `${baseUrl}/api/subtitles/download?url=${encodeURIComponent(sub.url)}`;
-                        const isActive = subtitleUrl === subUrl;
-                        return (
-                          <button key={sub.id} onClick={() => handleSelectSub(sub)}
-                            className={`w-full text-left px-4 py-2.5 rounded-[1.5rem] transition-all border flex items-center justify-between group
-                              ${isActive ? "bg-amber-500/10 border-amber-500/30 text-amber-500 font-bold"
-                                         : "bg-white/5 border-transparent hover:border-white/10 text-white/40 hover:text-white/80"}`}>
-                            <span className="text-[11px] truncate pr-3">{sub.label}</span>
-                            {isActive && <div className="w-1 h-1 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />}
-                          </button>
-                        );
-                      })}
+                  {subOptions.length === 0 ? <div className="text-center py-12 opacity-20 text-[9px] uppercase font-bold tracking-widest">No Results</div> : subOptions.map(sub => (
+                    <button key={sub.id} onClick={() => handleSelectSub(sub)} className={`w-full text-left px-4 py-2.5 rounded-[1.5rem] transition-all border flex items-center justify-between group ${subtitleUrl && subtitleUrl.includes(sub.url) ? "bg-amber-500/10 border-amber-500/30 text-amber-500 font-bold" : "bg-white/5 border-transparent hover:border-white/10 text-white/40 hover:text-white/80"}`}>
+                      <span className="text-[11px] truncate pr-3">{sub.label}</span>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
@@ -585,22 +378,14 @@ export default function NativeVideoPlayer({
 
           {activePanel === "recent" && (
             <div className="space-y-1">
-              {recentSubs.length === 0 ? (
-                <div className="text-center py-16 opacity-20 text-[9px] uppercase font-bold tracking-widest">
-                  No recent subtitles.<br />Search to add one.
-                </div>
-              ) : recentSubs.map((sub) => {
-                const isActive = subtitleUrl === sub.url;
-                return (
-                  <button key={sub.url} onClick={() => handleSelectSub(sub)}
-                    className={`w-full text-left px-4 py-2.5 rounded-[1.5rem] transition-all border flex items-center justify-between
-                      ${isActive ? "bg-amber-500/10 border-amber-500/30 text-amber-500 font-bold"
-                                 : "bg-white/5 border-transparent hover:border-white/10 text-white/40 hover:text-white/80"}`}>
+              {recentSubs.length === 0 ? <div className="text-center py-16 opacity-20 text-[9px] uppercase font-bold tracking-widest leading-loose">No recent subtitles.</div> : recentSubs.map(sub => (
+                <div key={sub.url} className="flex items-center gap-1.5 group/sub">
+                  <button onClick={() => { onSubtitleChange?.(sub.url); setActivePanel(null); }} className={`flex-1 text-left px-4 py-2.5 rounded-[1.5rem] transition-all border flex items-center justify-between ${subtitleUrl === sub.url ? "bg-amber-500/10 border-amber-500/30 text-amber-500 font-bold" : "bg-white/5 border-transparent hover:border-white/10 text-white/40 hover:text-white/80"}`}>
                     <span className="text-[11px] truncate pr-3">{sub.label}</span>
-                    {isActive && <div className="w-1 h-1 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />}
                   </button>
-                );
-              })}
+                  <button onClick={() => { const u = recentSubs.filter(s => s.url !== sub.url); setRecentSubs(u); localStorage.setItem("wt_recentSubs", JSON.stringify(u)); }} className="opacity-0 group-hover/sub:opacity-100 transition-opacity w-7 h-7 flex items-center justify-center rounded-full bg-danger/10 text-danger/60 hover:text-danger text-xs">✕</button>
+                </div>
+              ))}
             </div>
           )}
 
@@ -609,25 +394,16 @@ export default function NativeVideoPlayer({
               <section>
                 <label className="text-[8px] font-black text-white/20 uppercase tracking-[0.3em] mb-2.5 block ml-1">Scale</label>
                 <div className="grid grid-cols-4 gap-2">
-                  {[50, 75, 100, 125].map((sz) => (
-                    <button key={sz} onClick={() => setSubStyle((s) => ({ ...s, fontSize: sz }))}
-                      className={`py-2 rounded-[1.25rem] border text-[9px] font-bold transition-all
-                        ${subStyle.fontSize === sz ? "bg-amber-500 border-amber-500 text-void shadow-lg shadow-amber-500/20"
-                                                   : "bg-white/5 border-white/5 text-white/40 hover:text-white hover:border-white/10"}`}>
-                      {sz}%
-                    </button>
+                  {[50, 75, 100, 125].map(sz => (
+                    <button key={sz} onClick={() => setSubStyle(s => ({ ...s, fontSize: sz }))} className={`py-2 rounded-[1.25rem] border text-[9px] font-bold transition-all ${subStyle.fontSize === sz ? "bg-amber-500 border-amber-500 text-void" : "bg-white/5 border-white/5 text-white/40 hover:text-white"}`}>{sz}%</button>
                   ))}
                 </div>
               </section>
               <section>
                 <label className="text-[8px] font-black text-white/20 uppercase tracking-[0.3em] mb-2.5 block ml-1">Color</label>
-                <div className="bg-white/5 p-2 rounded-[1.5rem] border border-white/5 flex items-center justify-between">
-                  {["#ffffff","#ffee00","#00ffcc","#ff3366","#ff9900"].map((c) => (
-                    <button key={c} onClick={() => setSubStyle((s) => ({ ...s, color: c }))}
-                      className="group relative flex items-center justify-center p-0.5">
-                      <div className={`w-6 h-6 rounded-full transition-all border-2 ${subStyle.color === c ? "border-amber-500" : "border-transparent opacity-40 hover:opacity-100"}`}
-                        style={{ backgroundColor: c }} />
-                    </button>
+                <div className="bg-white/5 p-2 rounded-[1.5rem] flex items-center justify-between">
+                  {["#ffffff","#ffee00","#00ffcc","#ff3366","#ff9900"].map(c => (
+                    <button key={c} onClick={() => setSubStyle(s => ({ ...s, color: c }))} className={`w-6 h-6 rounded-full border-2 transition-all ${subStyle.color === c ? "border-amber-500" : "border-transparent opacity-40 hover:opacity-100"}`} style={{ backgroundColor: c }} />
                   ))}
                 </div>
               </section>
@@ -635,12 +411,7 @@ export default function NativeVideoPlayer({
                 <label className="text-[8px] font-black text-white/20 uppercase tracking-[0.3em] mb-2.5 block ml-1">Modes</label>
                 <div className="flex gap-2">
                   {[["rgba(0,0,0,0)", "Transparent"], ["rgba(0,0,0,0.6)", "Glass Box"]].map(([bg, label]) => (
-                    <button key={label} onClick={() => setSubStyle((s) => ({ ...s, background: bg }))}
-                      className={`flex-1 py-2.5 rounded-[1.5rem] border transition-all text-[8px] font-black uppercase tracking-widest
-                        ${subStyle.background === bg ? "bg-amber-500 border-amber-500 text-void font-bold shadow-lg shadow-amber-500/20"
-                                                     : "bg-white/5 border-white/5 text-white/40 hover:text-white"}`}>
-                      {label}
-                    </button>
+                    <button key={label} onClick={() => setSubStyle(s => ({ ...s, background: bg }))} className={`flex-1 py-2 rounded-[1.5rem] border text-[8px] font-black uppercase tracking-widest ${subStyle.background === bg ? "bg-amber-500 border-amber-500 text-void" : "bg-white/5 border-white/5 text-white/40"}`}>{label}</button>
                   ))}
                 </div>
               </section>
@@ -650,256 +421,84 @@ export default function NativeVideoPlayer({
       </div>
 
       {videoError && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-void/90 backdrop-blur-xl gap-5 text-center">
-          <div className="w-14 h-14 rounded-3xl bg-danger/10 flex items-center justify-center border border-danger/20">
-            <ExclamationIcon className="w-7 h-7 text-danger" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-void/92 backdrop-blur-xl gap-5 text-center px-6 z-30">
+          <div className="w-14 h-14 rounded-[2rem] bg-danger/10 flex items-center justify-center border border-danger/20 shrink-0"><ExclamationIcon className="w-7 h-7 text-danger" /></div>
+          <div className="max-w-sm w-full">
+            <h3 className="font-display font-bold text-lg text-white/90">{videoError.title}</h3>
+            <p className="text-sm text-white/50 mt-2 leading-relaxed">{videoError.detail}</p>
           </div>
-          <div>
-            <h3 className="font-display font-bold text-lg text-text">
-              Playback Error
-            </h3>
-            <p className="text-sm text-muted mt-1 px-8 max-w-sm">
-              Could not load this video source.
-            </p>
-            {typeof videoError === "string" && (
-              <div className="mt-4 p-2 px-3 rounded-lg bg-red-500/10 border border-red-500/20 text-xs font-mono text-red-300 max-w-md text-left leading-relaxed">
-                {videoError}
-              </div>
-            )}
+          <div className="flex gap-3">
+            <button onClick={handleRetry} className="h-10 px-6 rounded-[2rem] bg-amber-500 text-void font-black text-xs uppercase tracking-widest hover:bg-amber-400 transition-all">Try Again</button>
+            <button onClick={() => setVideoError(false)} className="h-10 px-5 rounded-[2rem] glass-card text-white/50 hover:text-white text-xs font-bold transition-all">Dismiss</button>
           </div>
-          <button
-            onClick={handleRetry}
-            className="h-10 px-6 rounded-full bg-surface border border-border hover:border-amber-500/40 text-xs font-bold transition-all active:scale-95"
-          >
-            Try Again
-          </button>
         </div>
       )}
 
       {chatOverlay}
 
-      {/* HLS quality indicator */}
-      {hlsQualityEnabled && hlsQuality && sourceType === "hls" && (
-        <div className="absolute top-3 left-3 px-2.5 py-1 rounded-[2rem] bg-black/50 backdrop-blur-sm text-[10px] font-mono font-bold text-white/70 border border-white/10 pointer-events-none z-20">
-          {hlsQuality.level && <span>{hlsQuality.level}</span>}
-          {hlsQuality.level && hlsQuality.bitrate && <span className="text-white/30 mx-1">·</span>}
-          {hlsQuality.bitrate && <span className="text-white/50">{hlsQuality.bitrate}</span>}
-        </div>
-      )}
-
-      <div
-        className={`absolute inset-x-0 bottom-0 z-20 transition-all duration-400
-        ${ctrlVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"}`}
-      >
+      {/* Controls */}
+      <div className={`absolute inset-x-0 bottom-0 z-20 transition-all duration-400 ${ctrlVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"}`}>
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
         <div className="relative px-4 pb-4 pt-8 space-y-2">
-          <div className="relative h-1.5 bg-white/15 rounded-full hover:h-2 transition-all duration-150 cursor-pointer overflow-hidden group/seek">
-            <div
-              className="absolute inset-y-0 left-0 bg-white/20 transition-all duration-200"
-              style={{ width: `${bufferedPct}%` }}
-            />
-            <div
-              className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-600 to-amber-400 rounded-full transition-all duration-150"
-              style={{ width: `${progressPct}%` }}
-            />
-            <input
-              type="range"
-              min={0}
-              max={duration || 100}
-              step={0.1}
-              value={localTime}
-              onChange={handleSeekChange}
-              onMouseUp={handleSeekCommit}
-              onTouchEnd={handleSeekCommit}
-              aria-label="Seek position"
-              className="absolute inset-0 w-full opacity-0 cursor-pointer py-3"
-            />
+          {/* Seek bar */}
+          <div className="relative h-1.5 bg-white/15 rounded-full hover:h-2 transition-all cursor-pointer overflow-hidden group/seek">
+            <div className="absolute inset-y-0 left-0 bg-white/20" style={{ width: `${bufferedPct}%` }} />
+            <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-600 to-amber-400 rounded-full" style={{ width: `${progressPct}%` }} />
+            <input type="range" min={0} max={duration || 100} step={0.1} value={localTime} onChange={handleSeekChange} onMouseUp={handleSeekCommit} onTouchEnd={handleSeekCommit} className="absolute inset-0 w-full opacity-0 cursor-pointer py-3" />
           </div>
+
           <div className="flex items-center gap-2.5">
-            <button
-              onClick={handlePlayPause}
-              aria-label={isPlaying ? "Pause" : "Play"}
-              disabled={!canControl}
-              className={`w-11 h-11 flex items-center justify-center rounded-[2rem] border border-white/8 transition-all active:scale-90 backdrop-blur-sm
-                ${canControl ? "bg-white/8 hover:bg-white/18 text-white" : "bg-white/4 text-white/30 cursor-not-allowed"}`}
-            >
-              {isPlaying ? (
-                <PauseIcon className="w-5 h-5" />
-              ) : (
-                <PlayIcon className="w-5 h-5 ml-0.5" />
-              )}
+            <button onClick={handlePlayPause} disabled={!canControl} className={`w-11 h-11 flex items-center justify-center rounded-[2rem] border border-white/8 transition-all ${canControl ? "bg-white/8 hover:bg-white/18" : "opacity-30 cursor-not-allowed"}`}>
+              {isPlaying ? <PauseIcon className="w-5 h-5" /> : <PlayIcon className="w-5 h-5 ml-0.5" />}
             </button>
+
             <div className="flex items-center group/vol">
-              <button
-                onClick={() => setMuted((m) => !m)}
-                aria-label={muted ? "Unmute" : "Mute"}
-                className="w-9 h-9 flex items-center justify-center rounded-[2rem] text-white/60 hover:text-white transition-colors"
-              >
-                {muted || volume === 0 ? (
-                  <MuteIcon className="w-4 h-4" />
-                ) : (
-                  <VolumeIcon className="w-4 h-4" />
-                )}
-              </button>
-              <div className="w-0 group-hover/vol:w-20 transition-all duration-300 overflow-hidden flex items-center h-9">
-                <div className="relative w-18 h-1.5 ml-2 bg-white/15 rounded-full cursor-pointer overflow-hidden">
-                  <div
-                    className="absolute inset-y-0 left-0 bg-white/80 rounded-full pointer-events-none transition-all duration-150"
-                    style={{ width: `${(muted ? 0 : volume) * 100}%` }}
-                  />
-                  <input
-                    type="range"
-                    min={0}
-                    max={1}
-                    step={0.05}
-                    value={muted ? 0 : volume}
-                    onChange={handleVolumeChange}
-                    aria-label="Volume"
-                    className="absolute inset-0 w-full opacity-0 cursor-pointer"
-                  />
-                </div>
+              <button onClick={() => setMuted(m => !m)} className="w-9 h-9 flex items-center justify-center text-white/60 hover:text-white">{muted || volume === 0 ? <MuteIcon className="w-4 h-4" /> : <VolumeIcon className="w-4 h-4" />}</button>
+              <div className="w-0 group-hover/vol:w-20 transition-all overflow-hidden h-9 flex items-center">
+                <input type="range" min={0} max={1} step={0.05} value={muted ? 0 : volume} onChange={handleVolumeChange} className="w-18 h-1.5 ml-2 accent-amber-500" />
               </div>
             </div>
 
-            <span className="text-[11px] font-mono text-white/80 tabular-nums bg-white/5 px-2.5 py-1 rounded-[2rem] border border-white/5">
+            <span className="text-[11px] font-mono text-white/80 tabular-nums bg-white/5 px-2.5 py-1 rounded-[2rem]">
               {formatTime(localTime)} / {formatTime(duration)}
             </span>
 
-            {!canControl && (
-              <span className="text-[9px] font-mono text-amber-400/60 uppercase tracking-wider flex items-center gap-1.5">
-                <LockSmallIcon className="w-3 h-3" /> Host only
-              </span>
-            )}
+            {hlsQualityEnabled && hlsQuality && <span className="hidden sm:inline px-2 py-1 rounded-[2rem] bg-jade/10 border border-jade/20 text-[9px] font-mono font-bold text-jade/70">{hlsQuality.level}</span>}
 
             <div className="flex-1" />
 
-            <div
-              className="flex items-center bg-white/5 border border-white/10 rounded-[2rem] p-1 transition-all duration-500 ease-in-out gap-1 overflow-hidden"
-              style={{
-                minWidth: ccMenuOpen ? (isHost ? "152px" : "90px") : "42px",
-                maxWidth: ccMenuOpen ? "500px" : "42px",
-              }}
-            >
-              <button
-                onClick={() => {
-                  if (!ccMenuOpen) setCcMenuOpen(true);
-                  else if (subtitleUrl) setShowSubtitles((s) => !s);
-                }}
-                aria-label="Subtitle Menu"
-                className={`w-8 h-8 flex items-center justify-center rounded-full transition-all shrink-0
-                  ${
-                    !subtitleUrl
-                      ? "text-white/40 hover:text-white hover:bg-white/10"
-                      : showSubtitles
-                        ? "bg-amber-500 text-void shadow-lg shadow-amber-500/20"
-                        : "text-white/60 hover:text-white hover:bg-white/10"
-                  }`}
-              >
-                <CcIcon className="w-4 h-4" />
-              </button>
-
+            <div className="flex items-center bg-white/5 border border-white/10 rounded-[2rem] p-1 gap-1" style={{ minWidth: ccMenuOpen ? "152px" : "42px" }}>
+              <button onClick={() => { if (!ccMenuOpen) setCcMenuOpen(true); else if (subtitleUrl) setShowSubtitles(s => !s); }} className={`w-8 h-8 flex items-center justify-center rounded-full ${showSubtitles ? "bg-amber-500 text-void" : "text-white/60"}`}><CcIcon className="w-4 h-4" /></button>
               {ccMenuOpen && (
-                <div className="flex items-center gap-1 animate-in slide-in-from-left-2 fade-in duration-300">
-                  <div className="w-[1px] h-4 bg-white/10 mx-0.5" />
-                  {isHost && (
-                    <button
-                      onClick={() => setActivePanel("search")}
-                      title="Search Subtitles"
-                      className={`w-8 h-8 flex items-center justify-center rounded-full transition-all hover:bg-white/10
-                        ${activePanel === "search" ? "text-amber-500" : "text-white/60 hover:text-white"}`}
-                    >
-                      <SearchIcon className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setActivePanel("recent")}
-                    title="Recent Subtitles"
-                    className={`w-8 h-8 flex items-center justify-center rounded-full transition-all hover:bg-white/10
-                      ${activePanel === "recent" ? "text-amber-500" : "text-white/60 hover:text-white"}`}
-                  >
-                    {/* History/clock icon */}
-                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                    </svg>
+                <div className="flex items-center gap-1 animate-in fade-in duration-300">
+                  <button onClick={() => setActivePanel("search")} className={`w-8 h-8 flex items-center justify-center rounded-full ${activePanel === "search" ? "text-amber-500" : "text-white/60"}`}><SearchIcon className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => setActivePanel("recent")} className={`w-8 h-8 flex items-center justify-center rounded-full ${activePanel === "recent" ? "text-amber-500" : "text-white/60"}`}>
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                   </button>
-                  <button
-                    onClick={() => setActivePanel("settings")}
-                    title="Subtitle Settings"
-                    className={`w-8 h-8 flex items-center justify-center rounded-full transition-all hover:bg-white/10
-                      ${activePanel === "settings" ? "text-amber-500" : "text-white/60 hover:text-white"}`}
-                  >
-                    <SettingsIcon className="w-3.5 h-3.5" />
-                  </button>
+                  <button onClick={() => setActivePanel("settings")} className={`w-8 h-8 flex items-center justify-center rounded-full ${activePanel === "settings" ? "text-amber-500" : "text-white/60"}`}><SettingsIcon className="w-3.5 h-3.5" /></button>
                 </div>
               )}
-
-              <button
-                onClick={() => {
-                  if (ccMenuOpen) setActivePanel(null);
-                  setCcMenuOpen(!ccMenuOpen);
-                }}
-                className={`w-8 h-8 flex items-center justify-center rounded-full transition-all text-white/30 hover:text-white shrink-0 ${ccMenuOpen ? "rotate-180" : ""}`}
-              >
-                <svg
-                  className="w-3 h-3"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M15 18l-6-6 6-6" />
-                </svg>
+              <button onClick={() => setCcMenuOpen(!ccMenuOpen)} className={`w-8 h-8 flex items-center justify-center text-white/30 hover:text-white ${ccMenuOpen ? "rotate-180" : ""}`}>
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M15 18l-6-6 6-6" /></svg>
               </button>
             </div>
 
-            {canControl && (
-              <SpeedPicker value={playbackRate} onChange={handleSpeedChange} />
-            )}
+            {canControl && <SpeedPicker value={playbackRate} onChange={onSpeed} />}
 
-            {/* Picture-in-Picture */}
             {canPip && (
-              <button
-                onClick={handlePip}
-                aria-label={isPip ? "Exit Picture-in-Picture" : "Picture-in-Picture"}
-                title="Picture-in-Picture"
-                className={`w-9 h-9 flex items-center justify-center rounded-[2rem] border border-white/8 text-white transition-all active:scale-90 backdrop-blur-sm
-                  ${isPip ? "bg-amber-500/20 text-amber-400 border-amber-500/30" : "bg-white/8 hover:bg-white/18"}`}
-              >
-                {/* PiP icon inline to avoid import issues */}
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="4" width="20" height="16" rx="2"/>
-                  <rect x="12" y="11" width="8" height="6" rx="1" fill="currentColor" stroke="none"/>
-                </svg>
+              <button onClick={handlePip} className={`w-9 h-9 flex items-center justify-center rounded-[2rem] transition-all ${isPip ? "bg-amber-500/20 text-amber-400" : "bg-white/8 hover:bg-white/18 text-white"}`}>
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><rect x="12" y="11" width="8" height="6" rx="1" fill="currentColor" stroke="none"/></svg>
               </button>
             )}
 
-            {/* Screenshot to chat */}
-            {screenshotEnabled && onSendScreenshot && (
-              <button
-                onClick={handleScreenshot}
-                aria-label="Screenshot to chat"
-                title="Send screenshot to chat"
-                className="w-9 h-9 flex items-center justify-center rounded-[2rem] bg-white/8 hover:bg-white/18 border border-white/8 text-white transition-all active:scale-90 backdrop-blur-sm"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
-                  <circle cx="12" cy="13" r="4"/>
-                </svg>
+            {screenshotEnabled && (
+              <button onClick={handleScreenshot} className="w-9 h-9 flex items-center justify-center rounded-[2rem] bg-white/8 hover:bg-white/18 text-white">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
               </button>
             )}
 
-            <button
-              onClick={handleFullscreen}
-              aria-label="Toggle fullscreen"
-              className="w-9 h-9 flex items-center justify-center rounded-[2rem] bg-white/8 hover:bg-white/18 border border-white/8 text-white transition-all active:scale-90 backdrop-blur-sm"
-            >
-              {fullscreen ? (
-                <CompressIcon className="w-4 h-4" />
-              ) : (
-                <ExpandIcon className="w-4 h-4" />
-              )}
+            <button onClick={handleFullscreen} className="w-9 h-9 flex items-center justify-center rounded-[2rem] bg-white/8 hover:bg-white/18 text-white">
+              {fullscreen ? <CompressIcon className="w-4 h-4" /> : <ExpandIcon className="w-4 h-4" />}
             </button>
           </div>
         </div>

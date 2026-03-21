@@ -31,31 +31,27 @@ export default function YouTubePlayer({
   const [ccEnabled, setCcEnabled] = useState(false);
   const [volume, setVolume] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  // YouTube thumbnails are free from the CDN — no server round-trip needed.
-  const thumbnailUrl = videoId
-    ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
-    : null;
-
-  // Ambilight: YouTube is cross-origin so canvas pixel reads are blocked.
-  // Clear any glow from a previous native video when YT player mounts.
-  useEffect(() => {
-    onAmbiColors?.(null);
-  }, [onAmbiColors]);
   const hideTimer = useRef(null);
 
-  // Keep a ref that always holds the latest ccEnabled value.
-  // The YT player is created inside an async onYTReady callback whose closure
-  // captures values from the time the effect ran. Without this ref, toggling
-  // captions and then loading a new video would initialise the new player
-  // with the OLD (stale) ccEnabled value — Bug #7 fix.
+  // Pending seek: applied when the player becomes ready (handles reload resume)
+  const pendingSeekRef = useRef(null);
+
   const ccEnabledRef = useRef(ccEnabled);
   useEffect(() => {
     ccEnabledRef.current = ccEnabled;
   }, [ccEnabled]);
 
-  // Buffering state for embedded player — exposed via the videoRef proxy so
-  // SyncEngine can read it without needing native DOM events (Bug #4 fix).
   const isBufferingRef = useRef(false);
+
+  // YouTube thumbnail from CDN (free, no API key needed)
+  const thumbnailUrl = videoId
+    ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
+    : null;
+
+  // Clear ambilight when YT player mounts (cross-origin blocks canvas reads)
+  useEffect(() => {
+    onAmbiColors?.(null);
+  }, [onAmbiColors]);
 
   const showCtrl = useCallback(() => {
     setCtrlVis(true);
@@ -72,6 +68,14 @@ export default function YouTubePlayer({
     } catch {}
   }, [volume, muted, ready]);
 
+  // Apply playback rate when it changes
+  useEffect(() => {
+    if (!ready || !playerRef.current) return;
+    try {
+      playerRef.current.setPlaybackRate?.(playbackRate);
+    } catch {}
+  }, [playbackRate, ready]);
+
   useEffect(() => {
     if (!videoRef) return;
     videoRef.current = {
@@ -84,7 +88,12 @@ export default function YouTubePlayer({
       },
       set currentTime(t) {
         try {
-          playerRef.current?.seekTo?.(t, true);
+          if (playerRef.current) {
+            playerRef.current.seekTo?.(t, true);
+          } else {
+            // Player not ready yet — store for later
+            pendingSeekRef.current = t;
+          }
         } catch {}
       },
       get paused() {
@@ -122,8 +131,6 @@ export default function YouTubePlayer({
           playerRef.current?.setPlaybackRate?.(r);
         } catch {}
       },
-      // Buffering state — read by SyncEngine's sync loop to suppress rate
-      // corrections while the YouTube player is stalled (Bug #4 fix).
       get isBuffering() {
         return isBufferingRef.current;
       },
@@ -173,15 +180,20 @@ export default function YouTubePlayer({
           modestbranding: 1,
           rel: 0,
           enablejsapi: 1,
-          // Use the ref so we always get the current value even if the user
-          // toggled CC before this async callback fires (Bug #7 fix).
           cc_load_policy: ccEnabledRef.current ? 1 : 0,
         },
         events: {
-          onReady: () => setReady(true),
+          onReady: () => {
+            setReady(true);
+            // Apply any pending seek (e.g. from SyncEngine's wasInitial resume)
+            if (pendingSeekRef.current !== null) {
+              try {
+                playerRef.current?.seekTo?.(pendingSeekRef.current, true);
+              } catch {}
+              pendingSeekRef.current = null;
+            }
+          },
           onStateChange: (e) => {
-            // Track buffering so SyncEngine can skip rate corrections while
-            // the YouTube player is stalled (Bug #4 fix).
             if (e.data === window.YT?.PlayerState?.BUFFERING) {
               isBufferingRef.current = true;
             } else if (
@@ -191,7 +203,6 @@ export default function YouTubePlayer({
             ) {
               isBufferingRef.current = false;
             }
-            // YT.PlayerState.ENDED === 0
             if (e.data === window.YT?.PlayerState?.ENDED) {
               const dur = playerRef.current?.getDuration?.() ?? 0;
               onPause?.(dur);
@@ -210,7 +221,6 @@ export default function YouTubePlayer({
     };
   }, [videoId]);
 
-  // Toggle CC in the YouTube player dynamically
   useEffect(() => {
     if (!ready || !playerRef.current) return;
     try {
@@ -231,7 +241,6 @@ export default function YouTubePlayer({
       const t = playerRef.current?.getCurrentTime?.() ?? 0;
       onPause?.(t);
     } else {
-      // If video ended, restart from 0 for all viewers
       const state = playerRef.current?.getPlayerState?.();
       if (state === window.YT?.PlayerState?.ENDED) {
         playerRef.current?.seekTo?.(0, true);
@@ -291,11 +300,6 @@ export default function YouTubePlayer({
         onClick={handlePlayPause}
         onDoubleClick={handleFullscreen}
       />
-      {!ready && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black pointer-events-none">
-          <div className="w-10 h-10 rounded-full border-2 border-amber-500/20 border-t-amber-500 animate-spin" />
-        </div>
-      )}
       <ThumbnailPoster
         visible={!ready}
         thumbnailUrl={thumbnailUrl}

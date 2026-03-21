@@ -1,81 +1,64 @@
 import { NextResponse } from "next/server";
 
-const API_KEY = process.env.OPENSUBTITLES_KEY || "Zff4vJKGx6hFiW02ouPLV1iXQCB3VjL1";
+const API_KEY =
+  process.env.OPENSUBTITLES_KEY || "Zff4vJKGx6hFiW02ouPLV1iXQCB3VjL1";
 const API_BASE = "https://api.opensubtitles.com/api/v1";
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const subUrlOrId = searchParams.get("url");
+    const query = searchParams.get("q");
+    const lang = searchParams.get("lang") || "en";
 
-    if (!subUrlOrId) {
-      return NextResponse.json({ error: "Missing 'url' or 'id' parameter" }, { status: 400 });
+    if (!query || !query.trim()) {
+      return NextResponse.json({ error: "Missing query" }, { status: 400 });
     }
 
-    let finalDownloadUrl = subUrlOrId;
+    const headers = {
+      "Api-Key": API_KEY,
+      "User-Agent": "WatchTogether v1",
+      "Content-Type": "application/json",
+    };
 
-    // 1. If it's a numeric ID (OpenSubtitles v1 file_id), we need to request the download link
-    if (!isNaN(subUrlOrId)) {
-        try {
-            const dlRes = await fetch(`${API_BASE}/download`, {
-                method: "POST",
-                headers: {
-                    "Api-Key": API_KEY,
-                    "User-Agent": "WatchTogether v1",
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ file_id: parseInt(subUrlOrId) })
-            });
-            const dlData = await dlRes.json();
-            if (dlData.link) {
-                finalDownloadUrl = dlData.link;
-            } else {
-                throw new Error("No download link returned from OpenSubtitles.");
-            }
-        } catch (err) {
-            console.error("[subtitles] OS Download request failed:", err.message);
-            return NextResponse.json({ error: "Failed to request download link from OpenSubtitles" }, { status: 500 });
-        }
+    // Go straight to text query — skip the slow per-file hash search
+    const res = await fetch(
+      `${API_BASE}/subtitles?query=${encodeURIComponent(query.trim())}&languages=${lang}&per_page=20`,
+      { headers, signal: AbortSignal.timeout(6000) },
+    );
+
+    if (!res.ok) {
+      throw new Error(`OpenSubtitles API error: ${res.status}`);
     }
 
-    // 2. Download the subtitle file
-    const res = await fetch(finalDownloadUrl);
-    if (!res.ok) throw new Error("Failed to download raw subtitle file.");
-    
-    const contentType = res.headers.get("content-type") || "";
-    const isVtt = finalDownloadUrl.endsWith(".vtt") || contentType.includes("vtt");
-    
-    let rawText = "";
-    if (isVtt) {
-        const vttData = await res.arrayBuffer();
-        return new NextResponse(vttData, {
-          status: 200,
-          headers: {
-            "Content-Type": "text/vtt; charset=utf-8",
-            "Cache-Control": "public, max-age=86400",
-            "Access-Control-Allow-Origin": "*"
-          }
-        });
+    const data = await res.json();
+
+    if (!data.data || data.data.length === 0) {
+      return NextResponse.json({ subtitles: [] });
     }
 
-    // 3. Robust Conversion (SRT -> VTT)
-    rawText = await res.text();
-    const vttText = "WEBVTT\n\n" + rawText
-        .trim()
-        .replace(/\r\n/g, "\n")
-        .replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, "$1.$2");
+    const subtitles = data.data
+      .filter((s) => s.attributes?.files?.length > 0)
+      .map((s) => ({
+        id: s.id,
+        label: [
+          s.attributes.feature_details?.title ||
+            s.attributes.release ||
+            "Unknown",
+          s.attributes.language && `[${s.attributes.language.toUpperCase()}]`,
+          s.attributes.feature_details?.year &&
+            `(${s.attributes.feature_details.year})`,
+        ]
+          .filter(Boolean)
+          .join(" "),
+        url: String(s.attributes.files[0].file_id),
+      }));
 
-    return new NextResponse(vttText, {
-      status: 200,
-      headers: {
-        "Content-Type": "text/vtt; charset=utf-8",
-        "Cache-Control": "public, max-age=86400",
-        "Access-Control-Allow-Origin": "*"
-      }
-    });
-
+    return NextResponse.json({ subtitles });
   } catch (err) {
-    console.error("[subtitles] Download/Proxy error:", err);
-    return NextResponse.json({ error: "Subtitle proxy failed", details: err.message }, { status: 500 });
+    console.error("[subtitles/search]", err.message);
+    return NextResponse.json(
+      { error: err.message || "Search failed" },
+      { status: 500 },
+    );
   }
 }

@@ -407,7 +407,7 @@ export default function SyncEngine({
             socketRef.current.io.opts.reconnection = false;
             socketRef.current.disconnect();
           }
-          onKicked?.();
+          onKicked?.("WRONG_PASSWORD");
           return;
         }
         if (

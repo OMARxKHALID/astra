@@ -24,6 +24,7 @@ export default function VideoPlayer({
   screenshotEnabled = true,
   hlsQualityEnabled = true,
   onSendScreenshot,
+  addToast,
 }) {
   const source = classifyUrl(videoUrl);
 
@@ -49,6 +50,7 @@ export default function VideoPlayer({
         screenshotEnabled={screenshotEnabled}
         hlsQualityEnabled={hlsQualityEnabled}
         onSendScreenshot={onSendScreenshot}
+        addToast={addToast}
       />
     );
 

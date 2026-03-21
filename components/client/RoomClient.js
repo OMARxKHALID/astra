@@ -12,6 +12,7 @@ import ReconnectBanner from "./ReconnectBanner";
 import ToastContainer, { useToast } from "./Toast";
 import SettingsPanel from "./SettingsPanel";
 import KeyboardShortcutsModal from "./KeyboardShortcutsModal";
+import PasswordModal from "./PasswordModal";
 import {
   ShareIcon,
   CrownIcon,
@@ -38,13 +39,13 @@ export default function RoomClient({ roomId, initialMeta }) {
   const router = useRouter();
   const { toasts, addToast } = useToast();
 
-  // ── Identity — use localStorage so userId persists across tab closes ──
+  // ── Identity — localStorage persists across tab closes ──
   const [userId] = useState(() => {
     if (typeof window === "undefined") return "";
     const key = "wt_userId";
     const stored = localStorage.getItem(key) || sessionStorage.getItem(key);
     if (stored) {
-      localStorage.setItem(key, stored); // migrate from sessionStorage
+      localStorage.setItem(key, stored);
       return stored;
     }
     const id = crypto.randomUUID();
@@ -54,6 +55,10 @@ export default function RoomClient({ roomId, initialMeta }) {
 
   const [displayName, setDisplayName] = useState("");
   const [nameReady, setNameReady] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+  const sendRef = useRef(null);
+
   useEffect(() => {
     const stored = localStorage.getItem("wt_displayName");
     const name =
@@ -62,10 +67,6 @@ export default function RoomClient({ roomId, initialMeta }) {
     setDisplayName(name);
     setNameReady(true);
   }, []);
-
-  const [editingName, setEditingName] = useState(false);
-  const [nameInput, setNameInput] = useState("");
-  const sendRef = useRef(null);
 
   const commitName = useCallback((raw) => {
     const trimmed = raw.trim().slice(0, 24);
@@ -76,7 +77,43 @@ export default function RoomClient({ roomId, initialMeta }) {
     setEditingName(false);
   }, []);
 
-  // ── Core room state ───────────────────────────────────────────────────
+  // ── Password prompt ───────────────────────────────────────────────────
+  // initialMeta.hasPassword tells us if the room needs a password.
+  // We show a prompt before connecting; once confirmed we store it and reconnect.
+  const [roomPassword, setRoomPassword] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem(`pw_${roomId}`) || "";
+  });
+  const [passwordError, setPasswordError] = useState("");
+  const [needsPassword, setNeedsPassword] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return (
+      Boolean(initialMeta?.hasPassword) && !localStorage.getItem(`pw_${roomId}`)
+    );
+  });
+  const [syncEnabled, setSyncEnabled] = useState(!needsPassword);
+
+  const handlePasswordSubmit = useCallback(
+    (pw) => {
+      localStorage.setItem(`pw_${roomId}`, pw);
+      setRoomPassword(pw);
+      setPasswordError("");
+      setNeedsPassword(false);
+      setSyncEnabled(true);
+    },
+    [roomId],
+  );
+
+  // When SyncEngine reports wrong password, re-show the prompt with error
+  const handleWrongPassword = useCallback(() => {
+    localStorage.removeItem(`pw_${roomId}`);
+    setRoomPassword("");
+    setPasswordError("Incorrect password. Please try again.");
+    setNeedsPassword(true);
+    setSyncEnabled(false);
+  }, [roomId]);
+
+  // ── Core state ────────────────────────────────────────────────────────
   const [serverState, setServerState] = useState(null);
   const [syncStatus, setSyncStatus] = useState("synced");
   const [connStatus, setConnStatus] = useState("connecting");
@@ -85,16 +122,10 @@ export default function RoomClient({ roomId, initialMeta }) {
   const [messages, setMessages] = useState([]);
   const [mobileSheet, setMobileSheet] = useState(null);
   const [tsMapState, setTsMapState] = useState({});
-  const [typingUsers, setTypingUsers] = useState({}); // { userId: { username, ts } }
+  const [typingUsers, setTypingUsers] = useState({});
   const typingTimersRef = useRef({});
   const displayNamesRef = useRef(displayNames);
   displayNamesRef.current = displayNames;
-
-  // ── Password ──────────────────────────────────────────────────────────
-  const [roomPassword, setRoomPassword] = useState(() => {
-    if (typeof window === "undefined") return "";
-    return localStorage.getItem(`pw_${roomId}`) || "";
-  });
 
   // ── Settings ─────────────────────────────────────────────────────────
   const [screenshotEnabled, setScreenshotEnabled] = useState(() =>
@@ -145,30 +176,35 @@ export default function RoomClient({ roomId, initialMeta }) {
   );
 
   useEffect(() => {
-    const handleUp = () => {
+    const up = () => {
       if (isDraggingSidebar.current) {
         isDraggingSidebar.current = false;
         document.body.style.cursor = "";
         document.body.style.userSelect = "";
       }
     };
-    const handleMove = (e) => {
+    const move = (e) => {
       if (!isDraggingSidebar.current) return;
-      const dx = startX.current - e.clientX;
-      setSidebarWidth(Math.max(250, Math.min(startWidth.current + dx, 600)));
+      setSidebarWidth(
+        Math.max(
+          250,
+          Math.min(startWidth.current + (startX.current - e.clientX), 600),
+        ),
+      );
     };
-    window.addEventListener("mouseup", handleUp);
-    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", up);
+    window.addEventListener("mousemove", move);
     return () => {
-      window.removeEventListener("mouseup", handleUp);
-      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", up);
+      window.removeEventListener("mousemove", move);
     };
   }, []);
 
-  // ── Fullscreen / chat overlay ─────────────────────────────────────────
+  // ── Fullscreen ────────────────────────────────────────────────────────
   const [playerChatOpen, setPlayerChatOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+
   useEffect(() => {
     const onFS = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -178,7 +214,7 @@ export default function RoomClient({ roomId, initialMeta }) {
     return () => document.removeEventListener("fullscreenchange", onFS);
   }, []);
 
-  // Global ? shortcut for keyboard help
+  // Global ? shortcut
   useEffect(() => {
     const handler = (e) => {
       if (["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(e.target.tagName))
@@ -191,9 +227,9 @@ export default function RoomClient({ roomId, initialMeta }) {
   }, []);
 
   const videoRef = useRef(null);
+  const bentoVideoRef = useRef(null);
 
   // Ambilight
-  const bentoVideoRef = useRef(null);
   const handleAmbiColors = useCallback((colors) => {
     if (!bentoVideoRef.current) return;
     if (!colors) {
@@ -204,12 +240,12 @@ export default function RoomClient({ roomId, initialMeta }) {
     bentoVideoRef.current.style.boxShadow = `0 0 80px 30px rgba(${r},${g},${b},0.18), inset 0 1px 0 rgba(255,255,255,0.055)`;
   }, []);
 
-  // ── Handlers ──────────────────────────────────────────────────────────
+  // ── Event handlers ────────────────────────────────────────────────────
   const handleStateUpdate = useCallback((stOrFn) => setServerState(stOrFn), []);
-
-  const handleTsMapUpdate = useCallback((data) => {
-    setTsMapState({ ...data });
-  }, []);
+  const handleTsMapUpdate = useCallback(
+    (data) => setTsMapState({ ...data }),
+    [],
+  );
 
   const handleChatMessage = useCallback(
     (msg) => {
@@ -217,13 +253,7 @@ export default function RoomClient({ roomId, initialMeta }) {
         setMessages(msg.messages || []);
         return;
       }
-      if (
-        !msg.text &&
-        !msg.dataUrl &&
-        msg.type !== "chat_history" &&
-        msg.senderId !== "system"
-      )
-        return;
+      if (!msg.text && !msg.dataUrl && msg.senderId !== "system") return;
 
       if (msg.senderId === "system") {
         let icon = null,
@@ -291,11 +321,11 @@ export default function RoomClient({ roomId, initialMeta }) {
         case "participants":
           setParticipants((event.users || []).map((u) => u.userId));
           setDisplayNames((prev) => {
-            const next = { ...prev };
+            const n = { ...prev };
             (event.users || []).forEach((u) => {
-              next[u.userId] = u.username;
+              n[u.userId] = u.username;
             });
-            return next;
+            return n;
           });
           break;
         case "user_joined":
@@ -328,7 +358,6 @@ export default function RoomClient({ roomId, initialMeta }) {
             ...prev,
             [event.userId]: { username: event.username, ts: Date.now() },
           }));
-          // Auto-expire after 3.5s
           clearTimeout(typingTimersRef.current[event.userId]);
           typingTimersRef.current[event.userId] = setTimeout(() => {
             setTypingUsers((prev) => {
@@ -343,9 +372,18 @@ export default function RoomClient({ roomId, initialMeta }) {
     [userId, addToast],
   );
 
-  const handleKicked = useCallback(() => {
-    router.push("/?kicked=1");
-  }, [router]);
+  // Kicked: distinguish between wrong password and actual kick
+  const handleKicked = useCallback(
+    (reason) => {
+      if (reason === "WRONG_PASSWORD") {
+        handleWrongPassword();
+        return;
+      }
+      router.push("/?kicked=1");
+    },
+    [router, handleWrongPassword],
+  );
+
   const handleSendChat = useCallback(
     (text, dataUrl) => sendRef.current?.({ type: "chat", text, dataUrl }),
     [],
@@ -398,6 +436,7 @@ export default function RoomClient({ roomId, initialMeta }) {
     }));
     sendRef.current?.({ type: "speed", rate, currentTime: time });
   }, []);
+
   const handleKick = useCallback(
     (tid) => sendRef.current?.({ type: "kick", targetUserId: tid }),
     [],
@@ -414,7 +453,6 @@ export default function RoomClient({ roomId, initialMeta }) {
     (pw) => sendRef.current?.({ type: "set_password", password: pw }),
     [],
   );
-
   const handleShare = useCallback(() => {
     addToast("Link copied!", "success");
     navigator.clipboard
@@ -440,19 +478,15 @@ export default function RoomClient({ roomId, initialMeta }) {
     serverState?.subtitleUrl ?? initialMeta?.subtitleUrl ?? "";
   const hostOnlyControls = serverState?.hostOnlyControls ?? false;
   const strictVideoUrlMode = serverState?.strictVideoUrlMode ?? false;
-  const hasPassword = serverState?.hasPassword ?? false;
+  const hasPassword =
+    serverState?.hasPassword ?? initialMeta?.hasPassword ?? false;
   const canControl = !hostOnlyControls || isHost;
-
-  // Connection quality leader time
   const leaderTime = useMemo(() => getLeaderTime(tsMapState), [tsMapState]);
 
-  // Speed sync: apply host's playbackRate to all viewers when speedSyncEnabled
-  // (server already broadcasts playbackRate in REC:host; the video player
-  //  applies it via the playbackRate prop — this is already handled)
-
-  // ── Chat overlay (fullscreen) ─────────────────────────────────────────
+  // ── Chat overlay (fullscreen only) ────────────────────────────────────
+  // Positioned inside the video section so it doesn't push the layout
   const chatOverlay = isFullscreen ? (
-    <div className="absolute top-3 right-4 sm:top-4 sm:right-6 lg:right-4 z-30 flex flex-col items-end pointer-events-none">
+    <div className="absolute top-3 right-3 z-30 flex flex-col items-end pointer-events-none">
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -461,7 +495,7 @@ export default function RoomClient({ roomId, initialMeta }) {
             return !v;
           });
         }}
-        className="pointer-events-auto w-10 h-10 flex items-center justify-center rounded-[2rem] bg-black/40 backdrop-blur-md text-white/70 hover:text-white transition-all ring-1 ring-white/10 shadow-xl"
+        className="pointer-events-auto w-10 h-10 flex items-center justify-center rounded-[2rem] bg-black/50 backdrop-blur-md text-white/70 hover:text-white transition-all ring-1 ring-white/10 shadow-xl relative"
         title={playerChatOpen ? "Close Chat" : "Open Chat"}
       >
         <ChatIcon className="w-5 h-5" />
@@ -471,12 +505,12 @@ export default function RoomClient({ roomId, initialMeta }) {
       </button>
       {playerChatOpen && (
         <div
-          className="pointer-events-auto mt-2 w-80 sm:w-96 h-[450px] sm:h-[550px] max-h-[85vh] rounded-[2.5rem] border border-white/10 bg-black/30 backdrop-blur-2xl overflow-hidden flex flex-col shadow-2xl animate-fadeIn"
+          className="pointer-events-auto mt-2 w-72 sm:w-80 h-[400px] rounded-[2rem] border border-white/10 bg-black/40 backdrop-blur-2xl overflow-hidden flex flex-col shadow-2xl"
           onClick={(e) => e.stopPropagation()}
           onDoubleClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0 bg-white/5">
-            <span className="font-display font-bold text-sm text-white/90 tracking-wide">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0 bg-white/5">
+            <span className="font-display font-bold text-sm text-white/90">
               Room Chat
             </span>
             <button
@@ -486,7 +520,7 @@ export default function RoomClient({ roomId, initialMeta }) {
               ✕
             </button>
           </div>
-          <div className="flex-1 min-h-0 relative">
+          <div className="flex-1 min-h-0">
             <ChatPanel
               messages={messages}
               userId={userId}
@@ -501,14 +535,24 @@ export default function RoomClient({ roomId, initialMeta }) {
     </div>
   ) : null;
 
+  // ── Render ────────────────────────────────────────────────────────────
   return (
     <div className="h-dvh bg-void flex flex-col overflow-hidden text-text font-body antialiased">
+      {/* Password prompt — shown BEFORE connecting */}
+      {needsPassword && (
+        <PasswordModal
+          roomId={roomId}
+          onSubmit={handlePasswordSubmit}
+          error={passwordError}
+        />
+      )}
+
       <div
         aria-hidden
         className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(ellipse_at_15%_20%,rgba(245,158,11,0.07),transparent_50%),radial-gradient(ellipse_at_85%_80%,rgba(16,185,129,0.05),transparent_50%)]"
       />
 
-      {userId && nameReady && (
+      {userId && nameReady && syncEnabled && (
         <SyncEngine
           roomId={roomId}
           userId={userId}
@@ -559,13 +603,16 @@ export default function RoomClient({ roomId, initialMeta }) {
         hasPassword={hasPassword}
       />
 
+      {/* Main bento grid — hidden in fullscreen to prevent black space */}
       <main
-        className={`relative z-10 flex-1 min-h-0 min-w-0 bento-grid px-2 sm:px-4 pb-2 sm:pb-4 ${showSidebar ? "sidebar-open" : "sidebar-closed"}`}
+        className={`relative z-10 flex-1 min-h-0 min-w-0 bento-grid px-2 sm:px-4 pb-2 sm:pb-4
+          ${showSidebar ? "sidebar-open" : "sidebar-closed"}
+          ${isFullscreen ? "!p-0 !gap-0" : ""}`}
         style={{ "--sidebar-width": `${sidebarWidth}px` }}
       >
         <section
           ref={bentoVideoRef}
-          className="bento-video glass-card overflow-hidden"
+          className={`bento-video glass-card overflow-hidden ${isFullscreen ? "!rounded-none" : ""}`}
         >
           <VideoPlayer
             videoRef={videoRef}
@@ -582,25 +629,30 @@ export default function RoomClient({ roomId, initialMeta }) {
             chatOverlay={chatOverlay}
             onLoad={handleLoadUrl}
             onSubtitleChange={handleSubtitleChange}
-            onAmbiColors={handleAmbiColors}
+            onAmbiColors={ambiEnabled ? handleAmbiColors : null}
             screenshotEnabled={screenshotEnabled}
             hlsQualityEnabled={hlsQualityEnabled}
-            ambiEnabled={ambiEnabled}
             onSendScreenshot={(dataUrl) =>
               handleSendChat("📸 Screenshot", dataUrl)
             }
+            addToast={addToast}
           />
         </section>
-        <section className="bento-url glass-card">
-          <VideoUrlInput
-            isHost={isHost}
-            currentUrl={videoUrl}
-            currentSubtitleUrl={subtitleUrl}
-            onLoad={handleLoadUrl}
-            strictVideoUrlMode={strictVideoUrlMode}
-          />
-        </section>
-        {showSidebar && (
+
+        {/* URL bar — hidden when fullscreen so no black space shows */}
+        {!isFullscreen && (
+          <section className="bento-url glass-card">
+            <VideoUrlInput
+              isHost={isHost}
+              currentUrl={videoUrl}
+              currentSubtitleUrl={subtitleUrl}
+              onLoad={handleLoadUrl}
+              strictVideoUrlMode={strictVideoUrlMode}
+            />
+          </section>
+        )}
+
+        {showSidebar && !isFullscreen && (
           <aside className="bento-sidebar hidden lg:flex relative">
             <div
               className="absolute -left-[10px] top-0 bottom-0 w-5 cursor-col-resize z-50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity group"
@@ -634,44 +686,46 @@ export default function RoomClient({ roomId, initialMeta }) {
         )}
       </main>
 
-      {/* Mobile tab bar */}
-      <div className="lg:hidden shrink-0 relative z-20 flex items-center justify-around px-6 py-3 pb-safe border-t border-white/5 bg-void/85 backdrop-blur-xl">
-        <MobileTabBtn
-          label={`Chat${unreadCount > 0 ? ` (${unreadCount})` : ""}`}
-          active={mobileSheet === "chat"}
-          onClick={() => {
-            setMobileSheet(mobileSheet === "chat" ? null : "chat");
-            if (mobileSheet !== "chat") setUnreadCount(0);
-          }}
-          icon={
-            <div className="relative">
-              <ChatIcon className="w-5 h-5" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1.5 w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
-              )}
-            </div>
-          }
-        />
-        <MobileTabBtn
-          label={`People (${participants.length})`}
-          active={mobileSheet === "users"}
-          onClick={() =>
-            setMobileSheet(mobileSheet === "users" ? null : "users")
-          }
-          icon={<UsersIcon className="w-5 h-5" />}
-        />
-        {nameReady && (
+      {/* Mobile tab bar — hidden in fullscreen */}
+      {!isFullscreen && (
+        <div className="lg:hidden shrink-0 relative z-20 flex items-center justify-around px-6 py-3 pb-safe border-t border-white/5 bg-void/85 backdrop-blur-xl">
           <MobileTabBtn
-            label={displayName.slice(0, 10)}
-            active={editingName}
+            label={`Chat${unreadCount > 0 ? ` (${unreadCount})` : ""}`}
+            active={mobileSheet === "chat"}
             onClick={() => {
-              setNameInput(displayName);
-              setEditingName(true);
+              setMobileSheet(mobileSheet === "chat" ? null : "chat");
+              if (mobileSheet !== "chat") setUnreadCount(0);
             }}
-            icon={<PencilIcon className="w-5 h-5" />}
+            icon={
+              <div className="relative">
+                <ChatIcon className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1.5 w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+                )}
+              </div>
+            }
           />
-        )}
-      </div>
+          <MobileTabBtn
+            label={`People (${participants.length})`}
+            active={mobileSheet === "users"}
+            onClick={() =>
+              setMobileSheet(mobileSheet === "users" ? null : "users")
+            }
+            icon={<UsersIcon className="w-5 h-5" />}
+          />
+          {nameReady && (
+            <MobileTabBtn
+              label={displayName.slice(0, 10)}
+              active={editingName}
+              onClick={() => {
+                setNameInput(displayName);
+                setEditingName(true);
+              }}
+              icon={<PencilIcon className="w-5 h-5" />}
+            />
+          )}
+        </div>
+      )}
 
       {/* Mobile sheet */}
       {mobileSheet && (
@@ -720,7 +774,6 @@ export default function RoomClient({ roomId, initialMeta }) {
         </>
       )}
 
-      {/* Settings panel */}
       <SettingsPanel
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
@@ -740,8 +793,6 @@ export default function RoomClient({ roomId, initialMeta }) {
         ambiEnabled={ambiEnabled}
         setAmbiEnabled={setAmbiEnabled}
       />
-
-      {/* Keyboard shortcuts modal */}
       <KeyboardShortcutsModal
         isOpen={showShortcuts}
         onClose={() => setShowShortcuts(false)}
@@ -750,6 +801,7 @@ export default function RoomClient({ roomId, initialMeta }) {
   );
 }
 
+// ── Sub-components ────────────────────────────────────────────────────────────
 function RoomNavbar({
   roomId,
   displayName,
@@ -793,10 +845,7 @@ function RoomNavbar({
         <div className="flex items-center gap-2 px-2.5 py-2 rounded-[2rem] glass-card text-[10px] font-mono uppercase tracking-[0.2em] shrink-0">
           <span className="w-1.5 h-1.5 rounded-full bg-jade/70 animate-pulse" />
           {hasPassword && (
-            <span
-              title="Password protected"
-              className="text-amber-400/60 text-[9px]"
-            >
+            <span title="Password protected" className="text-amber-400/60">
               🔒
             </span>
           )}
@@ -833,7 +882,6 @@ function RoomNavbar({
                 setNameInput(displayName);
                 setEditingName(true);
               }}
-              title="Click to edit your name"
               className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-[2rem] glass-card hover:border-white/15 transition-all text-[10px] font-mono text-white/50 hover:text-white/80 max-w-[140px] min-w-0"
             >
               <PencilIcon className="w-3 h-3 shrink-0" />
@@ -858,6 +906,7 @@ function RoomNavbar({
             </span>
           )}
         </button>
+
         <div className="px-3 py-2 rounded-[2rem] glass-card">
           <SyncStatusIndicator
             syncStatus={syncStatus}
@@ -865,16 +914,14 @@ function RoomNavbar({
           />
         </div>
 
-        {/* Keyboard shortcuts */}
         <button
           onClick={onOpenShortcuts}
           title="Keyboard shortcuts (?)"
-          className="w-9 h-9 flex items-center justify-center rounded-[2rem] glass-card text-muted hover:text-white/80 transition-all active:scale-95"
+          className="hidden sm:flex w-9 h-9 items-center justify-center rounded-[2rem] glass-card text-muted hover:text-white/80 transition-all active:scale-95"
         >
           <KeyboardIcon className="w-4 h-4" />
         </button>
 
-        {/* Settings */}
         <button
           onClick={onOpenSettings}
           title="Room settings"

@@ -8,7 +8,7 @@ const { loadEnvConfig } = pkg;
 loadEnvConfig(process.cwd());
 
 // Strict video URL validation — inlined so socket.js is self-contained
-const STRICT_VIDEO_EXTENSIONS = /\.(mp4|webm|ogg|mkv|mov|avi)$/i;
+const STRICT_VIDEO_EXTENSIONS = /\.(mp4|webm|ogg|mkv|mov|avi|m3u8)$/i;
 function isStrictVideoUrl(raw) {
   if (!raw || typeof raw !== "string") return false;
   try {

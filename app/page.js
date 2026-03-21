@@ -2,8 +2,7 @@ import CreateRoomForm from "@/components/client/CreateRoomForm";
 
 export const metadata = {
   title: "WatchTogether — Watch videos in sync",
-  description:
-    "Create a private room, share the link, watch any video in perfect real-time sync with friends.",
+  description: "Sync your video playback with friends anywhere in the world. Real-time playback for YouTube, Vimeo, and more.",
 };
 
 export default function HomePage() {
@@ -34,11 +33,11 @@ export default function HomePage() {
       </div>
       <div className="relative z-10 text-center mb-6 max-w-xl">
         <div
-          className="inline-flex items-center justify-center w-16 h-16 rounded-[2rem]
-                        bg-amber-500 shadow-2xl shadow-amber-500/20 mb-6
-                        ring-1 ring-amber-400/50"
+          className="inline-flex items-center justify-center w-16 h-16 rounded-[2.2rem]
+                        bg-amber-500 shadow-2xl shadow-amber-500/30 mb-7
+                        ring-1 ring-amber-400/50 transform -rotate-3 hover:rotate-0 transition-transform duration-500"
         >
-          <FilmIcon className="w-8 h-8 text-void" />
+          <span className="font-display font-black text-void text-2xl tracking-tighter">WT</span>
         </div>
 
         <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-bright tracking-tight leading-tight mb-3">
@@ -94,21 +93,6 @@ function FeatureCell({ icon, title, desc }) {
         <p className="text-xs text-muted/70 leading-snug mt-0.5">{desc}</p>
       </div>
     </div>
-  );
-}
-
-function FilmIcon({ className }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-    >
-      <rect x="2" y="2" width="20" height="20" rx="2.5" />
-      <path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 7h5M17 17h5" />
-    </svg>
   );
 }
 
