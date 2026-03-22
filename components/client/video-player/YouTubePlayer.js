@@ -24,7 +24,6 @@ export default function YouTubePlayer({
   onSeek,
   onSpeed,
   canControl = true,
-  chatOverlay,
   onAmbiColors,
   theatreMode = false,
   onToggleTheatre,
@@ -56,10 +55,29 @@ export default function YouTubePlayer({
     ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
     : null;
 
-  // Ambilight: YT is cross-origin, canvas reads are blocked
+  // Ambilight: YT is cross-origin, canvas reads are blocked.
+  // We sample the thumbnail ONCE as a staticthemed glow for the room.
   useEffect(() => {
-    onAmbiColors?.(null);
-  }, [onAmbiColors]);
+    if (!onAmbiColors || !thumbnailUrl) return;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = thumbnailUrl;
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = 1;
+        canvas.height = 1;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, 1, 1);
+        const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+        onAmbiColors({ r, g, b });
+      } catch {
+        onAmbiColors(null);
+      }
+    };
+    img.onerror = () => onAmbiColors(null);
+    return () => onAmbiColors(null);
+  }, [thumbnailUrl, onAmbiColors]);
 
   const showCtrl = useCallback(() => {
     setCtrlVis(true);
@@ -376,8 +394,6 @@ export default function YouTubePlayer({
           Skipping ad…
         </div>
       )}
-
-      {chatOverlay}
 
       <div className="absolute top-3 left-3 px-2 py-1 rounded-[2rem] bg-red-600/80 text-[10px] font-bold text-white backdrop-blur-sm z-20 pointer-events-none opacity-0 group-hover/yt:opacity-100 transition-opacity">
         YouTube

@@ -17,7 +17,6 @@ export default function VideoPlayer({
   onSeek,
   onSpeed,
   canControl = true,
-  chatOverlay,
   onLoad,
   onSubtitleChange,
   onAmbiColors,
@@ -46,7 +45,6 @@ export default function VideoPlayer({
         onSeek={onSeek}
         onSpeed={onSpeed}
         canControl={canControl}
-        chatOverlay={chatOverlay}
         onLoad={onLoad}
         onSubtitleChange={onSubtitleChange}
         onAmbiColors={onAmbiColors}
@@ -73,7 +71,6 @@ export default function VideoPlayer({
         onSeek={onSeek}
         onSpeed={onSpeed}
         canControl={canControl}
-        chatOverlay={chatOverlay}
         onLoad={onLoad}
         onAmbiColors={onAmbiColors}
         theatreMode={theatreMode}
@@ -94,7 +91,6 @@ export default function VideoPlayer({
         onSeek={onSeek}
         onSpeed={onSpeed}
         canControl={canControl}
-        chatOverlay={chatOverlay}
         onLoad={onLoad}
         onAmbiColors={onAmbiColors}
         theatreMode={theatreMode}

@@ -110,6 +110,7 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "http://localhost:3000")
   .map((o) => o.trim().replace(/\/$/, ""));
 const rooms = new Map(); // roomId → Room
 const clientMeta = new Map(); // socketId → { userId, roomId, isHost, username }
+const tsLastSent = new Map(); // socketId → last CMD:ts epoch ms (rate limiting)
 
 console.log(
   `[socket.io] Starting on port ${PORT} | Origins: [${ALLOWED_ORIGINS.join(", ")}]`,
@@ -141,6 +142,7 @@ class Room {
     // Sync state
     this.tsMap = {}; // userId → currentTime
     this.tsLockUntil = 0; // epoch ms — ignore CMD:ts before this
+    this.lastBroadcastTime = Date.now(); // epoch ms — used for timestamp normalization
 
     // Chat — dataUrls are NEVER stored (memory/bandwidth)
     this.messages = []; // max 200 text-only messages
@@ -187,8 +189,13 @@ class Room {
   receiveTimestamp(userId, time) {
     if (Date.now() < this.tsLockUntil) return;
     if (typeof time !== "number" || time < 0) return;
-    if (time > this.videoTS) this.videoTS = time;
-    this.tsMap[userId] = time;
+    // Normalize: subtract elapsed time since last broadcast so a late-arriving
+    // report doesn't push the room clock forward artificially.
+    // +1 projects to the next broadcast window (~1s away) — mirrors watchparty's formula.
+    const staleness = (Date.now() - this.lastBroadcastTime) / 1000;
+    const normalized = Math.max(0, time - staleness + 1);
+    if (normalized > this.videoTS) this.videoTS = normalized;
+    this.tsMap[userId] = normalized;
   }
 
   changeVideo(video, videoTS = 0, paused = false, subtitleUrl = "") {
@@ -236,6 +243,7 @@ class Room {
         if (!validUsers.has(uid)) delete this.tsMap[uid];
       }
       io.to(this.roomId).emit("REC:tsMap", { ...this.tsMap });
+      this.lastBroadcastTime = Date.now();
 
       // REC:host: only emit when state changed
       const fp = this._stateFingerprint();
@@ -484,6 +492,11 @@ io.on("connection", (socket) => {
     if (!meta) return;
     const room = rooms.get(meta.roomId);
     if (!room) return;
+    // Rate-limit: accept at most one CMD:ts per 500ms per socket.
+    // Prevents a misbehaving or spamming client from flooding receiveTimestamp().
+    const now = Date.now();
+    if (now - (tsLastSent.get(socket.id) ?? 0) < 500) return;
+    tsLastSent.set(socket.id, now);
     const time = typeof payload === "object" ? payload.currentTime : payload;
     room.receiveTimestamp(meta.userId, time);
   });
@@ -724,6 +737,7 @@ io.on("connection", (socket) => {
     const meta = clientMeta.get(socket.id);
     if (!meta) return;
     clientMeta.delete(socket.id);
+    tsLastSent.delete(socket.id);
 
     const room = rooms.get(meta.roomId);
     if (!room) return;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import SyncEngine from "./SyncEngine";
 import VideoPlayer from "./video-player";
@@ -174,6 +175,7 @@ export default function RoomClient({ roomId, initialMeta }) {
   const [hlsQualityEnabled, setHlsQualityEnabled] = useState(true);
   const [scrubPreviewEnabled, setScrubPreviewEnabled] = useState(true);
   const [speedSyncEnabled, setSpeedSyncEnabled] = useState(true);
+  const [ambilightEnabled, setAmbilightEnabled] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [theatreMode, setTheatreMode] = useState(false);
@@ -182,6 +184,7 @@ export default function RoomClient({ roomId, initialMeta }) {
     setScreenshotEnabled(ls.get(LS_KEYS.screenshot) !== "false");
     setHlsQualityEnabled(ls.get(LS_KEYS.hlsQuality) !== "false");
     setScrubPreviewEnabled(ls.get(LS_KEYS.scrubPreview) !== "false");
+    setAmbilightEnabled(ls.get(LS_KEYS.ambilight) !== "false");
   }, []);
 
   useEffect(() => {
@@ -193,6 +196,9 @@ export default function RoomClient({ roomId, initialMeta }) {
   useEffect(() => {
     ls.set(LS_KEYS.scrubPreview, scrubPreviewEnabled ? "true" : "false");
   }, [scrubPreviewEnabled]);
+  useEffect(() => {
+    ls.set(LS_KEYS.ambilight, ambilightEnabled ? "true" : "false");
+  }, [ambilightEnabled]);
 
   // ── Sidebar ───────────────────────────────────────────────────────────────
   const [showSidebar, setShowSidebar] = useState(true);
@@ -239,11 +245,14 @@ export default function RoomClient({ roomId, initialMeta }) {
   const [playerChatOpen, setPlayerChatOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fsElement, setFsElement] = useState(null);
 
   useEffect(() => {
     const onFS = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-      if (!document.fullscreenElement) setPlayerChatOpen(false);
+      const el = document.fullscreenElement;
+      setIsFullscreen(!!el);
+      setFsElement(el || null);
+      if (!el) setPlayerChatOpen(false);
     };
     document.addEventListener("fullscreenchange", onFS);
     return () => document.removeEventListener("fullscreenchange", onFS);
@@ -278,14 +287,37 @@ export default function RoomClient({ roomId, initialMeta }) {
   // ── Refs ──────────────────────────────────────────────────────────────────
   const videoRef = useRef(null);
   const bentoVideoRef = useRef(null);
+  const rootAmbiRef = useRef(null);
 
-  // Ambilight glow — written to DOM directly to avoid 12fps React re-renders
+  // Ambilight — direct DOM writes to avoid React re-renders at 12fps.
+  // The overlay uses position:fixed so it is never clipped by any overflow:hidden ancestor.
+  // boxShadow on bentoVideoRef handles the glow around the video sides/bottom.
+  // The fixed overlay handles the navbar bleed (top of screen).
+  const ambilightEnabledRef = useRef(ambilightEnabled);
+  useEffect(() => {
+    ambilightEnabledRef.current = ambilightEnabled;
+    if (!ambilightEnabled) {
+      if (rootAmbiRef.current) rootAmbiRef.current.style.opacity = "0";
+      if (bentoVideoRef.current) bentoVideoRef.current.style.boxShadow = "";
+    }
+  }, [ambilightEnabled]);
+
   const handleAmbiColors = useCallback((colors) => {
-    const el = bentoVideoRef.current;
-    if (!el) return;
-    el.style.boxShadow = colors
-      ? `0 0 80px 30px rgba(${colors.r},${colors.g},${colors.b},0.18), inset 0 1px 0 rgba(255,255,255,0.055)`
-      : "";
+    const overlay = rootAmbiRef.current;
+    if (overlay) {
+      if (colors && ambilightEnabledRef.current) {
+        overlay.style.opacity = "1";
+        overlay.style.background = `radial-gradient(ellipse 100% 100% at 50% 0%, rgba(${colors.r},${colors.g},${colors.b},0.4) 0%, transparent 100%)`;
+      } else {
+        overlay.style.opacity = "0";
+      }
+    }
+    const section = bentoVideoRef.current;
+    if (section) {
+      section.style.boxShadow = (colors && ambilightEnabledRef.current)
+        ? `0 0 100px 30px rgba(${colors.r},${colors.g},${colors.b},0.35), inset 0 1px 0 rgba(255,255,255,0.055)`
+        : "";
+    }
   }, []);
 
   // ── Socket event handlers ─────────────────────────────────────────────────
@@ -607,61 +639,81 @@ export default function RoomClient({ roomId, initialMeta }) {
     } catch {}
   }, [serverState, videoUrl, roomId, isHost]);
 
-  // ── Fullscreen chat overlay ───────────────────────────────────────────────
-  const chatOverlay = isFullscreen ? (
-    <div className="absolute top-3 right-3 z-30 flex flex-col items-end pointer-events-none">
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          setPlayerChatOpen((v) => {
-            if (!v) setUnreadCount(0);
-            return !v;
-          });
-        }}
-        className="pointer-events-auto w-10 h-10 flex items-center justify-center rounded-[2rem] bg-black/50 backdrop-blur-md text-white/70 hover:text-white ring-1 ring-white/10 shadow-xl relative transition-colors"
-      >
-        <ChatIcon className="w-5 h-5" />
-        {!playerChatOpen && unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-500 rounded-full border-2 border-void animate-pulse" />
-        )}
-      </button>
-      {playerChatOpen && (
-        <div
-          className="pointer-events-auto mt-2 w-72 sm:w-80 h-[400px] rounded-[2rem] border border-white/10 bg-black/55 backdrop-blur-3xl overflow-hidden flex flex-col shadow-2xl"
-          onClick={(e) => e.stopPropagation()}
-          onDoubleClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0 bg-white/5">
-            <span className="font-display font-bold text-sm text-white/90">
-              Room Chat
-            </span>
+  // Fullscreen chat — rendered as a portal directly into the fullscreen element.
+  // This prevents the video player component from re-rendering when chat opens,
+  // which was causing the YouTube iframe to repaint/lift in fullscreen mode.
+  const fullscreenChatPortal =
+    isFullscreen && fsElement
+      ? createPortal(
+          <div className="absolute top-3 right-3 z-[100] flex flex-col items-end pointer-events-none">
             <button
-              onClick={() => setPlayerChatOpen(false)}
-              className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                setPlayerChatOpen((v) => {
+                  if (!v) setUnreadCount(0);
+                  return !v;
+                });
+              }}
+              className="pointer-events-auto w-10 h-10 flex items-center justify-center rounded-[2rem] bg-black/50 backdrop-blur-md text-white/70 hover:text-white ring-1 ring-white/10 shadow-xl relative transition-colors"
             >
-              ✕
+              <ChatIcon className="w-5 h-5" />
+              {!playerChatOpen && unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-500 rounded-full border-2 border-void animate-pulse" />
+              )}
             </button>
-          </div>
-          <div className="flex-1 min-h-0">
-            <ChatPanel
-              messages={messages}
-              userId={userId}
-              displayNames={displayNames}
-              onSend={handleSendChat}
-              typingUsers={typingUsers}
-              onTyping={handleTyping}
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  ) : null;
+            {playerChatOpen && (
+              <div
+                className="pointer-events-auto mt-2 w-72 sm:w-80 h-[400px] rounded-[2rem] border border-white/10 bg-black/55 backdrop-blur-3xl overflow-hidden flex flex-col shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+                onDoubleClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0 bg-white/5">
+                  <span className="font-display font-bold text-sm text-white/90">
+                    Room Chat
+                  </span>
+                  <button
+                    onClick={() => setPlayerChatOpen(false)}
+                    className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="flex-1 min-h-0">
+                  <ChatPanel
+                    messages={messages}
+                    userId={userId}
+                    displayNames={displayNames}
+                    onSend={handleSendChat}
+                    typingUsers={typingUsers}
+                    onTyping={handleTyping}
+                  />
+                </div>
+              </div>
+            )}
+          </div>,
+          fsElement,
+        )
+      : null;
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div
-      className={`h-dvh bg-void flex flex-col overflow-hidden text-text font-body antialiased${theatreMode ? " theatre-mode" : ""}`}
+      className={`h-dvh flex flex-col overflow-hidden text-text font-body antialiased${theatreMode ? " theatre-mode" : ""}`}
     >
+      {/* Ambilight fixed overlay — position:fixed escapes all overflow:hidden clipping.
+          Covers the top of the viewport (navbar area) with the sampled video color. */}
+      <div
+        ref={rootAmbiRef}
+        aria-hidden
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 5,
+          pointerEvents: "none",
+          opacity: 0,
+          transition: "opacity 0.6s ease",
+        }}
+      />
       {/* Password modal — mounted only client-side to avoid SSR hydration mismatch */}
       {mounted && needsPassword && (
         <PasswordModal
@@ -874,7 +926,6 @@ export default function RoomClient({ roomId, initialMeta }) {
             onSeek={handleSeek}
             onSpeed={handleSpeed}
             canControl={canControl}
-            chatOverlay={chatOverlay}
             onLoad={handleLoadUrl}
             onSubtitleChange={handleSubtitleChange}
             onAmbiColors={handleAmbiColors}
@@ -888,6 +939,7 @@ export default function RoomClient({ roomId, initialMeta }) {
             theatreMode={theatreMode}
             onToggleTheatre={() => setTheatreMode((v) => !v)}
           />
+          {fullscreenChatPortal}
         </section>
 
         {/* URL bar */}
@@ -942,7 +994,13 @@ export default function RoomClient({ roomId, initialMeta }) {
 
       {/* ── Mobile tab bar ──────────────────────────────────────────────────── */}
       {!isFullscreen && !isTheatre && (
-        <div className="lg:hidden shrink-0 relative z-20 flex items-center justify-around px-6 py-3 pb-safe border-t border-white/5 bg-void/85 backdrop-blur-xl">
+        <div
+          className="lg:hidden shrink-0 relative z-20 flex items-center justify-around px-6 py-3 pb-safe backdrop-blur-xl"
+          style={{
+            borderTop: "1px solid var(--color-border)",
+            backgroundColor: "var(--color-void)",
+          }}
+        >
           <MobileTabBtn
             label={`Chat${unreadCount > 0 ? ` (${unreadCount})` : ""}`}
             active={mobileSheet === "chat"}
@@ -988,8 +1046,17 @@ export default function RoomClient({ roomId, initialMeta }) {
             className="lg:hidden fixed inset-0 z-30 bg-black/50 backdrop-blur-sm"
             onClick={() => setMobileSheet(null)}
           />
-          <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 h-[72vh] flex flex-col bg-surface/95 backdrop-blur-3xl border-t border-white/10 rounded-t-[3rem] overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 shrink-0">
+          <div
+            className="lg:hidden fixed bottom-0 inset-x-0 z-40 h-[72vh] flex flex-col backdrop-blur-3xl rounded-t-[3rem] overflow-hidden"
+            style={{
+              backgroundColor: "var(--color-panel)",
+              borderTop: "1px solid var(--color-border)",
+            }}
+          >
+            <div
+              className="flex items-center justify-between px-6 py-4 shrink-0"
+              style={{ borderBottom: "1px solid var(--color-border)" }}
+            >
               <span className="font-display font-semibold text-white/80">
                 {mobileSheet === "chat" ? "Chat" : "Participants"}
               </span>
@@ -1044,6 +1111,8 @@ export default function RoomClient({ roomId, initialMeta }) {
         setScrubPreviewEnabled={setScrubPreviewEnabled}
         speedSyncEnabled={speedSyncEnabled}
         setSpeedSyncEnabled={setSpeedSyncEnabled}
+        ambilightEnabled={ambilightEnabled}
+        setAmbilightEnabled={setAmbilightEnabled}
         onToggleHostControls={handleToggleHostControls}
         onToggleStrictVideoUrlMode={handleToggleStrictMode}
         hasPassword={hasPassword}

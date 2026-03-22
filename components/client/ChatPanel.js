@@ -66,7 +66,10 @@ export default function ChatPanel({
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-[rgba(0,0,0,0.06)] dark:border-white/5 shrink-0">
+      <div
+        className="flex items-center gap-3 px-5 py-4 shrink-0"
+        style={{ borderBottom: "1px solid var(--color-border)" }}
+      >
         <div className="w-9 h-9 rounded-2xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 shrink-0">
           <ChatBubbleIcon
             className="w-4 h-4 text-amber-500"
@@ -201,7 +204,10 @@ function ChatMessage({ msg, isOwn, displayNames = {} }) {
   if (msg.senderId === "system") {
     const ICONS = {
       "[HOST]": (
-        <CrownIcon className="w-3 h-3 text-amber-400 shrink-0" strokeWidth={2} />
+        <CrownIcon
+          className="w-3 h-3 text-amber-400 shrink-0"
+          strokeWidth={2}
+        />
       ),
       "[VIDEO]": (
         <FilmIcon className="w-3 h-3 text-jade shrink-0" strokeWidth={2} />

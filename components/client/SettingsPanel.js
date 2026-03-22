@@ -72,10 +72,12 @@ export default function SettingsPanel({
   setScrubPreviewEnabled,
   speedSyncEnabled,
   setSpeedSyncEnabled,
+  ambilightEnabled,
+  setAmbilightEnabled,
 }) {
   const panelRef = useRef(null);
   const [pwInput, setPwInput] = useState("");
-  const [pwMode, setPwMode] = useState("idle"); // "idle" | "set" | "remove"
+  const [pwMode, setPwMode] = useState("idle");
 
   useEffect(() => {
     if (!isOpen) return;
@@ -124,13 +126,13 @@ export default function SettingsPanel({
           </button>
         </div>
 
-        {/* Two-column body */}
+        {/* Body */}
         <div
           className="px-6 py-4 max-h-[80vh] overflow-y-auto"
           style={{ scrollbarWidth: "none" }}
         >
           <div className="grid sm:grid-cols-2 sm:gap-x-8">
-            {/* ── Left: Playback + Player ── */}
+            {/* Left: Playback + Player */}
             <div>
               <Section>Playback</Section>
 
@@ -215,7 +217,7 @@ export default function SettingsPanel({
 
               <Row
                 label="Scrubber preview"
-                description="Thumbnail preview when hovering the seek bar (MP4/HLS only)"
+                description="Thumbnail on seek bar hover (MP4/HLS only)"
                 enabled={scrubPreviewEnabled}
                 onToggle={() => setScrubPreviewEnabled((v) => !v)}
                 icon={
@@ -241,9 +243,29 @@ export default function SettingsPanel({
                   </svg>
                 }
               />
+
+              <Row
+                label="Ambilight Mode"
+                description="Dynamic background glow matching video colors"
+                enabled={ambilightEnabled}
+                onToggle={() => setAmbilightEnabled((v) => !v)}
+                icon={
+                  <svg
+                    className="w-4 h-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+                  </svg>
+                }
+              />
             </div>
 
-            {/* ── Right: Security + Password ── */}
+            {/* Right: Security + Password */}
             <div>
               <Section>Security</Section>
 
@@ -303,6 +325,7 @@ export default function SettingsPanel({
                       {hasPassword ? "Remove" : "Set"}
                     </button>
                   </div>
+
                   {pwMode !== "idle" && (
                     <form
                       onSubmit={submitPassword}
@@ -315,7 +338,7 @@ export default function SettingsPanel({
                           onChange={(e) => setPwInput(e.target.value)}
                           placeholder="New password…"
                           maxLength={64}
-                          className="flex-1 bg-void/60 border border-white/10 rounded-[2rem] px-4 py-2 text-sm text-white placeholder:text-white/20 outline-none focus:border-amber-500/40 font-mono"
+                          className="flex-1 bg-white/5 border border-white/10 rounded-[2rem] px-4 py-2 text-sm text-white/80 placeholder:text-white/20 outline-none focus:border-amber-500/40 font-mono"
                         />
                       ) : (
                         <p className="flex-1 text-sm text-danger/80 font-mono py-2">

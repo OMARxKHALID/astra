@@ -34,7 +34,6 @@ export default function NativeVideoPlayer({
   onSpeed,
   canControl = true,
   isHost,
-  chatOverlay,
   onLoad,
   onSubtitleChange,
   onAmbiColors,
@@ -307,6 +306,7 @@ export default function NativeVideoPlayer({
   useEffect(() => {
     setPosterVisible(true);
     ambiDisabledRef.current = false;
+    ambiCurrentRef.current = { r: 0, g: 0, b: 0 };
   }, [videoUrl]);
 
   // ── Subtitle style injection ──────────────────────────────────────────────
@@ -378,9 +378,9 @@ export default function NativeVideoPlayer({
         }
         const n = px.length / 4;
         const cur = ambiCurrentRef.current;
-        const sr = lerp(cur.r, r / n, 0.08);
-        const sg = lerp(cur.g, g / n, 0.08);
-        const sb = lerp(cur.b, b / n, 0.08);
+        const sr = lerp(cur.r, r / n, 0.18);
+        const sg = lerp(cur.g, g / n, 0.18);
+        const sb = lerp(cur.b, b / n, 0.18);
         ambiCurrentRef.current = { r: sr, g: sg, b: sb };
         onAmbiColors({
           r: Math.round(sr),
@@ -1161,8 +1161,6 @@ export default function NativeVideoPlayer({
           </div>
         </div>
       )}
-
-      {chatOverlay}
 
       {/* ── Volume OSD — floating pill shown on scroll-wheel / arrow-key change ── */}
       {volumeOsd !== null && (

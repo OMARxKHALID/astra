@@ -220,6 +220,29 @@ html[data-theme="light"] {
     color-scheme: dark;
   }
 
+  /* ── Toast pill — theme-aware ── */
+  .toast-pill {
+    background-color: var(--color-panel);
+    border-color: var(--color-border);
+    color: var(--color-text);
+    box-shadow:
+      0 8px 32px -4px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.04);
+  }
+  html[data-theme="light"] .toast-pill {
+    box-shadow:
+      0 8px 32px -4px rgba(0, 0, 0, 0.1),
+      0 0 0 1px rgba(0, 0, 0, 0.04);
+  }
+
+  /* ── Room navbar ── */
+  .room-navbar {
+    background-color: transparent;
+  }
+  html[data-theme="light"] .room-navbar {
+    background-color: transparent;
+  }
+
   .btn-primary {
     display: inline-flex;
     align-items: center;
@@ -412,7 +435,34 @@ html[data-theme="light"] .chat-other {
   color: #18213a !important;
 }
 
-/* ── Utilities ────────────────────────────────────────────────────────────── */
+/* Placeholder text */
+html[data-theme="light"] [class*="placeholder:text-white"] {
+  --tw-placeholder-opacity: 1;
+}
+html[data-theme="light"] ::placeholder {
+  color: rgba(24, 33, 58, 0.3) !important;
+}
+
+/* Input backgrounds */
+html[data-theme="light"] [class*="bg-transparent"] {
+  background-color: transparent !important;
+}
+html[data-theme="light"] [class*="bg-surface/95"] {
+  background-color: rgba(228, 233, 244, 0.97) !important;
+}
+
+/* Scrollbars in light mode */
+html[data-theme="light"] ::-webkit-scrollbar {
+  width: 4px;
+}
+html[data-theme="light"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+html[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 2px;
+}
+
 @layer utilities {
   .no-scrollbar::-webkit-scrollbar {
     display: none;

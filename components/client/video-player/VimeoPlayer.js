@@ -16,7 +16,6 @@ export default function VimeoPlayer({
   onSeek,
   onSpeed,
   canControl = true,
-  chatOverlay,
   onAmbiColors,
   theatreMode = false,
   onToggleTheatre,
@@ -40,7 +39,7 @@ export default function VimeoPlayer({
     if (!videoId) return;
     setThumbnailUrl(null);
     const vimeoUrl = `https://vimeo.com/${videoId}`;
-    fetch(`/api/thumbnail?url=${encodeURIComponent(vimeoUrl)}`)
+    fetch(`/api/subtitles/thumbnail?url=${encodeURIComponent(vimeoUrl)}`)
       .then((r) => r.json())
       .then((d) => {
         if (d.thumbnailUrl) setThumbnailUrl(d.thumbnailUrl);
@@ -48,10 +47,29 @@ export default function VimeoPlayer({
       .catch(() => {});
   }, [videoId]);
 
-  // Ambilight: Vimeo is cross-origin — clear any glow from a previous native video.
+  // Ambilight: Vimeo is cross-origin.
+  // We sample the thumbnail once to provide a static themed room glow.
   useEffect(() => {
-    onAmbiColors?.(null);
-  }, [onAmbiColors]);
+    if (!onAmbiColors || !thumbnailUrl) return;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = thumbnailUrl;
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = 1;
+        canvas.height = 1;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, 1, 1);
+        const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+        onAmbiColors({ r, g, b });
+      } catch {
+        onAmbiColors(null);
+      }
+    };
+    img.onerror = () => onAmbiColors(null);
+    return () => onAmbiColors(null);
+  }, [thumbnailUrl, onAmbiColors]);
   const hideTimer = useRef(null);
 
   // Buffering state for the Vimeo proxy — read by SyncEngine's sync loop to
@@ -249,7 +267,6 @@ export default function VimeoPlayer({
         thumbnailUrl={thumbnailUrl}
         subtitle="Loading Vimeo…"
       />
-      {chatOverlay}
       <div className="absolute top-3 left-3 px-2 py-1 rounded-[2rem] bg-[#1ab7ea]/80 text-[10px] font-bold text-white backdrop-blur-sm z-20 pointer-events-none opacity-0 group-hover/vm:opacity-100 transition-opacity">
         Vimeo
       </div>
