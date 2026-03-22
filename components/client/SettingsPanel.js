@@ -5,10 +5,6 @@ import {
   Shield as ShieldIcon,
   Lock as LockIcon,
   Unlock as UnlockIcon,
-  X as XIcon,
-  Zap as ZapIcon,
-  Camera as CameraIcon,
-  Activity as ActivityIcon,
 } from "lucide-react";
 
 // ─── Toggle switch ────────────────────────────────────────────────────────────
@@ -78,6 +74,8 @@ export default function SettingsPanel({
   setScreenshotEnabled,
   hlsQualityEnabled,
   setHlsQualityEnabled,
+  scrubPreviewEnabled,
+  setScrubPreviewEnabled,
   speedSyncEnabled,
   setSpeedSyncEnabled,
 }) {
@@ -128,7 +126,7 @@ export default function SettingsPanel({
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/8 text-white/40 hover:text-white transition-colors"
           >
-            <XIcon className="w-4 h-4" />
+            ✕
           </button>
         </div>
 
@@ -160,7 +158,19 @@ export default function SettingsPanel({
             enabled={speedSyncEnabled}
             onToggle={() => setSpeedSyncEnabled((v) => !v)}
             disabled={!isHost}
-            icon={<ZapIcon className="w-4 h-4" />}
+            icon={
+              <svg
+                className="w-4 h-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+              </svg>
+            }
           />
 
           {/* ── Security ── */}
@@ -180,7 +190,18 @@ export default function SettingsPanel({
             <div className="py-3 border-b border-white/5">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <LockIcon className="w-4 h-4 text-white/35 shrink-0" strokeWidth={1.8} />
+                  <svg
+                    className="w-4 h-4 text-white/35 shrink-0"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect x="3" y="11" width="18" height="11" rx="2" />
+                    <path d="M7 11V7a5 5 0 0110 0v4" />
+                  </svg>
                   <div>
                     <p className="text-sm font-semibold text-white/80">
                       Room password
@@ -251,7 +272,20 @@ export default function SettingsPanel({
             description="Camera button snaps a frame to the chat"
             enabled={screenshotEnabled}
             onToggle={() => setScreenshotEnabled((v) => !v)}
-            icon={<CameraIcon className="w-4 h-4" />}
+            icon={
+              <svg
+                className="w-4 h-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                <circle cx="12" cy="13" r="4" />
+              </svg>
+            }
           />
 
           <Row
@@ -259,7 +293,42 @@ export default function SettingsPanel({
             description="Shows resolution & bitrate for live streams"
             enabled={hlsQualityEnabled}
             onToggle={() => setHlsQualityEnabled((v) => !v)}
-            icon={<ActivityIcon className="w-4 h-4" />}
+            icon={
+              <svg
+                className="w-4 h-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+            }
+          />
+
+          <Row
+            label="Scrubber preview"
+            description="Thumbnail preview when hovering the seek bar (MP4/HLS only)"
+            enabled={scrubPreviewEnabled}
+            onToggle={() => setScrubPreviewEnabled((v) => !v)}
+            icon={
+              <svg
+                className="w-4 h-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="2" y="5" width="20" height="14" rx="2" />
+                <line x1="12" y1="19" x2="12" y2="21" />
+                <line x1="8" y1="21" x2="16" y2="21" />
+                <line x1="8" y1="12" x2="16" y2="12" strokeDasharray="2 2" />
+              </svg>
+            }
           />
 
           <div className="h-4" />

@@ -296,6 +296,24 @@ export default function SyncEngine({
         password: roomPassword || undefined,
       });
       loop();
+
+      // ── Clock offset calibration ──────────────────────────────────────────
+      // Measures the difference between client and server wall-clock time.
+      // Without this, a client whose system clock is 200ms fast would always
+      // "lead" the room and never converge. We calibrate once on connect,
+      // then every 30 seconds (slow drift from JS engine, power-save mode, etc.)
+      function calibrateClock() {
+        const t0 = Date.now();
+        socket.emit("PING_CLOCK", t0, (serverTime) => {
+          if (typeof serverTime !== "number") return;
+          const rtt = Date.now() - t0;
+          const serverNow = serverTime + rtt / 2; // estimate server time "now"
+          clockOffset.current = serverNow - Date.now();
+        });
+      }
+      calibrateClock();
+      const clockTimer = setInterval(calibrateClock, 30_000);
+      socket.once("disconnect", () => clearInterval(clockTimer));
     });
 
     const handlers = {

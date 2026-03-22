@@ -1,17 +1,40 @@
 {
   "name": "WatchTogether",
   "short_name": "WatchTogether",
-  "description": "Watch videos in perfect sync with friends.",
+  "description": "Watch videos in perfect sync with friends in real time.",
   "start_url": "/",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#07090d",
-  "theme_color": "#07090d",
+  "theme_color": "#f59e0b",
+  "categories": ["entertainment", "social"],
   "icons": [
     {
-      "src": "/icon.svg",
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Room",
+      "short_name": "New Room",
+      "description": "Create a new watch room",
+      "url": "/",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

@@ -23,6 +23,7 @@ export default function VideoPlayer({
   onAmbiColors,
   screenshotEnabled = true,
   hlsQualityEnabled = true,
+  scrubPreviewEnabled = true,
   onSendScreenshot,
   addToast,
   theatreMode = false,
@@ -51,6 +52,7 @@ export default function VideoPlayer({
         onAmbiColors={onAmbiColors}
         screenshotEnabled={screenshotEnabled}
         hlsQualityEnabled={hlsQualityEnabled}
+        scrubPreviewEnabled={scrubPreviewEnabled}
         onSendScreenshot={onSendScreenshot}
         addToast={addToast}
         theatreMode={theatreMode}

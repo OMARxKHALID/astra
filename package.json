@@ -23,7 +23,8 @@
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
     "tailwind-merge": "^2.5.4",
-    "lucide-react": "^0.446.0"
+    "lucide-react": "^0.446.0",
+    "@ducanh2912/next-pwa": "^10.2.9"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",

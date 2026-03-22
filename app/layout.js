@@ -1,5 +1,6 @@
 import "./globals.css";
 import { DM_Sans, DM_Mono } from "next/font/google";
+import PwaUpdateToast from "@/components/client/PwaUpdateToast";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -19,20 +20,47 @@ export const metadata = {
   title: "WatchTogether — Watch videos in sync",
   description:
     "Create a private room, share the link, and watch any video with friends — all in real time.",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "https://watch-together.vercel.app",
+  ),
   icons: {
-    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
-    apple: "/favicon.svg",
+    icon: [
+      { url: "/favicon.png", type: "image/png" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    apple: "/apple-touch-icon.png",
+    shortcut: "/favicon.svg",
+  },
+  openGraph: {
+    title: "WatchTogether — Watch videos in sync",
+    description:
+      "Watch videos together with friends in perfect real-time sync.",
+    url: "https://watch-together.vercel.app",
+    siteName: "WatchTogether",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "WatchTogether Logo",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "WatchTogether — Watch videos in sync",
+    description:
+      "Watch videos together with friends in perfect real-time sync.",
+    images: ["/og-image.png"],
   },
 };
 
-export const viewport = { themeColor: "#07090d" };
+export const viewport = { themeColor: "#f59e0b" };
 
 export default function RootLayout({ children }) {
   return (
-    // data-theme="dark" is the SSR default — matches what the browser starts with.
-    // The inline script below overrides it to "light" before first paint if the
-    // user has stored that preference. This way server and client always agree on
-    // the initial value ("dark"), preventing the hydration mismatch.
     <html
       lang="en"
       data-theme="dark"
@@ -40,19 +68,26 @@ export default function RootLayout({ children }) {
       className={`${dmSans.variable} ${dmMono.variable}`}
     >
       <head>
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-        {/*
-          Theme initialisation script — runs synchronously before React hydrates.
-          Only fires when stored theme is "light" (non-default), so the DOM stays
-          "dark" (already matching SSR) unless the user explicitly chose light.
-          React sees the final DOM value which matches whatever the script set,
-          so there is no second mismatch after this point.
-        */}
+        {/* Theme: apply stored preference before first paint to prevent flash */}
         <script
           dangerouslySetInnerHTML={{
             __html: `try{if(localStorage.getItem('wt_theme')==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}`,
           }}
         />
+
+        {/* PWA */}
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="application-name" content="WatchTogether" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
+        <meta name="apple-mobile-web-app-title" content="WatchTogether" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+        {/* Preconnects */}
         <link rel="preconnect" href="https://img.youtube.com" />
         <link rel="preconnect" href="https://www.youtube.com" />
         <link rel="preconnect" href="https://player.vimeo.com" />
@@ -67,7 +102,10 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <PwaUpdateToast />
+      </body>
     </html>
   );
 }

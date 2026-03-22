@@ -39,6 +39,7 @@ export default function NativeVideoPlayer({
   onAmbiColors,
   screenshotEnabled = true,
   hlsQualityEnabled = true,
+  scrubPreviewEnabled = true,
   onSendScreenshot,
   addToast,
   theatreMode = false,
@@ -56,6 +57,15 @@ export default function NativeVideoPlayer({
   const [showStats, setShowStats] = useState(false);
   const [volumeOsd, setVolumeOsd] = useState(null); // { pct, timer }
   const volumeOsdTimer = useRef(null);
+
+  // ── Scrub preview ─────────────────────────────────────────────────────────
+  // hover position: { x (px from bar left), pct (0–1), time (s) } or null
+  const [preview, setPreview] = useState(null);
+  const previewVideoRef = useRef(null); // hidden <video> for frame capture
+  const previewCanvasRef = useRef(null); // hidden <canvas> for drawing
+  const previewImgRef = useRef(null); // data URL of the captured frame
+  const previewDebounce = useRef(null); // debounce timer for seek
+  const previewSeekTime = useRef(null); // last time we seeked the hidden video
   const [videoError, setVideoError] = useState(false);
   const [ccMenuOpen, setCcMenuOpen] = useState(false);
   const [activePanel, setActivePanel] = useState(null);
@@ -373,6 +383,89 @@ export default function NativeVideoPlayer({
     };
   }, [videoRef, videoUrl, onAmbiColors]);
 
+  // ── Scrub preview — hidden video frame capture ────────────────────────────
+  // Only works for direct MP4/HLS (not YouTube/Vimeo — cross-origin canvas taint).
+  // A hidden <video> loads the same URL, seeks to hover position, draws to canvas.
+  useEffect(() => {
+    if (
+      !scrubPreviewEnabled ||
+      sourceType === "youtube" ||
+      sourceType === "vimeo"
+    )
+      return;
+    if (!videoUrl) return;
+
+    const vid = document.createElement("video");
+    vid.src = videoUrl;
+    vid.muted = true;
+    vid.preload = "metadata";
+    vid.crossOrigin = "anonymous";
+    vid.style.display = "none";
+    document.body.appendChild(vid);
+    previewVideoRef.current = vid;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = 160;
+    canvas.height = 90;
+    previewCanvasRef.current = canvas;
+
+    return () => {
+      vid.src = "";
+      vid.remove();
+      previewVideoRef.current = null;
+      previewCanvasRef.current = null;
+      previewImgRef.current = null;
+      clearTimeout(previewDebounce.current);
+    };
+  }, [videoUrl, sourceType, scrubPreviewEnabled]);
+
+  const handleSeekBarMouseMove = useCallback(
+    (e) => {
+      if (!scrubPreviewEnabled || !duration) return;
+      if (sourceType === "youtube" || sourceType === "vimeo") return;
+
+      const bar = e.currentTarget;
+      const rect = bar.getBoundingClientRect();
+      const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+      const pct = x / rect.width;
+      const time = pct * duration;
+
+      setPreview({ x, pct, time, img: previewImgRef.current });
+
+      // Debounce the hidden video seek to avoid thrashing
+      clearTimeout(previewDebounce.current);
+      previewDebounce.current = setTimeout(() => {
+        const vid = previewVideoRef.current;
+        const can = previewCanvasRef.current;
+        if (!vid || !can) return;
+        // Only seek if meaningfully different
+        if (Math.abs((previewSeekTime.current ?? -999) - time) < 0.5) return;
+        previewSeekTime.current = time;
+        vid.currentTime = time;
+        vid.onseeked = () => {
+          try {
+            const ctx = can.getContext("2d");
+            ctx.drawImage(vid, 0, 0, can.width, can.height);
+            previewImgRef.current = can.toDataURL("image/jpeg", 0.6);
+            // Update the img in the preview without re-rendering — direct DOM
+            setPreview((p) =>
+              p ? { ...p, img: previewImgRef.current } : null,
+            );
+          } catch {
+            // Cross-origin taint — disable preview silently
+            previewImgRef.current = null;
+          }
+        };
+      }, 120);
+    },
+    [duration, sourceType, scrubPreviewEnabled],
+  );
+
+  const handleSeekBarMouseLeave = useCallback(() => {
+    setPreview(null);
+    clearTimeout(previewDebounce.current);
+  }, []);
+
   // ── D key → stats overlay ─────────────────────────────────────────────────
   useEffect(() => {
     const h = (e) => {
@@ -684,14 +777,14 @@ export default function NativeVideoPlayer({
                         <button
                           key={sub.id}
                           onClick={() => handleSelectSub(sub)}
-                          className={`w-full text-left px-4 py-2.5 rounded-[1.5rem] transition-all border flex items-center justify-between group
+                          className={`w-full min-w-0 text-left px-4 py-2.5 rounded-[1.5rem] transition-all border flex items-center justify-between overflow-hidden
                               ${
                                 isActive
                                   ? "bg-amber-500/10 border-amber-500/30 text-amber-500 font-bold"
                                   : "bg-white/5 border-transparent hover:border-white/10 text-white/40 hover:text-white/80"
                               }`}
                         >
-                          <span className="text-[11px] truncate pr-3">
+                          <span className="text-[11px] truncate min-w-0 mr-2">
                             {sub.label}
                           </span>
                           {isActive && (
@@ -722,21 +815,21 @@ export default function NativeVideoPlayer({
                     return (
                       <div
                         key={sub.url}
-                        className="flex items-center gap-1.5 group/sub"
+                        className="flex items-center gap-1.5 group/sub w-full overflow-hidden"
                       >
                         <button
                           onClick={() => {
                             onSubtitleChange?.(sub.url);
                             setActivePanel(null);
                           }}
-                          className={`flex-1 text-left px-4 py-2.5 rounded-[1.5rem] transition-all border flex items-center justify-between
+                          className={`flex-1 min-w-0 text-left px-3 py-2.5 rounded-[1.5rem] transition-all border flex items-center gap-2 overflow-hidden
                             ${
                               isActive
                                 ? "bg-amber-500/10 border-amber-500/30 text-amber-500 font-bold"
                                 : "bg-white/5 border-transparent hover:border-white/10 text-white/40 hover:text-white/80"
                             }`}
                         >
-                          <span className="text-[11px] truncate pr-3">
+                          <span className="text-[11px] truncate block min-w-0 flex-1">
                             {sub.label}
                           </span>
                           {isActive && (
@@ -1054,10 +1147,10 @@ export default function NativeVideoPlayer({
 
       {/* ── Volume OSD — floating pill shown on scroll-wheel / arrow-key change ── */}
       {volumeOsd !== null && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40 pointer-events-none animate-in fade-in zoom-in-95 duration-200">
-          <div className="flex flex-col items-center gap-4 px-6 py-5 rounded-[2.5rem] glass-card shadow-2xl min-w-[130px] border-white/10">
-            {/* Icon circle */}
-            <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/90">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40 pointer-events-none animate-in fade-in duration-150">
+          <div className="flex flex-col items-center gap-2 px-5 py-3 rounded-2xl bg-black/75 backdrop-blur-md border border-white/15 shadow-2xl min-w-[110px]">
+            {/* Icon */}
+            <div className="text-white/90">
               {volumeOsd === 0 ? (
                 <MuteIcon className="w-5 h-5" />
               ) : volumeOsd < 0.4 ? (
@@ -1067,14 +1160,14 @@ export default function NativeVideoPlayer({
               )}
             </div>
             {/* Bar */}
-            <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+            <div className="w-full h-1.5 rounded-full bg-white/20 overflow-hidden">
               <div
-                className="h-full rounded-full bg-amber-500 transition-all duration-150"
+                className="h-full rounded-full bg-white transition-all duration-100"
                 style={{ width: `${Math.round(volumeOsd * 100)}%` }}
               />
             </div>
             {/* Percentage */}
-            <span className="text-xs font-mono font-bold text-white/90 tabular-nums">
+            <span className="text-[11px] font-mono font-bold text-white/80 tabular-nums">
               {Math.round(volumeOsd * 100)}%
             </span>
           </div>
@@ -1140,28 +1233,67 @@ export default function NativeVideoPlayer({
       >
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
         <div className="relative px-3 sm:px-4 pb-3 sm:pb-4 pt-8 space-y-2">
-          {/* Seek bar */}
-          <div className="relative h-1.5 bg-white/15 rounded-full hover:h-2 transition-all duration-150 cursor-pointer overflow-hidden">
-            <div
-              className="absolute inset-y-0 left-0 bg-white/20"
-              style={{ width: `${bufferedPct}%` }}
-            />
-            <div
-              className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-600 to-amber-400 rounded-full"
-              style={{ width: `${progressPct}%` }}
-            />
-            <input
-              type="range"
-              min={0}
-              max={duration || 100}
-              step={0.1}
-              value={localTime}
-              onChange={handleSeekChange}
-              onMouseUp={handleSeekCommit}
-              onTouchEnd={handleSeekCommit}
-              aria-label="Seek"
-              className="absolute inset-0 w-full opacity-0 cursor-pointer py-3"
-            />
+          {/* Seek bar + scrub preview */}
+          <div
+            className="relative"
+            onMouseMove={handleSeekBarMouseMove}
+            onMouseLeave={handleSeekBarMouseLeave}
+          >
+            {/* Preview tooltip */}
+            {preview && scrubPreviewEnabled && (
+              <div
+                className="absolute bottom-full mb-3 pointer-events-none z-50"
+                style={{
+                  left: `clamp(80px, ${preview.x}px, calc(100% - 80px))`,
+                  transform: "translateX(-50%)",
+                }}
+              >
+                <div className="flex flex-col items-center gap-1.5">
+                  {/* Thumbnail */}
+                  <div className="w-40 h-[90px] rounded-lg overflow-hidden bg-black/70 border border-white/15 shadow-2xl">
+                    {preview.img ? (
+                      <img
+                        src={preview.img}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                  {/* Time label */}
+                  <span className="text-[11px] font-mono font-bold text-white bg-black/70 px-2 py-0.5 rounded-full border border-white/10">
+                    {formatTime(preview.time)}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Track */}
+            <div className="relative h-1.5 bg-white/15 rounded-full hover:h-2 transition-all duration-150 cursor-pointer overflow-hidden">
+              <div
+                className="absolute inset-y-0 left-0 bg-white/20"
+                style={{ width: `${bufferedPct}%` }}
+              />
+              <div
+                className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-600 to-amber-400 rounded-full"
+                style={{ width: `${progressPct}%` }}
+              />
+              <input
+                type="range"
+                min={0}
+                max={duration || 100}
+                step={0.1}
+                value={localTime}
+                onChange={handleSeekChange}
+                onMouseUp={handleSeekCommit}
+                onTouchEnd={handleSeekCommit}
+                aria-label="Seek"
+                className="absolute inset-0 w-full opacity-0 cursor-pointer py-3"
+              />
+            </div>
           </div>
 
           {/* Controls row */}

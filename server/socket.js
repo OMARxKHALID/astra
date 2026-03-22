@@ -329,7 +329,14 @@ const io = new Server(httpServer, {
 });
 
 io.on("connection", (socket) => {
-  // ── JOIN_ROOM ──────────────────────────────────────────────────────────────
+  // ── Clock calibration ──────────────────────────────────────────────────────
+  // Client sends its local Date.now() t0; we reply with our server Date.now().
+  // Client computes: rtt = Date.now() - t0; serverNow ≈ serverTime + rtt/2;
+  // clockOffset = serverNow - Date.now().  Used in expectedTime() to compensate
+  // for client-server clock skew (can be ±200ms on unsynced machines).
+  socket.on("PING_CLOCK", (t0, ack) => {
+    if (typeof ack === "function") ack(Date.now());
+  });
   socket.on("JOIN_ROOM", async (msg) => {
     const { roomId, token, clientId, videoUrl, username, password } = msg || {};
     if (!roomId || !clientId) return;
@@ -502,7 +509,9 @@ io.on("connection", (socket) => {
   socket.on("CMD:seek", (time) => {
     const ctx = getCtx();
     if (!ctx) return;
-    ctx.room.videoTS = Number(time) || 0;
+    const t = parseFloat(time);
+    if (!isFinite(t) || t < 0) return; // reject garbage
+    ctx.room.videoTS = t;
     ctx.room.lastUpdated = Date.now();
     ctx.room.lockTs();
     io.to(ctx.room.roomId).emit("REC:seek", ctx.room.videoTS);

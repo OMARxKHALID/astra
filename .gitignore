@@ -21,3 +21,8 @@ dist/
 npm-debug.log*
 .vercel
 .env*.local
+
+# PWA generated files (rebuilt on every deploy)
+public/sw.js
+public/workbox-*.js
+public/swe-worker-*.js

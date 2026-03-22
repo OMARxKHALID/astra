@@ -167,6 +167,7 @@ export default function RoomClient({ roomId, initialMeta }) {
   // ── Settings — SSR-safe defaults, corrected from localStorage after mount ─
   const [screenshotEnabled, setScreenshotEnabled] = useState(true);
   const [hlsQualityEnabled, setHlsQualityEnabled] = useState(true);
+  const [scrubPreviewEnabled, setScrubPreviewEnabled] = useState(true);
   const [speedSyncEnabled, setSpeedSyncEnabled] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
@@ -175,6 +176,7 @@ export default function RoomClient({ roomId, initialMeta }) {
   useEffect(() => {
     setScreenshotEnabled(ls.get("wt_screenshot") !== "false");
     setHlsQualityEnabled(ls.get("wt_hlsquality") !== "false");
+    setScrubPreviewEnabled(ls.get("wt_scrubpreview") !== "false");
   }, []);
 
   useEffect(() => {
@@ -183,6 +185,9 @@ export default function RoomClient({ roomId, initialMeta }) {
   useEffect(() => {
     ls.set("wt_hlsquality", hlsQualityEnabled ? "true" : "false");
   }, [hlsQualityEnabled]);
+  useEffect(() => {
+    ls.set("wt_scrubpreview", scrubPreviewEnabled ? "true" : "false");
+  }, [scrubPreviewEnabled]);
 
   // ── Sidebar ───────────────────────────────────────────────────────────────
   const [showSidebar, setShowSidebar] = useState(true);
@@ -863,6 +868,7 @@ export default function RoomClient({ roomId, initialMeta }) {
             onAmbiColors={handleAmbiColors}
             screenshotEnabled={screenshotEnabled}
             hlsQualityEnabled={hlsQualityEnabled}
+            scrubPreviewEnabled={scrubPreviewEnabled}
             onSendScreenshot={(dataUrl) =>
               handleSendChat("📸 Screenshot", dataUrl)
             }
@@ -1022,6 +1028,8 @@ export default function RoomClient({ roomId, initialMeta }) {
         setScreenshotEnabled={setScreenshotEnabled}
         hlsQualityEnabled={hlsQualityEnabled}
         setHlsQualityEnabled={setHlsQualityEnabled}
+        scrubPreviewEnabled={scrubPreviewEnabled}
+        setScrubPreviewEnabled={setScrubPreviewEnabled}
         speedSyncEnabled={speedSyncEnabled}
         setSpeedSyncEnabled={setSpeedSyncEnabled}
         onToggleHostControls={handleToggleHostControls}
