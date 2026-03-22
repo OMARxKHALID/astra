@@ -1,54 +1,55 @@
 "use client";
 
 import { useState } from "react";
-import { Crown as CrownIcon, Users as UsersIcon, X as XIcon } from "lucide-react";
+import { Crown, Users } from "lucide-react";
 
 function QualityDot({ deviation }) {
   const base = "w-2 h-2 rounded-full shrink-0 flex-none";
   if (deviation === null)
-    return (
-      <span
-        className={`${base} bg-white/15`}
-        title="No data"
-        style={{ backgroundColor: "var(--color-border)" }}
-      />
-    );
+    return <span className={`${base} bg-white/15`} title="No data" />;
   if (deviation < 0.5)
     return (
       <span
         className={`${base} bg-jade shadow-[0_0_6px_rgba(16,185,129,0.5)]`}
-        title="Excellent sync"
+        title="In sync"
       />
     );
   if (deviation < 2)
-    return <span className={`${base} bg-amber-400`} title="Minor drift" />;
-  return <span className={`${base} bg-danger`} title="Large drift" />;
+    return (
+      <span
+        className={`${base} bg-amber-400`}
+        title={`${deviation.toFixed(1)}s drift`}
+      />
+    );
+  return (
+    <span
+      className={`${base} bg-danger`}
+      title={`${deviation.toFixed(1)}s drift`}
+    />
+  );
 }
 
 function Avatar({ name, isMe, isHost }) {
   return (
     <div
       title={isMe ? "You" : name}
-      className="relative w-9 h-9 rounded-2xl flex items-center justify-center text-[11px] font-bold font-mono shrink-0 select-none"
-      style={{
-        backgroundColor: isMe
-          ? "rgba(245,158,11,0.15)"
-          : "var(--color-surface)",
-        border: isMe
-          ? "1px solid rgba(245,158,11,0.35)"
-          : "1px solid var(--color-border)",
-        color: isMe ? "#f59e0b" : "var(--color-muted)",
-      }}
+      className={`relative w-9 h-9 rounded-[2rem] flex items-center justify-center
+                  text-[11px] font-bold font-mono shrink-0 select-none
+                  ${
+                    isMe
+                      ? "bg-amber-500/20 border border-amber-500/40 text-amber-400"
+                      : "bg-white/5 border border-white/10 text-white/50"
+                  }`}
     >
       {name.slice(0, 2).toUpperCase()}
       {isHost && (
         <div
           className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500
                         flex items-center justify-center
-                        shadow-[0_0_6px_rgba(245,158,11,0.5)]"
-          style={{ border: "2px solid var(--color-void)" }}
+                        border-2 shadow-[0_0_8px_rgba(245,158,11,0.5)]"
+          style={{ borderColor: "var(--color-void)" }}
         >
-          <CrownIcon className="w-2 h-2 text-white" strokeWidth={2.5} />
+          <Crown className="w-2 h-2 text-void" strokeWidth={3} />
         </div>
       )}
     </div>
@@ -67,7 +68,8 @@ export default function ParticipantList({
   leaderTime = 0,
 }) {
   const [confirmTransfer, setConfirmTransfer] = useState(null);
-  const getName = (uid) => displayNames[uid] || `Guest-${uid.slice(0, 4)}`;
+  const getName = (uid) =>
+    displayNames[uid] || `Guest-${uid.slice(0, 4).toUpperCase()}`;
 
   function handleTransfer(uid) {
     if (confirmTransfer === uid) {
@@ -87,13 +89,13 @@ export default function ParticipantList({
         style={{ borderBottom: "1px solid var(--color-border)" }}
       >
         <div
-          className="w-9 h-9 rounded-2xl flex items-center justify-center shrink-0"
+          className="w-9 h-9 rounded-[2rem] flex items-center justify-center shrink-0"
           style={{
             backgroundColor: "rgba(16,185,129,0.08)",
             border: "1px solid rgba(16,185,129,0.2)",
           }}
         >
-          <UsersIcon className="w-4 h-4 text-jade" strokeWidth={1.5} />
+          <Users className="w-4 h-4 text-jade" strokeWidth={1.5} />
         </div>
         <div>
           <p
@@ -127,14 +129,14 @@ export default function ParticipantList({
             </p>
           </div>
         )}
+
         {participants.map((uid) => {
           const isMe = uid === myUserId;
           const isThisHost = uid === hostId;
           const name = getName(uid);
-          const userTime = tsMap[uid];
           const deviation =
-            leaderTime > 0 && typeof userTime === "number"
-              ? Math.abs(userTime - leaderTime)
+            leaderTime > 0 && typeof tsMap[uid] === "number"
+              ? Math.abs(tsMap[uid] - leaderTime)
               : null;
           const canKick = isHost && !isMe && !isThisHost;
           const canTransfer =
@@ -144,12 +146,7 @@ export default function ParticipantList({
           return (
             <div
               key={uid}
-              className="group flex items-center gap-2.5 py-2 px-2 rounded-2xl transition-colors"
-              style={{ ["--hover-bg"]: "var(--color-surface)" }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "var(--color-surface)")
-              }
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "")}
+              className="group flex items-center gap-2.5 py-2 px-2 rounded-[2rem] transition-colors hover:bg-white/[0.04]"
             >
               <Avatar name={name} isMe={isMe} isHost={isThisHost} />
 
@@ -160,7 +157,7 @@ export default function ParticipantList({
                 >
                   {name}
                   {isMe && (
-                    <span className="ml-1.5 text-[10px] text-amber-500/50 font-mono">
+                    <span className="ml-1.5 text-[10px] text-amber-400/50 font-mono">
                       (you)
                     </span>
                   )}
@@ -172,41 +169,44 @@ export default function ParticipantList({
                 )}
               </div>
 
-              {/* Fixed-width action area — dot never shifts */}
+              {/* Fixed-width action column so quality dot never shifts */}
               <div className="flex items-center gap-1 shrink-0 w-14 justify-end">
                 {canTransfer && (
                   <button
                     onClick={() => handleTransfer(uid)}
                     title={confirming ? "Confirm: make host?" : "Transfer host"}
-                    className={`opacity-0 group-hover:opacity-100 transition-all w-7 h-7 flex items-center justify-center rounded-xl text-xs
+                    className={`opacity-0 group-hover:opacity-100 transition-all w-7 h-7
+                                flex items-center justify-center rounded-[2rem] text-xs
                       ${
                         confirming
                           ? "bg-amber-500/20 border border-amber-500/40 text-amber-500 !opacity-100 animate-pulse"
                           : "bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 hover:border-amber-500/40 text-amber-500/60 hover:text-amber-500"
                       }`}
                   >
-                    <CrownIcon className="w-3 h-3" strokeWidth={2} />
+                    <Crown className="w-3 h-3" strokeWidth={2} />
                   </button>
                 )}
                 {canKick && (
                   <button
                     onClick={() => onKick?.(uid)}
                     title={`Kick ${name}`}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 flex items-center justify-center rounded-xl bg-danger/10 hover:bg-danger/20 border border-danger/20 text-danger/60 hover:text-danger text-xs"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity
+                               w-7 h-7 flex items-center justify-center rounded-[2rem]
+                               bg-danger/10 hover:bg-danger/20 border border-danger/20
+                               text-danger/60 hover:text-danger text-xs"
                   >
-                    <XIcon className="w-3 h-3" strokeWidth={2.5} />
+                    ✕
                   </button>
                 )}
+                <QualityDot deviation={deviation} />
               </div>
-
-              <QualityDot deviation={deviation} />
             </div>
           );
         })}
       </div>
 
       {confirmTransfer && (
-        <div className="px-4 pb-3">
+        <div className="px-4 pb-3 shrink-0">
           <p className="text-[10px] font-mono text-center text-amber-500/60">
             Tap crown again to confirm
           </p>

@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect, useCallback } from "react";
 import { onYTReady, useVideoHotkeys } from "./utils";
+import { YT_AD_POLL_MS as AD_POLL_MS } from "@/lib/constants";
 import EmbedControls from "./EmbedControls";
 import ThumbnailPoster from "./ThumbnailPoster";
 
@@ -11,7 +12,6 @@ import ThumbnailPoster from "./ThumbnailPoster";
 // The IFrame API exposes getAdState() but it's undocumented. The reliable
 // approach: poll getVideoData() — if the returned video id doesn't match the
 // one we loaded, an ad is playing. Then we call nextVideo() or stop the ad.
-const AD_POLL_MS = 800;
 
 export default function YouTubePlayer({
   videoRef,

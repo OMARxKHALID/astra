@@ -3,6 +3,16 @@ import http from "http";
 import { Redis } from "@upstash/redis";
 import pkg from "@next/env";
 import { createHash, createHmac, timingSafeEqual } from "crypto";
+import {
+  HOST_RECONNECT_GRACE_MS,
+  EMPTY_ROOM_CLEANUP_MS,
+  SAVE_DEBOUNCE_MS,
+  REDIS_TTL_S,
+  SOCKET_PING_INTERVAL,
+  SOCKET_PING_TIMEOUT,
+  MAX_CHAT_MESSAGES,
+  MAX_DATAURL_BYTES,
+} from "./constants.js";
 
 const { loadEnvConfig } = pkg;
 loadEnvConfig(process.cwd());
@@ -98,7 +108,6 @@ const PORT = parseInt(process.env.PORT || process.env.WS_PORT || "3001", 10);
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "http://localhost:3000")
   .split(",")
   .map((o) => o.trim().replace(/\/$/, ""));
-const HOST_RECONNECT_GRACE_MS = 6000;
 const rooms = new Map(); // roomId → Room
 const clientMeta = new Map(); // socketId → { userId, roomId, isHost, username }
 
@@ -275,12 +284,12 @@ function saveRoom(room) {
                 dataUrl: undefined,
               })),
             },
-            { ex: 86400 },
+            { ex: REDIS_TTL_S },
           );
         } catch (err) {
           console.error(`[redis] save failed ${r.roomId}: ${err.message}`);
         }
-      }, 2000),
+      }, SAVE_DEBOUNCE_MS),
     ); // collapse writes within 2s window
   }
   debouncedSave.get(room.roomId)(room);
@@ -322,8 +331,8 @@ const io = new Server(httpServer, {
   cors: { origin: ALLOWED_ORIGINS, methods: ["GET", "POST"] },
   // Increase ping timeout for slow connections; reduce ping interval
   // to detect dead clients faster without flooding
-  pingInterval: 20000,
-  pingTimeout: 30000,
+  pingInterval: SOCKET_PING_INTERVAL,
+  pingTimeout: SOCKET_PING_TIMEOUT,
   // Limit how much unacknowledged data can queue up per socket
   maxHttpBufferSize: 1e6, // 1 MB — screenshots are ≤300KB, safe
 });
@@ -685,7 +694,7 @@ io.on("connection", (socket) => {
       .slice(0, 500)
       .trim();
     const dataUrl = msg?.dataUrl
-      ? String(msg.dataUrl).slice(0, 300000)
+      ? String(msg.dataUrl).slice(0, MAX_DATAURL_BYTES)
       : undefined;
     if (!text && !dataUrl) return;
 
@@ -730,7 +739,7 @@ io.on("connection", (socket) => {
           rooms.delete(room.roomId);
           cleanupRoom(room.roomId);
         }
-      }, 30000);
+      }, EMPTY_ROOM_CLEANUP_MS);
       return;
     }
 

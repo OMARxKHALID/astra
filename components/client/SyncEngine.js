@@ -9,6 +9,7 @@ import {
   SYNC_CHECK_INTERVAL,
   SYNC_TOLERANCE_S,
 } from "@/lib/sync";
+import { CLOCK_RECAL_INTERVAL } from "@/lib/constants";
 
 const WS_URL =
   process.env.NEXT_PUBLIC_WS_URL ||
@@ -312,7 +313,7 @@ export default function SyncEngine({
         });
       }
       calibrateClock();
-      const clockTimer = setInterval(calibrateClock, 30_000);
+      const clockTimer = setInterval(calibrateClock, CLOCK_RECAL_INTERVAL);
       socket.once("disconnect", () => clearInterval(clockTimer));
     });
 

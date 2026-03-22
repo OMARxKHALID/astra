@@ -3,27 +3,26 @@
 import { useState, useEffect } from "react";
 import { Sun, Moon } from "lucide-react";
 
+const THEME_KEY = "wt_theme";
+
 export default function ThemeToggle({ className = "" }) {
   const [theme, setTheme] = useState("dark");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    const stored = localStorage.getItem("wt_theme") || "dark";
+    const stored = localStorage.getItem(THEME_KEY) || "dark";
     setTheme(stored);
-    // Ensure the attribute is set (layout script may not have run on first load)
     document.documentElement.setAttribute("data-theme", stored);
   }, []);
 
   function toggle() {
     const next = theme === "dark" ? "light" : "dark";
     setTheme(next);
-    localStorage.setItem("wt_theme", next);
+    localStorage.setItem(THEME_KEY, next);
     document.documentElement.setAttribute("data-theme", next);
   }
 
-  // Don't render until mounted — prevents SSR/client hydration mismatch
-  // and ensures icon reflects the actual stored preference
   if (!mounted) {
     return <div className={`w-9 h-9 rounded-[2rem] glass-card ${className}`} />;
   }

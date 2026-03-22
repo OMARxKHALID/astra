@@ -33,8 +33,13 @@ import {
   Link2,
 } from "lucide-react";
 import { getLeaderTime } from "@/lib/sync";
-
-const MAX_MESSAGES = 200;
+import {
+  LS_KEYS,
+  MAX_CHAT_MESSAGES,
+  MAX_HISTORY_ENTRIES,
+  MAX_RECENT_ROOMS,
+  REDIS_TTL_S,
+} from "@/lib/constants";
 
 // ── Safe localStorage helpers (no-op on server / private browsing) ───────────
 const ls = {
@@ -73,7 +78,7 @@ export default function RoomClient({ roomId, initialMeta }) {
   // ── Identity ──────────────────────────────────────────────────────────────
   const [userId, setUserId] = useState(""); // empty on server, set after mount
   useEffect(() => {
-    const key = "wt_userId";
+    const key = LS_KEYS.userId;
     const stored = ls.get(key) || sessionStorage.getItem(key);
     if (stored) {
       ls.set(key, stored);
@@ -92,10 +97,10 @@ export default function RoomClient({ roomId, initialMeta }) {
   const sendRef = useRef(null);
 
   useEffect(() => {
-    const stored = ls.get("wt_displayName");
+    const stored = ls.get(LS_KEYS.displayName);
     const name =
       stored || `Guest-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
-    if (!stored) ls.set("wt_displayName", name);
+    if (!stored) ls.set(LS_KEYS.displayName, name);
     setDisplayName(name);
     setNameReady(true);
   }, []);
@@ -104,7 +109,7 @@ export default function RoomClient({ roomId, initialMeta }) {
     const name = raw.trim().slice(0, 24);
     if (!name) return;
     setDisplayName(name);
-    ls.set("wt_displayName", name);
+    ls.set(LS_KEYS.displayName, name);
     sendRef.current?.({ type: "set_name", username: name });
     setEditingName(false);
   }, []);
@@ -174,24 +179,24 @@ export default function RoomClient({ roomId, initialMeta }) {
   const [theatreMode, setTheatreMode] = useState(false);
 
   useEffect(() => {
-    setScreenshotEnabled(ls.get("wt_screenshot") !== "false");
-    setHlsQualityEnabled(ls.get("wt_hlsquality") !== "false");
-    setScrubPreviewEnabled(ls.get("wt_scrubpreview") !== "false");
+    setScreenshotEnabled(ls.get(LS_KEYS.screenshot) !== "false");
+    setHlsQualityEnabled(ls.get(LS_KEYS.hlsQuality) !== "false");
+    setScrubPreviewEnabled(ls.get(LS_KEYS.scrubPreview) !== "false");
   }, []);
 
   useEffect(() => {
-    ls.set("wt_screenshot", screenshotEnabled ? "true" : "false");
+    ls.set(LS_KEYS.screenshot, screenshotEnabled ? "true" : "false");
   }, [screenshotEnabled]);
   useEffect(() => {
-    ls.set("wt_hlsquality", hlsQualityEnabled ? "true" : "false");
+    ls.set(LS_KEYS.hlsQuality, hlsQualityEnabled ? "true" : "false");
   }, [hlsQualityEnabled]);
   useEffect(() => {
-    ls.set("wt_scrubpreview", scrubPreviewEnabled ? "true" : "false");
+    ls.set(LS_KEYS.scrubPreview, scrubPreviewEnabled ? "true" : "false");
   }, [scrubPreviewEnabled]);
 
   // ── Sidebar ───────────────────────────────────────────────────────────────
   const [showSidebar, setShowSidebar] = useState(true);
-  const [sidebarWidth, setSidebarWidth] = useState(300);
+  const [sidebarWidth, setSidebarWidth] = useState(350);
   const isDragging = useRef(false);
   const dragStartX = useRef(0);
   const dragStartW = useRef(0);
@@ -341,7 +346,7 @@ export default function RoomClient({ roomId, initialMeta }) {
         return;
       }
 
-      setMessages((prev) => [...prev, msg].slice(-MAX_MESSAGES));
+      setMessages((prev) => [...prev, msg].slice(-MAX_CHAT_MESSAGES));
       const isMobile =
         typeof window !== "undefined" && window.innerWidth < 1024;
       const isVisible = document.fullscreenElement
@@ -506,12 +511,17 @@ export default function RoomClient({ roomId, initialMeta }) {
 
   // hostToken — read from localStorage after mount only
   const [hostToken, setHostToken] = useState("");
+  const [hostTokenReady, setHostTokenReady] = useState(false);
   useEffect(() => {
     setHostToken(ls.get(`host_${roomId}`) || "");
+    setHostTokenReady(true);
   }, [roomId]);
 
   // ── Derived values ────────────────────────────────────────────────────────
-  const isHost = serverState?.hostId === userId;
+  // isHost: match server's hostId OR optimistically trust local hostToken before
+  // serverState arrives (prevents gear icon flash on first load).
+  const isHost =
+    serverState?.hostId === userId || (!!hostToken && !serverState);
   const hostId = serverState?.hostId ?? null;
   const isPlaying = serverState?.isPlaying ?? false;
   const playbackRate = serverState?.playbackRate ?? 1;
@@ -545,7 +555,7 @@ export default function RoomClient({ roomId, initialMeta }) {
   // Rooms have a 24h Redis TTL. Show a countdown badge once < 2h remain.
   const roomExpiresIn = useMemo(() => {
     if (!createdAt) return null;
-    const remaining = createdAt + 86400 * 1000 - Date.now();
+    const remaining = createdAt + REDIS_TTL_S * 1000 - Date.now();
     if (remaining <= 0) return "Expired";
     if (remaining > 2 * 3600 * 1000) return null;
     const h = Math.floor(remaining / 3600000);
@@ -560,7 +570,7 @@ export default function RoomClient({ roomId, initialMeta }) {
     if (!serverState || historySavedRef.current || !videoUrl) return;
     historySavedRef.current = true;
     try {
-      const history = JSON.parse(localStorage.getItem("wt_history") || "[]");
+      const history = JSON.parse(localStorage.getItem(LS_KEYS.history) || "[]");
       const ytMatch = videoUrl.match(
         /(?:youtube\.com\/watch\?.*v=|youtu\.be\/)([A-Za-z0-9_-]{11})/,
       );
@@ -576,15 +586,17 @@ export default function RoomClient({ roomId, initialMeta }) {
         isHost,
       };
       localStorage.setItem(
-        "wt_history",
+        LS_KEYS.history,
         JSON.stringify(
           [entry, ...history.filter((h) => h.roomId !== roomId)].slice(0, 10),
         ),
       );
       // Also keep the legacy recent_rooms list (3 entries) for CreateRoomForm
-      const recent = JSON.parse(localStorage.getItem("recent_rooms") || "[]");
+      const recent = JSON.parse(
+        localStorage.getItem(LS_KEYS.recentRooms) || "[]",
+      );
       localStorage.setItem(
-        "recent_rooms",
+        LS_KEYS.recentRooms,
         JSON.stringify(
           [
             { id: roomId, url: videoUrl, time: Date.now() },
@@ -615,7 +627,7 @@ export default function RoomClient({ roomId, initialMeta }) {
       </button>
       {playerChatOpen && (
         <div
-          className="pointer-events-auto mt-2 w-72 sm:w-80 h-[400px] rounded-[2rem] border border-white/10 bg-black/40 backdrop-blur-2xl overflow-hidden flex flex-col shadow-2xl"
+          className="pointer-events-auto mt-2 w-72 sm:w-80 h-[400px] rounded-[2rem] border border-white/10 bg-black/55 backdrop-blur-3xl overflow-hidden flex flex-col shadow-2xl"
           onClick={(e) => e.stopPropagation()}
           onDoubleClick={(e) => e.stopPropagation()}
         >
@@ -666,7 +678,7 @@ export default function RoomClient({ roomId, initialMeta }) {
       />
 
       {/* SyncEngine — only after userId is ready and password gate is passed */}
-      {userId && nameReady && syncEnabled && (
+      {userId && nameReady && syncEnabled && hostTokenReady && (
         <SyncEngine
           roomId={roomId}
           userId={userId}

@@ -51,8 +51,8 @@ export function SpeedPicker({ value, onChange }) {
       {open && (
         <div
           className="absolute bottom-full right-0 mb-1.5 py-1
-                        bg-black/85 border border-white/12 rounded-xl shadow-2xl
-                        backdrop-blur-xl z-50 min-w-[80px] overflow-hidden video-controls"
+                        bg-black/60 backdrop-blur-2xl border border-white/15 rounded-xl shadow-2xl
+                        z-50 min-w-[80px] overflow-hidden video-controls"
         >
           {SPEEDS.map((s) => (
             <button

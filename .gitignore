@@ -7,7 +7,6 @@ node_modules/
 .next/
 out/
 dist/
-*.md          # ignore all markdown files
 
 # env
 .env
@@ -26,3 +25,6 @@ npm-debug.log*
 public/sw.js
 public/workbox-*.js
 public/swe-worker-*.js
+
+# Documentation
+Codebaserules.md

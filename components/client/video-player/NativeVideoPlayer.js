@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect, useCallback } from "react";
 import { formatTime, SpeedPicker, useVideoHotkeys } from "./utils";
+import { MAX_RECENT_SUBS } from "@/lib/constants";
 import ThumbnailPoster from "./ThumbnailPoster";
 import {
   Play as PlayIcon,
@@ -172,6 +173,23 @@ export default function NativeVideoPlayer({
     if (Math.abs(v.playbackRate - playbackRate) > 0.01)
       v.playbackRate = playbackRate;
   }, [playbackRate, videoRef]);
+
+  // ── Force subtitle track to "showing" mode ───────────────────────────────
+  // The `default` attribute on <track> is unreliable — browsers often set mode
+  // to "disabled" regardless. Programmatically set mode = "showing" after mount.
+  // Note: TextTrack objects (v.textTracks) have NO .src property — only the
+  // <track> DOM element does. We match by label only.
+  useEffect(() => {
+    if (!subtitleUrl || !showSubtitles) return;
+    const v = videoRef.current;
+    if (!v) return;
+    const t = setTimeout(() => {
+      for (const track of v.textTracks) {
+        track.mode = track.label === "English" ? "showing" : "disabled";
+      }
+    }, 100);
+    return () => clearTimeout(t);
+  }, [subtitleUrl, showSubtitles, videoRef]);
 
   // ── PiP state sync ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -514,7 +532,7 @@ export default function NativeVideoPlayer({
     const updated = [
       { label: sub.label, url },
       ...recentSubs.filter((s) => s.url !== url),
-    ].slice(0, 5);
+    ].slice(0, MAX_RECENT_SUBS);
     setRecentSubs(updated);
     try {
       localStorage.setItem("wt_recentSubs", JSON.stringify(updated));
@@ -655,6 +673,7 @@ export default function NativeVideoPlayer({
       >
         {subtitleUrl && showSubtitles && (
           <track
+            key={subtitleUrl}
             kind="subtitles"
             src={subtitleUrl}
             srcLang="en"
@@ -679,7 +698,7 @@ export default function NativeVideoPlayer({
       {/* Subtitle panel */}
       <div
         className={`absolute bottom-24 right-3 sm:right-6 w-full max-w-[360px] sm:max-w-[420px] h-[520px] sm:h-[540px]
-          bg-black/30 backdrop-blur-2xl border border-white/10 z-50 transition-all duration-200
+          bg-black/55 backdrop-blur-3xl border border-white/15 z-50 transition-all duration-200
           shadow-2xl rounded-[2rem] overflow-hidden flex flex-col
           ${activePanel ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
       >
@@ -1392,14 +1411,12 @@ export default function NativeVideoPlayer({
               {ccMenuOpen && (
                 <div className="flex items-center gap-0.5 pl-0.5 animate-in fade-in slide-in-from-left-2 duration-200">
                   <div className="w-px h-4 bg-white/15 mx-0.5 shrink-0" />
-                  {isHost && (
-                    <button
-                      onClick={() => setActivePanel("search")}
-                      className={`w-8 h-8 flex items-center justify-center rounded-full transition-all hover:bg-white/10 ${activePanel === "search" ? "text-amber-400" : "text-white/50 hover:text-white"}`}
-                    >
-                      <SearchIcon className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setActivePanel("search")}
+                    className={`w-8 h-8 flex items-center justify-center rounded-full transition-all hover:bg-white/10 ${activePanel === "search" ? "text-amber-400" : "text-white/50 hover:text-white"}`}
+                  >
+                    <SearchIcon className="w-3.5 h-3.5" />
+                  </button>
                   <button
                     onClick={() => setActivePanel("recent")}
                     className={`w-8 h-8 flex items-center justify-center rounded-full transition-all hover:bg-white/10 ${activePanel === "recent" ? "text-amber-400" : "text-white/50 hover:text-white"}`}

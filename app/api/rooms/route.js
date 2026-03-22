@@ -6,7 +6,7 @@ import { roomStore } from "@/lib/roomStore";
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { videoUrl } = body;
+    const { videoUrl, userId } = body;
 
     if (!videoUrl || typeof videoUrl !== "string")
       return NextResponse.json(
@@ -21,7 +21,12 @@ export async function POST(request) {
     }
 
     const roomId = randomUUID().slice(0, 8);
-    const hostId = randomUUID();
+    // Use the browser's existing userId so serverState.hostId === userId in the client.
+    // Fall back to random UUID if not provided (e.g. direct API calls).
+    const hostId =
+      typeof userId === "string" && userId.trim()
+        ? userId.trim()
+        : randomUUID();
 
     // JWT host token — signed with JWT_SECRET (HS256), expires in 24h.
     // Claims: sub = hostId, roomId, role = "host"
