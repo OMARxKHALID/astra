@@ -803,13 +803,15 @@ export default function RoomClient({ roomId, initialMeta }) {
 
           <ThemeToggle />
 
-          <button
-            onClick={() => setShowSettings(true)}
-            title="Room settings"
-            className="w-9 h-9 flex items-center justify-center rounded-[2rem] glass-card text-muted hover:text-white/80 transition-all active:scale-95"
-          >
-            <SettingsGearIcon className="w-4 h-4" />
-          </button>
+          {isHost && (
+            <button
+              onClick={() => setShowSettings(true)}
+              title="Room settings"
+              className="w-9 h-9 flex items-center justify-center rounded-[2rem] glass-card text-muted hover:text-white/80 transition-all active:scale-95"
+            >
+              <SettingsGearIcon className="w-4 h-4" />
+            </button>
+          )}
 
           {/* Copy video URL */}
           <button
