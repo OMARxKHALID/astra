@@ -623,6 +623,21 @@ export default function NativeVideoPlayer({
     }
   }
 
+  // Mobile picture-in-picture on tab switch
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      const v = videoRef.current;
+      if (!v) return;
+      if (document.visibilityState === "hidden" && !v.paused && window.innerWidth < 1024) {
+        if (document.pictureInPictureEnabled && !document.pictureInPictureElement) {
+          v.requestPictureInPicture().catch(() => {});
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, []);
+
   function handleScreenshot() {
     const v = videoRef.current;
     if (!v || !onSendScreenshot) return;

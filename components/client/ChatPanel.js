@@ -251,61 +251,83 @@ function ChatMessage({ msg, isOwn, displayNames = {} }) {
   if (msg.dataUrl) {
     return (
       <div
-        className={`flex flex-col gap-1 ${isOwn ? "items-end" : "items-start"}`}
+        className={`flex ${isOwn ? "flex-row-reverse" : "flex-row"} gap-2 items-end`}
       >
         {!isOwn && (
-          <span className="text-[10px] font-semibold text-amber-500/70 px-1">
-            {name}
-          </span>
+          <img
+            src={`https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(name)}`}
+            alt={name}
+            className="w-7 h-7 shrink-0 object-contain"
+          />
         )}
-        <img
-          src={msg.dataUrl}
-          alt="Screenshot"
-          className="max-w-[220px] rounded-xl border shadow-lg"
-          style={{ borderColor: "var(--color-border)" }}
-        />
-        <span
-          className="text-[9px] font-mono px-1"
-          style={{ color: "var(--color-muted)" }}
+        <div
+          className={`flex flex-col gap-1 ${isOwn ? "items-end" : "items-start"}`}
         >
-          {time}
-        </span>
+          {!isOwn && (
+            <span className="text-[10px] font-semibold text-amber-500/70 px-1">
+              {name}
+            </span>
+          )}
+          <img
+            src={msg.dataUrl}
+            alt="Screenshot"
+            className="max-w-[220px] rounded-xl border shadow-lg"
+            style={{ borderColor: "var(--color-border)" }}
+          />
+          <span
+            className="text-[9px] font-mono px-1"
+            style={{ color: "var(--color-muted)" }}
+          >
+            {time}
+          </span>
+        </div>
       </div>
     );
   }
 
   return (
     <div
-      className={`flex flex-col gap-0.5 ${isOwn ? "items-end" : "items-start"}`}
+      className={`flex ${isOwn ? "flex-row-reverse" : "flex-row"} gap-2 items-end`}
     >
       {!isOwn && (
-        <span className="text-[10px] font-semibold text-amber-500/70 px-1">
-          {name}
-        </span>
+        <img
+          src={`https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(name)}`}
+          alt={name}
+          className="w-7 h-7 shrink-0 object-contain"
+        />
       )}
       <div
-        className={`max-w-[85%] px-3.5 py-2 rounded-2xl text-sm leading-relaxed break-words
-        ${isOwn ? "chat-bubble-own rounded-br-sm" : "chat-bubble-other rounded-bl-sm"}`}
-        style={
-          isOwn
-            ? {
-                backgroundColor: "rgba(245,158,11,0.15)",
-                color: "var(--color-text)",
-              }
-            : {
-                backgroundColor: "var(--color-surface)",
-                color: "var(--color-text)",
-              }
-        }
+        className={`flex flex-col gap-0.5 ${isOwn ? "items-end" : "items-start"} max-w-[85%]`}
       >
-        {msg.text}
+        {!isOwn && (
+          <span className="text-[10px] font-semibold text-amber-500/70 px-1">
+            {name}
+          </span>
+        )}
+        <div
+          className={`px-3.5 py-2 rounded-2xl text-sm leading-relaxed break-words
+          ${isOwn ? "chat-bubble-own rounded-br-sm" : "chat-bubble-other rounded-bl-sm"}`}
+          style={
+            isOwn
+              ? {
+                  backgroundColor: "rgba(245,158,11,0.15)",
+                  color: "var(--color-text)",
+                }
+              : {
+                  backgroundColor: "var(--color-surface)",
+                  color: "var(--color-text)",
+                }
+          }
+        >
+          {msg.text}
+        </div>
+        <span
+          className="text-[9px] font-mono px-1 mt-0.5"
+          style={{ color: "var(--color-muted)" }}
+        >
+          {time}
+        </span>
       </div>
-      <span
-        className="text-[9px] font-mono px-1"
-        style={{ color: "var(--color-muted)" }}
-      >
-        {time}
-      </span>
     </div>
   );
 }

@@ -166,6 +166,7 @@ export default function RoomClient({ roomId, initialMeta }) {
   const [mobileSheet, setMobileSheet] = useState(null);
   const [tsMapState, setTsMapState] = useState({});
   const [typingUsers, setTypingUsers] = useState({});
+  const [tmdbMeta, setTmdbMeta] = useState(null);
   const typingTimers = useRef({});
   const displayNamesRef = useRef(displayNames);
   displayNamesRef.current = displayNames;
@@ -569,8 +570,42 @@ export default function RoomClient({ roomId, initialMeta }) {
     serverState?.hasPassword ?? initialMeta?.hasPassword ?? false;
   const createdAt = serverState?.createdAt ?? initialMeta?.createdAt ?? null;
   const canControl = !hostOnlyControls || isHost;
-  const leaderTime = useMemo(() => getLeaderTime(tsMapState), [tsMapState]);
+  const leaderTime = tsMapState._leaderTime_ || 0;
   const isTheatre = theatreMode && !isFullscreen;
+
+  useEffect(() => {
+    if (!videoUrl) {
+      setTmdbMeta(null);
+      return;
+    }
+    try {
+      if (
+        videoUrl.includes("youtube.com") ||
+        videoUrl.includes("youtu.be") ||
+        videoUrl.includes("vimeo.com")
+      ) {
+        setTmdbMeta(null);
+        return;
+      }
+      const u = new URL(videoUrl);
+      const filename = u.pathname.split("/").pop();
+      const rawTitle = filename.replace(/\.(mp4|mkv|avi|webm|m3u8)$/i, "");
+      const cleanTitle = rawTitle
+        .replace(/[\._\-]/g, " ")
+        .replace(/(19|20)\d{2}.*/, "")
+        .trim();
+      if (cleanTitle.length > 2) {
+        fetch(`/api/tmdb?q=${encodeURIComponent(cleanTitle)}`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((d) => setTmdbMeta(d?.title ? d : null))
+          .catch(() => setTmdbMeta(null));
+      } else {
+        setTmdbMeta(null);
+      }
+    } catch {
+      setTmdbMeta(null);
+    }
+  }, [videoUrl]);
 
   const handleCopyVideoUrl = useCallback(() => {
     if (!videoUrl) {
@@ -965,7 +1000,18 @@ export default function RoomClient({ roomId, initialMeta }) {
             >
               <div className="w-1 h-12 bg-white/20 rounded-full group-hover:bg-amber-400/80 transition-colors shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
             </div>
-            <div className="flex-[2] min-h-0 glass-card overflow-hidden flex flex-col">
+            <div className="flex-[2] min-h-0 glass-card overflow-hidden flex flex-col relative">
+              {tmdbMeta && (
+                <div className="p-4 border-b border-white/5 bg-black/20 flex gap-4 shrink-0 shadow-lg relative z-10">
+                  {tmdbMeta.poster && (
+                    <img src={tmdbMeta.poster} alt={tmdbMeta.title} className="w-10 h-14 object-cover rounded shadow border border-white/10 shrink-0" />
+                  )}
+                  <div className="flex flex-col justify-center min-w-0 flex-1">
+                    <h3 className="text-sm font-bold text-white/90 truncate">{tmdbMeta.title} {tmdbMeta.year ? `(${tmdbMeta.year})` : ""}</h3>
+                    <p className="text-[10px] text-white/50 line-clamp-2 mt-0.5 leading-snug">{tmdbMeta.overview}</p>
+                  </div>
+                </div>
+              )}
               <ChatPanel
                 messages={messages}
                 userId={userId}

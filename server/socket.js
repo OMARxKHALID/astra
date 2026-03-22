@@ -242,7 +242,13 @@ class Room {
       for (const uid of Object.keys(this.tsMap)) {
         if (!validUsers.has(uid)) delete this.tsMap[uid];
       }
-      io.to(this.roomId).emit("REC:tsMap", { ...this.tsMap });
+
+      const times = Object.values(this.tsMap)
+        .filter((t) => typeof t === "number")
+        .sort((a, b) => a - b);
+      const leaderTime = times.length ? times[Math.floor(times.length / 2)] : this.videoTS;
+
+      io.to(this.roomId).emit("REC:tsMap", { ...this.tsMap, _leaderTime_: leaderTime });
       this.lastBroadcastTime = Date.now();
 
       // REC:host: only emit when state changed

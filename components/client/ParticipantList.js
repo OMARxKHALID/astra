@@ -30,24 +30,23 @@ function QualityDot({ deviation }) {
 }
 
 function Avatar({ name, isMe, isHost }) {
+  const seed = encodeURIComponent(name);
   return (
     <div
       title={isMe ? "You" : name}
-      className={`relative w-9 h-9 rounded-[2rem] flex items-center justify-center
-                  text-[11px] font-bold font-mono shrink-0 select-none
-                  ${
-                    isMe
-                      ? "bg-amber-500/20 border border-amber-500/40 text-amber-400"
-                      : "bg-white/5 border border-white/10 text-white/50"
-                  }`}
+      className="relative w-9 h-9 flex items-center justify-center shrink-0 select-none"
     >
-      {name.slice(0, 2).toUpperCase()}
+      <img 
+        src={`https://api.dicebear.com/9.x/bottts/svg?seed=${seed}`} 
+        alt={name} 
+        className="w-full h-full object-contain" 
+      />
       {isHost && (
         <div
           className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500
                         flex items-center justify-center
                         border-2 shadow-[0_0_8px_rgba(245,158,11,0.5)]"
-          style={{ borderColor: "var(--color-void)" }}
+          style={{ borderColor: "var(--color-void)", zIndex: 10 }}
         >
           <Crown className="w-2 h-2 text-void" strokeWidth={3} />
         </div>
@@ -170,12 +169,12 @@ export default function ParticipantList({
               </div>
 
               {/* Fixed-width action column so quality dot never shifts */}
-              <div className="flex items-center gap-1 shrink-0 w-14 justify-end">
+              <div className="flex items-center gap-1 shrink-0 w-20 justify-end">
                 {canTransfer && (
                   <button
                     onClick={() => handleTransfer(uid)}
                     title={confirming ? "Confirm: make host?" : "Transfer host"}
-                    className={`opacity-0 group-hover:opacity-100 transition-all w-7 h-7
+                    className={`opacity-0 group-hover:opacity-100 transition-all w-7 h-7 shrink-0
                                 flex items-center justify-center rounded-[2rem] text-xs
                       ${
                         confirming

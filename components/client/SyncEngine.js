@@ -215,7 +215,7 @@ export default function SyncEngine({
         return;
       }
 
-      const lt = getLeaderTime(tsMap.current);
+      const lt = tsMap.current._leaderTime_ ?? 0;
       const target = expectedTime(s, clockOffset.current);
       const leaderTime = lt > 0 ? lt : target;
       if (leaderTime === 0) return;
