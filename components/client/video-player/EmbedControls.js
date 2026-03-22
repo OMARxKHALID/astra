@@ -3,15 +3,15 @@
 import { useState } from "react";
 import { formatTime, SpeedPicker } from "./utils";
 import {
-  PlayIcon,
-  PauseIcon,
-  VolumeIcon,
-  MuteIcon,
-  LockSmallIcon,
-  CcIcon,
-  ExpandIcon,
-  CompressIcon,
-} from "../Icons";
+  Play as PlayIcon,
+  Pause as PauseIcon,
+  Volume2 as VolumeIcon,
+  VolumeX as MuteIcon,
+  Lock as LockSmallIcon,
+  Captions as CcIcon,
+  Maximize as ExpandIcon,
+  Minimize as CompressIcon,
+} from "lucide-react";
 
 // Theatre icon inlined — EmbedControls can't import TheatreIcon from Icons
 // without a circular path issue in some bundler configs; keep it self-contained.

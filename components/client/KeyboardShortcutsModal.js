@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
+import { X as XIcon } from "lucide-react";
 
 const SHORTCUTS = [
   { keys: ["Space", "K"], label: "Play / Pause" },
@@ -43,7 +44,7 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }) {
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/8 text-white/40 hover:text-white transition-colors"
           >
-            ✕
+            <XIcon className="w-4 h-4" />
           </button>
         </div>
         <div className="px-6 py-4 space-y-1.5">

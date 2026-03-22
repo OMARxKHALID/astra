@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap");
-
 @import "tailwindcss";
 
 @theme {
@@ -7,6 +5,7 @@
   --font-body: "DM Sans", sans-serif;
   --font-mono: "DM Mono", monospace;
 
+  /* ── Dark palette (default) ── */
   --color-void: #07090d;
   --color-surface: #0d1018;
   --color-panel: #131720;
@@ -22,6 +21,23 @@
   --color-bright: #f8fafc;
 }
 
+/* ── Light palette ───────────────────────────────────────────────────────── */
+/* Warm slate-blue tones — not pure white. Inspired by Linear/Notion light. */
+html[data-theme="light"] {
+  --color-void: #eef1f8;
+  --color-surface: #e4e9f4;
+  --color-panel: #d8dfee;
+  --color-card: #cdd5e8;
+  --color-border: #b8c3d8;
+  --color-border-bright: #9aaac0;
+  --color-muted: #6070a0;
+  --color-subtle: #4a5878;
+  --color-dim: #364260;
+  --color-text: #18213a;
+  --color-bright: #0a0f1e;
+}
+
+/* ── Animations ──────────────────────────────────────────────────────────── */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -37,7 +53,7 @@
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 @keyframes toastIn {
@@ -47,13 +63,12 @@
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: none;
   }
 }
 @keyframes toastOut {
   from {
     opacity: 1;
-    transform: translateY(0) scale(1);
   }
   to {
     opacity: 0;
@@ -61,6 +76,7 @@
   }
 }
 
+/* ── Base ─────────────────────────────────────────────────────────────────── */
 @layer base {
   *,
   *::before,
@@ -73,15 +89,14 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     height: 100%;
+    transition: background-color 0.25s ease;
   }
-
   body {
     background-color: var(--color-void);
     color: var(--color-text);
     font-family: var(--font-body);
     min-height: 100%;
   }
-
   ::selection {
     background: rgba(245, 158, 11, 0.25);
   }
@@ -97,7 +112,9 @@
   }
 }
 
+/* ── Components ──────────────────────────────────────────────────────────── */
 @layer components {
+  /* Glass card — dark mode */
   .glass-card {
     background: rgba(255, 255, 255, 0.028);
     border: 1px solid rgba(255, 255, 255, 0.075);
@@ -113,11 +130,23 @@
     border-color: rgba(255, 255, 255, 0.11);
   }
 
+  /* Glass card — light mode override */
+  html[data-theme="light"] .glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(0, 0, 0, 0.09);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      0 4px 24px rgba(0, 0, 0, 0.07);
+  }
+  html[data-theme="light"] .glass-card:hover {
+    border-color: rgba(0, 0, 0, 0.14);
+  }
+
+  /* ── Bento grid ── */
   .bento-grid {
     display: grid;
     gap: 0.5rem;
   }
-
   @media (min-width: 640px) {
     .bento-grid {
       gap: 0.75rem;
@@ -125,33 +154,23 @@
   }
 
   .bento-grid.sidebar-open {
-    grid-template-areas:
-      "video  sidebar"
-      "url    sidebar";
+    grid-template-areas: "video sidebar" "url sidebar";
     grid-template-columns: minmax(0, 1fr) var(--sidebar-width, 300px);
     grid-template-rows: minmax(0, 1fr) 60px;
   }
-
   .bento-grid.sidebar-closed {
-    grid-template-areas:
-      "video"
-      "url";
+    grid-template-areas: "video" "url";
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr) 60px;
   }
-
   @media (max-width: 1023px) {
     .bento-grid.sidebar-open,
     .bento-grid.sidebar-closed {
-      grid-template-areas:
-        "video"
-        "url";
+      grid-template-areas: "video" "url";
       grid-template-columns: minmax(0, 1fr);
       grid-template-rows: minmax(0, 1fr) 56px;
     }
   }
-
-  /* When fullscreen: video fills entire grid, no URL bar, no gap */
   .bento-grid.\!p-0 {
     gap: 0;
     grid-template-areas: "video";
@@ -169,27 +188,36 @@
     align-items: center;
     padding: 0 0.75rem;
   }
-
   @media (min-width: 640px) {
     .bento-url {
       padding: 0 1.5rem;
     }
   }
-
   .bento-sidebar {
     grid-area: sidebar;
-    grid-row: 1 / 3;
+    grid-row: 1/3;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
     min-height: 0;
   }
 
-  .card {
-    background: var(--color-card);
-    border: 1px solid var(--color-border);
-    border-radius: 2rem;
-    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.35);
+  /* ── Theatre mode ── */
+  /* URL bar + sidebar are hidden via JS (isTheatre flag).                   */
+  /* The navbar stays visible at full opacity — just the video expands.      */
+  .theatre-mode .bento-grid {
+    gap: 0;
+    padding: 0 !important;
+  }
+  .theatre-mode .bento-video {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* ── Video controls — always dark regardless of theme ── */
+  /* Controls overlay the video which is always black.                       */
+  .video-controls {
+    color-scheme: dark;
   }
 
   .btn-primary {
@@ -203,10 +231,9 @@
     color: var(--color-void);
     font-weight: 700;
     font-size: 0.875rem;
-    letter-spacing: 0.01em;
     transition:
-      background 0.15s ease,
-      transform 0.1s ease;
+      background 0.15s,
+      transform 0.1s;
     box-shadow: 0 4px 16px rgba(245, 158, 11, 0.2);
   }
   .btn-primary:hover {
@@ -221,6 +248,171 @@
   }
 }
 
+/* ── Light mode: invert white-based Tailwind utilities ───────────────────── */
+/* The entire UI uses text-white/XX and bg-white/XX for dark-on-dark layering.
+   In light mode we flip these to dark-on-light. We do this via attribute
+   selectors so it applies everywhere without touching individual components.  */
+
+html[data-theme="light"] {
+  /* text-white and all opacity variants → dark ink */
+  --tw-text-opacity: 1;
+}
+
+html[data-theme="light"] [class*="text-white"] {
+  color: var(--color-text) !important;
+}
+html[data-theme="light"] [class*="text-white/90"] {
+  color: rgba(24, 33, 58, 0.92) !important;
+}
+html[data-theme="light"] [class*="text-white/80"] {
+  color: rgba(24, 33, 58, 0.82) !important;
+}
+html[data-theme="light"] [class*="text-white/75"] {
+  color: rgba(24, 33, 58, 0.76) !important;
+}
+html[data-theme="light"] [class*="text-white/70"] {
+  color: rgba(24, 33, 58, 0.7) !important;
+}
+html[data-theme="light"] [class*="text-white/60"] {
+  color: rgba(24, 33, 58, 0.6) !important;
+}
+html[data-theme="light"] [class*="text-white/50"] {
+  color: rgba(24, 33, 58, 0.5) !important;
+}
+html[data-theme="light"] [class*="text-white/40"] {
+  color: rgba(24, 33, 58, 0.4) !important;
+}
+html[data-theme="light"] [class*="text-white/35"] {
+  color: rgba(24, 33, 58, 0.36) !important;
+}
+html[data-theme="light"] [class*="text-white/30"] {
+  color: rgba(24, 33, 58, 0.3) !important;
+}
+html[data-theme="light"] [class*="text-white/25"] {
+  color: rgba(24, 33, 58, 0.25) !important;
+}
+html[data-theme="light"] [class*="text-white/20"] {
+  color: rgba(24, 33, 58, 0.2) !important;
+}
+html[data-theme="light"] [class*="text-white/18"] {
+  color: rgba(24, 33, 58, 0.18) !important;
+}
+html[data-theme="light"] [class*="text-white/15"] {
+  color: rgba(24, 33, 58, 0.15) !important;
+}
+html[data-theme="light"] [class*="text-white/10"] {
+  color: rgba(24, 33, 58, 0.1) !important;
+}
+
+/* text-void (amber button labels) should stay dark on light backgrounds */
+html[data-theme="light"] [class*="text-void"] {
+  color: #07090d !important;
+}
+
+/* Background utilities */
+html[data-theme="light"] [class*="bg-void"] {
+  background-color: var(--color-void) !important;
+}
+html[data-theme="light"] [class*="bg-void/60"] {
+  background-color: rgba(240, 244, 251, 0.7) !important;
+}
+html[data-theme="light"] [class*="bg-void/85"] {
+  background-color: rgba(240, 244, 251, 0.88) !important;
+}
+html[data-theme="light"] [class*="bg-void/90"] {
+  background-color: rgba(240, 244, 251, 0.92) !important;
+}
+html[data-theme="light"] [class*="bg-void/92"] {
+  background-color: rgba(240, 244, 251, 0.94) !important;
+}
+html[data-theme="light"] [class*="bg-void/95"] {
+  background-color: rgba(240, 244, 251, 0.96) !important;
+}
+html[data-theme="light"] [class*="bg-surface"] {
+  background-color: var(--color-surface) !important;
+}
+html[data-theme="light"] [class*="bg-white/4"] {
+  background-color: rgba(0, 0, 0, 0.03) !important;
+}
+html[data-theme="light"] [class*="bg-white/5"] {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+html[data-theme="light"] [class*="bg-white/8"] {
+  background-color: rgba(0, 0, 0, 0.06) !important;
+}
+html[data-theme="light"] [class*="bg-white/10"] {
+  background-color: rgba(0, 0, 0, 0.07) !important;
+}
+html[data-theme="light"] [class*="bg-white/15"] {
+  background-color: rgba(0, 0, 0, 0.08) !important;
+}
+html[data-theme="light"] [class*="bg-white/18"] {
+  background-color: rgba(0, 0, 0, 0.09) !important;
+}
+html[data-theme="light"] [class*="bg-black/30"] {
+  background-color: rgba(0, 0, 0, 0.12) !important;
+}
+html[data-theme="light"] [class*="bg-black/40"] {
+  background-color: rgba(0, 0, 0, 0.14) !important;
+}
+html[data-theme="light"] [class*="bg-black/50"] {
+  background-color: rgba(0, 0, 0, 0.18) !important;
+}
+html[data-theme="light"] [class*="bg-black/60"] {
+  background-color: rgba(0, 0, 0, 0.22) !important;
+}
+html[data-theme="light"] [class*="bg-black/75"] {
+  background-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Border utilities */
+html[data-theme="light"] [class*="border-white/5"] {
+  border-color: rgba(0, 0, 0, 0.05) !important;
+}
+html[data-theme="light"] [class*="border-white/6"] {
+  border-color: rgba(0, 0, 0, 0.06) !important;
+}
+html[data-theme="light"] [class*="border-white/8"] {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+html[data-theme="light"] [class*="border-white/10"] {
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+html[data-theme="light"] [class*="border-white/12"] {
+  border-color: rgba(0, 0, 0, 0.12) !important;
+}
+html[data-theme="light"] [class*="border-white/15"] {
+  border-color: rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Video player controls always stay dark (overlaid on video) */
+html[data-theme="light"] .video-controls [class*="text-white"] {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+html[data-theme="light"] .video-controls [class*="bg-white"] {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+html[data-theme="light"] .video-controls [class*="border-white"] {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Amber bg buttons keep their void text */
+html[data-theme="light"] .bg-amber-500 [class*="text-void"],
+html[data-theme="light"] .bg-amber-400 [class*="text-void"] {
+  color: #07090d !important;
+}
+
+/* Chat bubbles */
+html[data-theme="light"] .chat-own {
+  background-color: rgba(245, 158, 11, 0.18) !important;
+  color: #7c3e00 !important;
+}
+html[data-theme="light"] .chat-other {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+  color: #18213a !important;
+}
+
+/* ── Utilities ────────────────────────────────────────────────────────────── */
 @layer utilities {
   .no-scrollbar::-webkit-scrollbar {
     display: none;

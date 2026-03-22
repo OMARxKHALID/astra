@@ -31,8 +31,10 @@ export default function SyncEngine({
   onConnStatus,
   onKicked,
   sendRef,
-  onTsMapUpdate, // NEW: forwards { userId → time } to RoomClient for connection quality
-  roomPassword, // NEW: password for joining password-protected rooms
+  onTsMapUpdate,
+  onLateJoin,
+  onReconnected,
+  roomPassword,
 }) {
   const p = useRef();
   p.current = {
@@ -50,6 +52,8 @@ export default function SyncEngine({
     onConnStatus,
     onKicked,
     onTsMapUpdate,
+    onLateJoin,
+    onReconnected,
     roomPassword,
   };
 
@@ -62,6 +66,31 @@ export default function SyncEngine({
   const preventUpdateEnd = useRef(0);
   const clockOffset = useRef(0);
   const initialSeekDone = useRef(false);
+
+  // Prevents sync-engine-driven v.play()/v.pause() from re-firing CMD:play/pause.
+  // When the engine calls v.play() programmatically, native "play" DOM event fires,
+  // which would otherwise call onPlay → CMD:play → unnecessary server round-trip.
+  const suppressNativeRef = useRef(false);
+
+  // Expose the suppress flag on videoRef.current so NativeVideoPlayer can read it.
+  // We tag it on the videoRef.current object (safe: it's just a ref value).
+  useEffect(() => {
+    const v = videoRef?.current;
+    if (!v) return;
+    // Tag the video element / proxy with our suppress flag accessor
+    v._suppressNative = false;
+  }, [videoRef]);
+
+  function suppressNext() {
+    suppressNativeRef.current = true;
+    const v = videoRef?.current;
+    if (v) v._suppressNative = true;
+    setTimeout(() => {
+      suppressNativeRef.current = false;
+      const vv = videoRef?.current;
+      if (vv) vv._suppressNative = false;
+    }, 150);
+  }
 
   const isBufferingNow = useCallback((v) => {
     if (isBuffering.current) return true;
@@ -88,42 +117,41 @@ export default function SyncEngine({
   );
 
   useEffect(() => {
-    if (sendRef)
-      sendRef.current = (msg) => {
-        if (msg.type === "chat")
-          send("chat", { text: msg.text, dataUrl: msg.dataUrl });
-        else if (msg.type === "play")
-          send("CMD:play", { videoTS: msg.currentTime });
-        else if (msg.type === "pause")
-          send("CMD:pause", { videoTS: msg.currentTime });
-        else if (msg.type === "seek") send("CMD:seek", msg.currentTime);
-        else if (msg.type === "speed")
-          send("CMD:playbackRate", {
-            rate: msg.rate,
-            videoTS: msg.currentTime,
-          });
-        else if (msg.type === "change_video")
-          send("CMD:host", {
-            video: msg.videoUrl,
-            subtitleUrl: msg.subtitleUrl,
-            paused: true,
-          });
-        else if (msg.type === "kick")
-          send("CMD:kick", { targetUserId: msg.targetUserId });
-        else if (msg.type === "toggle_host_controls") send("CMD:lock");
-        else if (msg.type === "toggle_strict_video_url_mode")
-          send("CMD:strictVideoUrlMode");
-        else if (msg.type === "set_subtitle") send("CMD:subtitle", msg.url);
-        else if (msg.type === "set_name")
-          send("CMD:setName", { username: msg.username });
-        else if (msg.type === "set_password")
-          send("CMD:setPassword", { password: msg.password });
-        else if (msg.type === "typing") send("CMD:typing");
-        else send(msg.type, msg);
-      };
+    if (!sendRef) return;
+    sendRef.current = (msg) => {
+      if (msg.type === "chat")
+        send("chat", { text: msg.text, dataUrl: msg.dataUrl });
+      else if (msg.type === "play")
+        send("CMD:play", { videoTS: msg.currentTime });
+      else if (msg.type === "pause")
+        send("CMD:pause", { videoTS: msg.currentTime });
+      else if (msg.type === "seek") send("CMD:seek", msg.currentTime);
+      else if (msg.type === "speed")
+        send("CMD:playbackRate", { rate: msg.rate, videoTS: msg.currentTime });
+      else if (msg.type === "change_video")
+        send("CMD:host", {
+          video: msg.videoUrl,
+          subtitleUrl: msg.subtitleUrl,
+          paused: true,
+        });
+      else if (msg.type === "kick")
+        send("CMD:kick", { targetUserId: msg.targetUserId });
+      else if (msg.type === "transfer_host")
+        send("CMD:transferHost", { targetUserId: msg.targetUserId });
+      else if (msg.type === "toggle_host_controls") send("CMD:lock");
+      else if (msg.type === "toggle_strict_video_url_mode")
+        send("CMD:strictVideoUrlMode");
+      else if (msg.type === "set_subtitle") send("CMD:subtitle", msg.url);
+      else if (msg.type === "set_name")
+        send("CMD:setName", { username: msg.username });
+      else if (msg.type === "set_password")
+        send("CMD:setPassword", { password: msg.password });
+      else if (msg.type === "typing") send("CMD:typing");
+      else send(msg.type, msg);
+    };
   }, [send, sendRef]);
 
-  // CMD:ts — emit every second while playing
+  // CMD:ts — report current position every second while playing
   useEffect(() => {
     const int = setInterval(() => {
       const v = videoRef?.current;
@@ -138,7 +166,7 @@ export default function SyncEngine({
     return () => clearInterval(int);
   }, [videoRef, isBufferingNow]);
 
-  // DOM-event buffering detection for native <video> only
+  // DOM buffering detection for native <video>
   useEffect(() => {
     const v = videoRef?.current;
     if (!v || typeof v.addEventListener !== "function") return;
@@ -158,7 +186,7 @@ export default function SyncEngine({
     };
   }, [videoRef]);
 
-  // ── Core sync loop ────────────────────────────────────────────────────────
+  // ── Core sync loop ─────────────────────────────────────────────────────────
   const loop = useCallback(() => {
     clearInterval(timer.current);
     timer.current = setInterval(() => {
@@ -169,22 +197,17 @@ export default function SyncEngine({
 
       const inPreventWindow = Date.now() < preventUpdateEnd.current;
 
-      // ── Play/pause enforcement ─────────────────────────────────────────
-      // CRITICAL FIX: guard behind preventUpdateEnd so we don't pause the
-      // video immediately after the user clicks play (before the server's
-      // REC:host response arrives and updates serverLine.isPlaying).
       if (!inPreventWindow) {
         if (s.isPlaying && v.paused && !isBufferingNow(v)) {
+          suppressNext(); // suppress the native "play" event that v.play() will fire
           v.play().catch(() => {});
         } else if (!s.isPlaying && !v.paused) {
+          suppressNext();
           v.pause();
         }
       }
 
-      // ── Rate-correction guard ──────────────────────────────────────────
       if (v.readyState < 3 || isBufferingNow(v) || inPreventWindow) {
-        // Reset only to the server-commanded rate, not blindly to 1.0.
-        // Previously this reset to 1.0 which silently undid speed changes.
         const targetRate = s.playbackRate || 1;
         if (Math.abs(v.playbackRate - targetRate) > 0.005)
           v.playbackRate = targetRate;
@@ -211,7 +234,6 @@ export default function SyncEngine({
       }
 
       const correction = computeCorrection(myTime, leaderTime, s.isPlaying);
-      // Apply drift correction ON TOP of the commanded playback rate
       const commandedRate = s.playbackRate || 1;
       const correctedRate =
         correction.action === "soft"
@@ -225,10 +247,14 @@ export default function SyncEngine({
       if (Math.abs(v.playbackRate - correctedRate) > 0.005)
         v.playbackRate = correctedRate;
 
-      // Final enforcement after corrections
       if (!inPreventWindow) {
-        if (s.isPlaying && v.paused) v.play().catch(() => {});
-        else if (!s.isPlaying && !v.paused) v.pause();
+        if (s.isPlaying && v.paused) {
+          suppressNext();
+          v.play().catch(() => {});
+        } else if (!s.isPlaying && !v.paused) {
+          suppressNext();
+          v.pause();
+        }
       }
     }, SYNC_CHECK_INTERVAL);
   }, [isBufferingNow]);
@@ -288,10 +314,9 @@ export default function SyncEngine({
         serverLine.current = state;
         onStateUpdate?.(state);
 
-        // Mode-change toasts
         if (!wasInitial && prev) {
-          const { onChatMessage: ocm } = p.current;
-          if (prev.strictVideoUrlMode !== m.strictVideoUrlMode) {
+          const ocm = p.current.onChatMessage;
+          if (prev.strictVideoUrlMode !== m.strictVideoUrlMode)
             ocm?.({
               senderId: "system",
               ts: Date.now(),
@@ -299,8 +324,7 @@ export default function SyncEngine({
                 ? "[STRICT_ON] Strict URL mode ON — direct files only."
                 : "[STRICT_OFF] Strict URL mode OFF — all URLs allowed.",
             });
-          }
-          if (prev.hostOnlyControls !== m.hostOnlyControls) {
+          if (prev.hostOnlyControls !== m.hostOnlyControls)
             ocm?.({
               senderId: "system",
               ts: Date.now(),
@@ -308,8 +332,7 @@ export default function SyncEngine({
                 ? "[LOCK] Playback locked to host only."
                 : "[UNLOCK] Playback unlocked for everyone.",
             });
-          }
-          if (Boolean(prev.hasPassword) !== Boolean(m.hasPassword)) {
+          if (Boolean(prev.hasPassword) !== Boolean(m.hasPassword))
             ocm?.({
               senderId: "system",
               ts: Date.now(),
@@ -317,33 +340,43 @@ export default function SyncEngine({
                 ? "[LOCK] Room password set."
                 : "[UNLOCK] Room password removed.",
             });
-          }
         }
 
         if (wasInitial) initialSeekDone.current = false;
         if (Date.now() < preventUpdateEnd.current) return;
         const v = p.current.videoRef?.current;
+
         if (wasInitial && v && state.currentTime > 0) {
           v.currentTime = state.currentTime;
           initialSeekDone.current = true;
-          if (state.isPlaying) v.play().catch(() => {});
+          if (state.isPlaying) {
+            suppressNext();
+            v.play().catch(() => {});
+          }
+          if (m.reconnected) {
+            p.current.onReconnected?.();
+          } else if (state.currentTime > 120) {
+            p.current.onLateJoin?.(state.currentTime);
+          }
         }
       },
 
       "REC:play": (m) => {
         const v = p.current.videoRef?.current;
         if (v) {
-          if (m && typeof m.videoTS === "number") {
-            if (Math.abs(v.currentTime - m.videoTS) > 0.5)
-              v.currentTime = m.videoTS;
-          }
+          if (m?.videoTS != null && Math.abs(v.currentTime - m.videoTS) > 0.5)
+            v.currentTime = m.videoTS;
+          suppressNext();
           v.play().catch(() => {});
         }
       },
 
       "REC:pause": () => {
         const v = p.current.videoRef?.current;
-        if (v && !v.paused) v.pause();
+        if (v && !v.paused) {
+          suppressNext();
+          v.pause();
+        }
       },
 
       "REC:seek": (time) => {
@@ -365,11 +398,9 @@ export default function SyncEngine({
       },
 
       "REC:roster": (users) => onUserChange?.({ type: "participants", users }),
-
       user_joined: (m) => onUserChange?.({ type: "user_joined", ...m }),
       user_left: (m) => onUserChange?.({ type: "user_left", ...m }),
       name_changed: (m) => onUserChange?.({ type: "name_changed", ...m }),
-
       user_typing: (m) => onUserChange?.({ type: "user_typing", ...m }),
 
       host_changed: (m) => {
@@ -377,13 +408,18 @@ export default function SyncEngine({
         onStateUpdate?.((prev) =>
           prev ? { ...prev, hostId: m.newHostId } : prev,
         );
+        if (m.transferredFrom)
+          p.current.onChatMessage?.({
+            senderId: "system",
+            ts: Date.now(),
+            text: "[HOST] Host role transferred.",
+          });
       },
 
-      "REC:subtitle": (url) => {
+      "REC:subtitle": (url) =>
         onStateUpdate?.((prev) =>
           prev ? { ...prev, subtitleUrl: url } : prev,
-        );
-      },
+        ),
 
       chat: (m) => onChatMessage?.(m),
       chat_history: (m) => onChatMessage?.({ type: "chat_history", ...m }),

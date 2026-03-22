@@ -2,10 +2,56 @@ import { Server } from "socket.io";
 import http from "http";
 import { Redis } from "@upstash/redis";
 import pkg from "@next/env";
-import { createHash } from "crypto";
+import { createHash, createHmac, timingSafeEqual } from "crypto";
 
 const { loadEnvConfig } = pkg;
 loadEnvConfig(process.cwd());
+
+// ─── JWT (HS256, zero external dep) ──────────────────────────────────────────
+function jwtSecret() {
+  return process.env.JWT_SECRET || "dev-fallback-not-secure";
+}
+
+function verifyHostToken(token, expectedRoomId) {
+  // Support legacy UUID tokens during migration
+  if (!token) return false;
+
+  // Try JWT first
+  if (token.includes(".")) {
+    try {
+      const [header, claims, sig] = token.split(".");
+      if (!header || !claims || !sig) return false;
+      const expected = createHmac("sha256", jwtSecret())
+        .update(`${header}.${claims}`)
+        .digest("base64url");
+      const a = Buffer.from(sig, "base64url");
+      const b = Buffer.from(expected, "base64url");
+      if (a.length !== b.length || !timingSafeEqual(a, b)) return false;
+      const payload = JSON.parse(Buffer.from(claims, "base64url").toString());
+      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000))
+        return false;
+      if (payload.role !== "host") return false;
+      if (expectedRoomId && payload.roomId !== expectedRoomId) return false;
+      return { hostId: payload.sub, ...payload };
+    } catch {
+      return false;
+    }
+  }
+
+  // Legacy UUID token — accept as-is (backwards compatibility)
+  return { legacy: true };
+}
+
+function extractHostId(token) {
+  if (!token?.includes(".")) return null;
+  try {
+    const claims = token.split(".")[1];
+    const payload = JSON.parse(Buffer.from(claims, "base64url").toString());
+    return payload.sub || null;
+  } catch {
+    return null;
+  }
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const STRICT_EXTS = /\.(mp4|webm|ogg|mkv|mov|avi)$/i;
@@ -69,6 +115,7 @@ class Room {
     this.videoTS = 0;
     this.paused = true;
     this.lastUpdated = Date.now();
+    this.createdAt = Date.now();
     this.hostId = hostId;
     this.hostToken = hostToken;
     this.playbackRate = 1;
@@ -154,6 +201,7 @@ class Room {
       paused: this.paused,
       videoTS: this.videoTS,
       lastUpdated: this.lastUpdated,
+      createdAt: this.createdAt,
       hostId: this.hostId,
       playbackRate: this.playbackRate,
       hostOnlyControls: this.hostOnlyControls,
@@ -317,23 +365,30 @@ io.on("connection", (socket) => {
     }
 
     const isHost = Boolean(token);
+    const jwtPayload = isHost ? verifyHostToken(token, roomId) : false;
 
     // Create room if first visitor
     if (!room) {
-      room = new Room(roomId, videoUrl || "", clientId, isHost ? token : "");
+      const hostIdFromToken = jwtPayload ? jwtPayload.hostId || clientId : "";
+      room = new Room(
+        roomId,
+        videoUrl || "",
+        hostIdFromToken,
+        isHost ? token : "",
+      );
       rooms.set(roomId, room);
       room.startBroadcast(io);
     } else {
       if (!room.video && videoUrl) room.video = videoUrl;
-      if (isHost && !room.hostToken && token) {
-        room.hostId = clientId;
+      if (isHost && !room.hostToken && token && jwtPayload) {
+        room.hostId = jwtPayload.hostId || clientId;
         room.hostToken = token;
         if (videoUrl) room.video = videoUrl;
       }
     }
 
     // Auth checks
-    if (isHost && room.hostToken && token !== room.hostToken) {
+    if (isHost && !jwtPayload) {
       socket.emit("REC:error", { message: "Invalid host token" });
       return;
     }
@@ -348,14 +403,15 @@ io.on("connection", (socket) => {
       }
     }
 
-    // Host identity transfer
-    if (isHost && token === room.hostToken && room.hostId !== clientId) {
+    // Host identity transfer — use hostId from JWT payload, not clientId
+    const effectiveHostId = jwtPayload?.hostId || clientId;
+    if (isHost && jwtPayload && room.hostId !== effectiveHostId) {
       const prev = room.hostId;
-      room.hostId = clientId;
+      room.hostId = effectiveHostId;
       for (const meta of clientMeta.values()) {
         if (meta.roomId === roomId && meta.userId === prev) meta.isHost = false;
       }
-      io.to(roomId).emit("host_changed", { newHostId: clientId });
+      io.to(roomId).emit("host_changed", { newHostId: effectiveHostId });
     }
 
     socket.join(roomId);
@@ -369,12 +425,13 @@ io.on("connection", (socket) => {
     clientMeta.set(socket.id, {
       userId: clientId,
       roomId,
-      isHost: isHost && token === room.hostToken,
+      isHost: Boolean(isHost && jwtPayload),
       username: displayName,
     });
 
     // Send state to the new joiner
-    socket.emit("REC:host", room.publicState());
+    // reconnected=true when the same userId rejoins (not a brand new user)
+    socket.emit("REC:host", { ...room.publicState(), reconnected: !wasNew });
     socket.emit("REC:tsMap", { ...room.tsMap });
 
     // Chat history: text-only, no dataUrls
@@ -544,6 +601,41 @@ io.on("connection", (socket) => {
         // Don't break — kick all tabs of that user
       }
     }
+  });
+
+  // ── Transfer host ─────────────────────────────────────────────────────────
+  // Current host can voluntarily hand ownership to any active viewer.
+  // The new host gets a fresh JWT-style session — they will appear as host
+  // in the UI immediately via the host_changed broadcast.
+  socket.on("CMD:transferHost", (msg) => {
+    const meta = clientMeta.get(socket.id);
+    if (!meta?.isHost) return;
+    const room = rooms.get(meta.roomId);
+    if (!room) return;
+    const { targetUserId } = msg || {};
+    if (!targetUserId || targetUserId === meta.userId) return;
+    // Verify target is actually in the room
+    let found = false;
+    for (const m of clientMeta.values()) {
+      if (m.roomId === meta.roomId && m.userId === targetUserId) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) return;
+    // Demote current host
+    meta.isHost = false;
+    // Promote new host — all their sockets
+    for (const m of clientMeta.values()) {
+      if (m.roomId === meta.roomId && m.userId === targetUserId)
+        m.isHost = true;
+    }
+    room.hostId = targetUserId;
+    io.to(room.roomId).emit("host_changed", {
+      newHostId: targetUserId,
+      transferredFrom: meta.userId,
+    });
+    saveRoom(room);
   });
 
   // ── Name change ────────────────────────────────────────────────────────────

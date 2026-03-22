@@ -1,5 +1,11 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import {
+  Lock as LockIcon,
+  Eye as EyeIcon,
+  EyeOff as EyeOffIcon,
+  AlertTriangle as ExclamationIcon,
+} from "lucide-react";
 
 export default function PasswordModal({ roomId, onSubmit, error }) {
   const [pw, setPw] = useState("");
@@ -18,26 +24,12 @@ export default function PasswordModal({ roomId, onSubmit, error }) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-void/95 backdrop-blur-xl">
-      {/* Ambient glow */}
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_50%_40%,rgba(245,158,11,0.08),transparent_60%)]" />
 
       <div className="relative z-10 w-full max-w-sm mx-4 glass-card rounded-[2.5rem] overflow-hidden shadow-2xl">
-        {/* Header */}
         <div className="flex flex-col items-center gap-3 px-8 pt-8 pb-5 border-b border-white/5">
           <div className="w-14 h-14 rounded-[1.75rem] bg-amber-500/12 border border-amber-500/25 flex items-center justify-center">
-            {/* Lock icon */}
-            <svg
-              className="w-7 h-7 text-amber-500/80"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <rect x="3" y="11" width="18" height="11" rx="2" />
-              <path d="M7 11V7a5 5 0 0110 0v4" />
-            </svg>
+            <LockIcon className="w-7 h-7 text-amber-500/80" strokeWidth={1.5} />
           </div>
           <div className="text-center">
             <h2 className="font-display font-bold text-lg text-white/90">
@@ -53,7 +45,6 @@ export default function PasswordModal({ roomId, onSubmit, error }) {
           </div>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="px-8 py-6 space-y-4">
           <div className="relative">
             <input
@@ -75,44 +66,16 @@ export default function PasswordModal({ roomId, onSubmit, error }) {
                          rounded-full text-white/30 hover:text-white/60 transition-colors"
             >
               {show ? (
-                <svg
-                  className="w-4 h-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
-                  <line x1="1" y1="1" x2="23" y2="23" />
-                </svg>
+                <EyeOffIcon className="w-4 h-4" />
               ) : (
-                <svg
-                  className="w-4 h-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
+                <EyeIcon className="w-4 h-4" />
               )}
             </button>
           </div>
 
           {error && (
             <div className="flex items-center gap-2 px-4 py-2.5 rounded-[2rem] bg-danger/8 border border-danger/20">
-              <svg
-                className="w-4 h-4 text-danger shrink-0"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
+              <ExclamationIcon className="w-4 h-4 text-danger shrink-0" strokeWidth={2.5} />
               <p className="text-sm text-danger/80 font-mono">{error}</p>
             </div>
           )}

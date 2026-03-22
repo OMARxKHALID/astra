@@ -1,13 +1,8 @@
 {
   "name": "watch-together",
   "version": "1.1.0",
-  "description": "Watch videos in perfect sync with friends globally. Real-time playback for YouTube, Vimeo, and direct links.",
-  "author": "WatchTogether Team",
   "private": true,
   "type": "module",
-  "engines": {
-    "node": ">=18.17.0"
-  },
   "scripts": {
     "dev": "concurrently \"next dev\" \"node server/socket.js\"",
     "dev:next": "next dev",
@@ -22,11 +17,13 @@
     "clsx": "^2.1.1",
     "hls.js": "^1.6.15",
     "next": "^15.1.0",
+    "opensubtitles-api": "^5.1.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
-    "tailwind-merge": "^2.5.4"
+    "tailwind-merge": "^2.5.4",
+    "lucide-react": "^0.446.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",

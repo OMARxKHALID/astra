@@ -2,26 +2,25 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
-  ChatBubbleIcon,
-  SendIcon,
-  CrownIcon,
-  FilmIcon,
-  LockSmallIcon,
-  UnlockSmallIcon,
-  CcIcon,
-} from "./Icons";
+  MessageCircle as ChatBubbleIcon,
+  Send as SendIcon,
+  Crown as CrownIcon,
+  Film as FilmIcon,
+  Lock as LockIcon,
+  Unlock as UnlockIcon,
+  Captions as CcIcon,
+} from "lucide-react";
 
 export default function ChatPanel({
   messages = [],
   userId,
   displayNames = {},
   onSend,
-  typingUsers = {}, // { userId: { username, ts } }
-  onTyping, // callback to notify parent user is typing
+  typingUsers = {},
+  onTyping,
 }) {
   const [input, setInput] = useState("");
   const bottomRef = useRef(null);
-  const inputRef = useRef(null);
   const atBottomRef = useRef(true);
   const scrollRef = useRef(null);
   const typingTimerRef = useRef(null);
@@ -38,8 +37,9 @@ export default function ChatPanel({
   }, [messages, typingUsers]);
 
   function handleSubmit() {
-    if (!input.trim()) return;
-    onSend(input.trim());
+    const t = input.trim();
+    if (!t) return;
+    onSend(t);
     setInput("");
   }
 
@@ -52,14 +52,12 @@ export default function ChatPanel({
 
   function handleInputChange(e) {
     setInput(e.target.value);
-    // Debounced typing indicator
     if (onTyping) {
       onTyping();
       clearTimeout(typingTimerRef.current);
     }
   }
 
-  // Active typers (exclude self, expire after 3s)
   const now = Date.now();
   const activeTypers = Object.entries(typingUsers)
     .filter(([uid, d]) => uid !== userId && now - d.ts < 3000)
@@ -67,30 +65,48 @@ export default function ChatPanel({
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-white/5 shrink-0">
-        <div className="w-9 h-9 rounded-[2rem] bg-amber-500/10 flex items-center justify-center border border-amber-500/20 shrink-0">
-          <ChatBubbleIcon className="w-4 h-4 text-amber-500" />
+      {/* Header */}
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-[rgba(0,0,0,0.06)] dark:border-white/5 shrink-0">
+        <div className="w-9 h-9 rounded-2xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 shrink-0">
+          <ChatBubbleIcon
+            className="w-4 h-4 text-amber-500"
+            strokeWidth={1.75}
+          />
         </div>
         <div>
-          <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em]">
+          <p
+            className="text-[9px] font-black uppercase tracking-[0.3em]"
+            style={{ color: "var(--color-muted)" }}
+          >
             Live Feed
           </p>
-          <p className="text-xs font-medium text-text/70">
+          <p
+            className="text-xs font-medium"
+            style={{ color: "var(--color-text)" }}
+          >
             {messages.length} messages
           </p>
         </div>
       </div>
 
+      {/* Messages */}
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-5 py-4 space-y-3"
+        className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5"
         style={{ scrollbarWidth: "none" }}
       >
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full gap-4 opacity-30">
-            <ChatBubbleIcon className="w-12 h-12 text-muted" />
-            <p className="text-[11px] font-mono text-muted text-center max-w-[180px] leading-relaxed uppercase tracking-wider">
+          <div className="flex flex-col items-center justify-center h-full gap-3 opacity-30">
+            <ChatBubbleIcon
+              className="w-10 h-10"
+              style={{ color: "var(--color-muted)" }}
+              strokeWidth={1}
+            />
+            <p
+              className="text-[11px] font-mono text-center max-w-[160px] leading-relaxed uppercase tracking-wider"
+              style={{ color: "var(--color-muted)" }}
+            >
               The thread is quiet.
             </p>
           </div>
@@ -104,36 +120,41 @@ export default function ChatPanel({
           />
         ))}
 
-        {/* Typing indicator */}
         {activeTypers.length > 0 && (
-          <div className="flex items-center gap-2 px-1">
+          <div className="flex items-center gap-2 px-1 py-0.5">
             <div className="flex gap-0.5">
               {[0, 1, 2].map((i) => (
                 <span
                   key={i}
-                  className="w-1 h-1 rounded-full bg-white/40 animate-bounce"
+                  className="w-1 h-1 rounded-full bg-amber-400/50 animate-bounce"
                   style={{ animationDelay: `${i * 150}ms` }}
                 />
               ))}
             </div>
-            <span className="text-[10px] text-white/40 font-mono italic">
+            <span
+              className="text-[10px] font-mono italic"
+              style={{ color: "var(--color-muted)" }}
+            >
               {activeTypers.length === 1
                 ? `${activeTypers[0]} is typing…`
                 : `${activeTypers.slice(0, -1).join(", ")} & ${activeTypers.at(-1)} are typing…`}
             </span>
           </div>
         )}
-        <div ref={bottomRef} className="h-2" />
+        <div ref={bottomRef} className="h-1" />
       </div>
 
-      <div className="px-5 py-4 border-t border-white/5 shrink-0">
+      {/* Input */}
+      <div
+        className="px-4 py-3.5 border-t shrink-0"
+        style={{ borderColor: "var(--color-border)" }}
+      >
         <div className="relative">
           <label htmlFor="chat-input" className="sr-only">
             Message
           </label>
           <input
             id="chat-input"
-            ref={inputRef}
             type="text"
             value={input}
             onChange={handleInputChange}
@@ -141,21 +162,23 @@ export default function ChatPanel({
             placeholder="Write a message…"
             maxLength={500}
             autoComplete="off"
-            className="w-full bg-void/60 border border-white/6 rounded-full pl-5 pr-14 py-3.5
-                       text-sm text-text placeholder:text-white/15 font-body outline-none
-                       transition-all duration-200 focus:border-amber-500/25 focus:bg-void/90
-                       focus:shadow-[0_0_0_1px_rgba(245,158,11,0.15)]"
+            style={{
+              backgroundColor: "var(--color-surface)",
+              borderColor: "var(--color-border)",
+              color: "var(--color-text)",
+            }}
+            className="w-full border rounded-full pl-4 pr-12 py-3 text-sm font-body outline-none
+                       transition-all focus:ring-2 focus:ring-amber-500/25 placeholder:opacity-40"
           />
           <button
             onClick={handleSubmit}
             disabled={!input.trim()}
             aria-label="Send message"
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center
-                       rounded-[2rem] bg-amber-500 text-void transition-all duration-150
-                       hover:bg-amber-400 active:scale-90 disabled:opacity-0 disabled:scale-75
-                       shadow-md shadow-amber-500/20"
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center
+                       rounded-full bg-amber-500 text-void transition-all
+                       hover:bg-amber-400 active:scale-90 disabled:opacity-0 disabled:scale-75"
           >
-            <SendIcon className="w-4 h-4" />
+            <SendIcon className="w-3.5 h-3.5" strokeWidth={2.5} />
           </button>
         </div>
       </div>
@@ -176,67 +199,69 @@ function ChatMessage({ msg, isOwn, displayNames = {} }) {
     (msg.senderId ? msg.senderId.slice(0, 6) : "Guest");
 
   if (msg.senderId === "system") {
-    let icon = null;
-    let cleanText = msg.text || "";
-    if (cleanText.includes("[HOST]")) {
-      icon = <CrownIcon className="w-3 h-3 text-amber-500" />;
-      cleanText = cleanText.replace("[HOST]", "").trim();
-    } else if (cleanText.includes("[VIDEO]")) {
-      icon = <FilmIcon className="w-3 h-3 text-jade" />;
-      cleanText = cleanText.replace("[VIDEO]", "").trim();
-    } else if (cleanText.includes("[SUBS]")) {
-      icon = <CcIcon className="w-3 h-3 text-jade" />;
-      cleanText = cleanText.replace("[SUBS]", "").trim();
-    } else if (cleanText.includes("[LOCK]")) {
-      icon = <LockSmallIcon className="w-3 h-3 text-danger" />;
-      cleanText = cleanText.replace("[LOCK]", "").trim();
-    } else if (cleanText.includes("[UNLOCK]")) {
-      icon = <UnlockSmallIcon className="w-3 h-3 text-jade" />;
-      cleanText = cleanText.replace("[UNLOCK]", "").trim();
+    const ICONS = {
+      "[HOST]": (
+        <CrownIcon className="w-3 h-3 text-amber-400 shrink-0" strokeWidth={2} />
+      ),
+      "[VIDEO]": (
+        <FilmIcon className="w-3 h-3 text-jade shrink-0" strokeWidth={2} />
+      ),
+      "[SUBS]": (
+        <CcIcon className="w-3 h-3 text-jade shrink-0" strokeWidth={2} />
+      ),
+      "[LOCK]": (
+        <LockIcon className="w-3 h-3 text-amber-400 shrink-0" strokeWidth={2} />
+      ),
+      "[UNLOCK]": (
+        <UnlockIcon className="w-3 h-3 text-jade shrink-0" strokeWidth={2} />
+      ),
+    };
+    let icon = null,
+      text = msg.text || "";
+    for (const [tag, ic] of Object.entries(ICONS)) {
+      if (text.includes(tag)) {
+        icon = ic;
+        text = text.replace(tag, "").trim();
+        break;
+      }
     }
     return (
       <div className="flex justify-center">
         <div
-          className="bg-void/60 px-4 py-1.5 rounded-full border border-white/5
-                        text-[10px] font-mono text-muted/70 uppercase tracking-wider flex items-center gap-2"
+          className="px-3.5 py-1 rounded-full border text-[10px] font-mono uppercase tracking-wide flex items-center gap-1.5"
+          style={{
+            backgroundColor: "var(--color-surface)",
+            borderColor: "var(--color-border)",
+            color: "var(--color-muted)",
+          }}
         >
           {icon}
-          {cleanText}
+          {text}
         </div>
       </div>
     );
   }
 
-  // Screenshot message
   if (msg.dataUrl) {
     return (
       <div
         className={`flex flex-col gap-1 ${isOwn ? "items-end" : "items-start"}`}
       >
         {!isOwn && (
-          <span className="text-[10px] font-mono font-bold text-amber-500/40 px-1 uppercase tracking-widest">
+          <span className="text-[10px] font-semibold text-amber-500/70 px-1">
             {name}
           </span>
         )}
-        <div
-          className={`max-w-[90%] rounded-[1.5rem] overflow-hidden border ${isOwn ? "border-amber-500/30" : "border-white/10"}`}
+        <img
+          src={msg.dataUrl}
+          alt="Screenshot"
+          className="max-w-[220px] rounded-xl border shadow-lg"
+          style={{ borderColor: "var(--color-border)" }}
+        />
+        <span
+          className="text-[9px] font-mono px-1"
+          style={{ color: "var(--color-muted)" }}
         >
-          <img
-            src={msg.dataUrl}
-            alt="Screenshot"
-            className="w-full block"
-            style={{ maxHeight: 200, objectFit: "cover" }}
-          />
-        </div>
-        {msg.text && (
-          <div
-            className={`max-w-[85%] px-3 py-2 rounded-[2rem] text-[12px] font-body leading-relaxed break-words border
-            ${isOwn ? "bg-amber-500 text-void border-transparent rounded-br-2xl" : "bg-white/5 border-white/6 text-white/90 rounded-bl-2xl"}`}
-          >
-            {msg.text}
-          </div>
-        )}
-        <span className="text-[10px] font-medium text-white/50 px-1 mt-0.5">
           {time}
         </span>
       </div>
@@ -245,24 +270,34 @@ function ChatMessage({ msg, isOwn, displayNames = {} }) {
 
   return (
     <div
-      className={`flex flex-col gap-1 ${isOwn ? "items-end" : "items-start"}`}
+      className={`flex flex-col gap-0.5 ${isOwn ? "items-end" : "items-start"}`}
     >
       {!isOwn && (
-        <span className="text-[10px] font-mono font-bold text-amber-500/40 px-1 uppercase tracking-widest">
+        <span className="text-[10px] font-semibold text-amber-500/70 px-1">
           {name}
         </span>
       )}
       <div
-        className={`max-w-[85%] px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-[2rem] text-[12px] sm:text-[13px] font-body leading-relaxed break-words border transition-colors duration-200
-        ${
+        className={`max-w-[85%] px-3.5 py-2 rounded-2xl text-sm leading-relaxed break-words
+        ${isOwn ? "chat-bubble-own rounded-br-sm" : "chat-bubble-other rounded-bl-sm"}`}
+        style={
           isOwn
-            ? "bg-amber-500 text-void border-transparent rounded-br-2xl shadow-[0_4px_12px_-4px_rgba(245,158,11,0.5)] ring-1 ring-amber-400/50"
-            : "bg-white/5 border-white/6 text-white/90 rounded-bl-2xl hover:border-white/15"
-        }`}
+            ? {
+                backgroundColor: "rgba(245,158,11,0.15)",
+                color: "var(--color-text)",
+              }
+            : {
+                backgroundColor: "var(--color-surface)",
+                color: "var(--color-text)",
+              }
+        }
       >
         {msg.text}
       </div>
-      <span className="text-[10px] font-medium text-white/50 px-1 mt-0.5">
+      <span
+        className="text-[9px] font-mono px-1"
+        style={{ color: "var(--color-muted)" }}
+      >
         {time}
       </span>
     </div>

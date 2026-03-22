@@ -6,7 +6,7 @@ import {
   isStrictVideoUrl,
   SOURCE_LABELS,
 } from "@/lib/videoSource";
-import { LinkIcon, ShieldIcon } from "./Icons";
+import { Link2 as LinkIcon, Shield as ShieldIcon } from "lucide-react";
 
 export default function VideoUrlInput({
   isHost,

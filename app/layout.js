@@ -1,53 +1,72 @@
 import "./globals.css";
+import { DM_Sans, DM_Mono } from "next/font/google";
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-body",
+  display: "swap",
+});
+
+const dmMono = DM_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-mono",
+  display: "swap",
+});
 
 export const metadata = {
-  metadataBase: new URL("https://watch-together-ebon.vercel.app"),
-  title: {
-    default: "WatchTogether — Watch videos in sync",
-    template: "%s | WatchTogether",
-  },
-  description: "Create private rooms to watch videos, movies, and streams with friends in perfect real-time synchronization. No accounts needed.",
-  applicationName: "WatchTogether",
-  authors: [{ name: "WatchTogether Team" }],
-  generator: "Next.js",
-  keywords: ["watch together", "sync video", "real-time playback", "watch party", "youtube sync"],
-  referrer: "origin-when-cross-origin",
-  manifest: "/manifest.json",
+  title: "WatchTogether — Watch videos in sync",
+  description:
+    "Create a private room, share the link, and watch any video with friends — all in real time.",
   icons: {
-    icon: "/icon.svg",
-    apple: "/icon.svg",
-  },
-  openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: "https://watch-together-ebon.vercel.app",
-    siteName: "WatchTogether",
-    title: "WatchTogether — Watch videos in sync",
-    description: "Watch any video in perfect real-time sync with friends. Join a room and start your watch party instantly.",
-    images: [
-      {
-        url: "/icon.svg",
-        width: 512,
-        height: 512,
-        alt: "WatchTogether Logo",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "WatchTogether — Watch videos in sync",
-    description: "Sync your video playback with friends globally.",
-    images: ["/icon.svg"],
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+    apple: "/favicon.svg",
   },
 };
 
-export const viewport = {
-  themeColor: "#07090d",
-};
+export const viewport = { themeColor: "#07090d" };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    // data-theme="dark" is the SSR default — matches what the browser starts with.
+    // The inline script below overrides it to "light" before first paint if the
+    // user has stored that preference. This way server and client always agree on
+    // the initial value ("dark"), preventing the hydration mismatch.
+    <html
+      lang="en"
+      data-theme="dark"
+      suppressHydrationWarning
+      className={`${dmSans.variable} ${dmMono.variable}`}
+    >
+      <head>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        {/*
+          Theme initialisation script — runs synchronously before React hydrates.
+          Only fires when stored theme is "light" (non-default), so the DOM stays
+          "dark" (already matching SSR) unless the user explicitly chose light.
+          React sees the final DOM value which matches whatever the script set,
+          so there is no second mismatch after this point.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(localStorage.getItem('wt_theme')==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}`,
+          }}
+        />
+        <link rel="preconnect" href="https://img.youtube.com" />
+        <link rel="preconnect" href="https://www.youtube.com" />
+        <link rel="preconnect" href="https://player.vimeo.com" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body>{children}</body>
     </html>
   );
