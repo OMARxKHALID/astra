@@ -14,11 +14,11 @@ export default function YouTubeSearch({ onLoad }) {
   const [nextPageToken, setNextPageToken] = useState(null);
 
   const containerRef = useRef(null);
-  const resultsRef = useRef(null);
+  const resultsRef = useRef(null); // tracks the portal modal so outside-click ignores clicks inside it
   const scrollRef = useRef(null);
   const bottomTriggerRef = useRef(null);
 
-  // Close on outside click or Escape
+  // Close on outside click or Escape — checks both the input bar AND the portal modal
   useEffect(() => {
     if (!open) return;
     const onMouse = (e) => {
@@ -81,7 +81,7 @@ export default function YouTubeSearch({ onLoad }) {
     }
   }, [loadingMore, nextPageToken, query]);
 
-  // Intersection Observer drives infinite scroll
+  // IntersectionObserver drives infinite scroll on the sentinel div
   useEffect(() => {
     if (!open || !nextPageToken || !bottomTriggerRef.current) return;
     const observer = new IntersectionObserver(
@@ -170,13 +170,12 @@ export default function YouTubeSearch({ onLoad }) {
         results.length > 0 &&
         createPortal(
           <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-6">
-            {/* Clicking the backdrop closes the modal */}
             <div
               className="absolute inset-0 bg-void/70 backdrop-blur-sm"
               onClick={() => setOpen(false)}
             />
 
-            {/* glass-card gives the same transparent blur treatment as SettingsPanel / TmdbSearch */}
+            {/* resultsRef ensures outside-click detection ignores clicks inside this modal */}
             <div
               ref={resultsRef}
               className="relative z-10 w-full max-w-lg glass-card overflow-hidden shadow-[0_32px_120px_rgba(0,0,0,0.5)] animate-in zoom-in-95 fade-in duration-300 flex flex-col"

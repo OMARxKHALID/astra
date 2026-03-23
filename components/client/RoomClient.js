@@ -1147,7 +1147,7 @@ export default function RoomClient({ roomId, initialMeta }) {
                     style={{ color: "var(--color-muted)" }}
                   >
                     <FilmIcon className="w-3.5 h-3.5" />
-                    Identify Movie Title
+                    Search Movie/Series Title
                   </button>
                 )
               )}

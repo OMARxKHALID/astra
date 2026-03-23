@@ -249,9 +249,14 @@ class Room {
       const times = Object.values(this.tsMap)
         .filter((t) => typeof t === "number")
         .sort((a, b) => a - b);
-      const leaderTime = times.length ? times[Math.floor(times.length / 2)] : this.videoTS;
+      const leaderTime = times.length
+        ? times[Math.floor(times.length / 2)]
+        : this.videoTS;
 
-      io.to(this.roomId).emit("REC:tsMap", { ...this.tsMap, _leaderTime_: leaderTime });
+      io.to(this.roomId).emit("REC:tsMap", {
+        ...this.tsMap,
+        _leaderTime_: leaderTime,
+      });
       this.lastBroadcastTime = Date.now();
 
       // REC:host: only emit when state changed
@@ -556,7 +561,9 @@ io.on("connection", (socket) => {
   socket.on("CMD:playbackRate", (msg) => {
     const ctx = getCtx();
     if (!ctx) return;
-    ctx.room.playbackRate = Number(msg?.rate) || 1;
+    // isFinite guard prevents NaN/Infinity; || 1 would wrongly map rate=0 to 1
+    const rate = Number(msg?.rate);
+    ctx.room.playbackRate = isFinite(rate) && rate > 0 ? rate : 1;
     if (msg?.videoTS != null) ctx.room.videoTS = Number(msg.videoTS);
     ctx.room.lastUpdated = Date.now();
     io.to(ctx.room.roomId).emit("REC:host", ctx.room.publicState());
