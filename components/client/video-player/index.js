@@ -1,11 +1,15 @@
 "use client";
 
+import { memo } from "react";
 import { classifyUrl } from "@/lib/videoSource";
 import NativeVideoPlayer from "./NativeVideoPlayer";
 import YouTubePlayer from "./YouTubePlayer";
 import VimeoPlayer from "./VimeoPlayer";
 
-export default function VideoPlayer({
+// memo prevents re-renders when RoomClient state unrelated to video changes (e.g. playerChatOpen).
+// Without this, toggling the fullscreen chat overlay causes YouTubePlayer to re-render and the
+// iframe to visually "lift" — even though no video props changed.
+function VideoPlayer({
   videoRef,
   videoUrl,
   subtitleUrl,
@@ -132,3 +136,5 @@ export default function VideoPlayer({
     </div>
   );
 }
+
+export default memo(VideoPlayer);

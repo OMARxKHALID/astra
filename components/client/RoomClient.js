@@ -12,16 +12,16 @@ import SyncStatusIndicator from "./SyncStatusIndicator";
 import ReconnectBanner from "./ReconnectBanner";
 import ToastContainer, { useToast } from "./Toast";
 import SettingsPanel from "./SettingsPanel";
+import TmdbPanel from "./TmdbPanel";
+import TmdbSearch from "./TmdbSearch";
 import KeyboardShortcutsModal from "./KeyboardShortcutsModal";
 import PasswordModal from "./PasswordModal";
-import ThemeToggle from "./ThemeToggle";
 import {
   Share2 as ShareIcon,
   Crown as CrownIcon,
   Film as FilmIcon,
-  Lock as LockSmallIcon,
-  Lock as LockNavIcon,
-  Unlock as UnlockSmallIcon,
+  Lock as LockIcon,
+  Unlock as UnlockIcon,
   Captions as CcIcon,
   Pencil as PencilIcon,
   PanelRight as SidebarIcon,
@@ -32,17 +32,17 @@ import {
   Settings2 as SettingsGearIcon,
   Keyboard as KeyboardIcon,
   Link2,
+  X as XIcon,
 } from "lucide-react";
 import { getLeaderTime } from "@/lib/sync";
 import {
   LS_KEYS,
   MAX_CHAT_MESSAGES,
   MAX_HISTORY_ENTRIES,
-  MAX_RECENT_ROOMS,
   REDIS_TTL_S,
 } from "@/lib/constants";
 
-// ── Safe localStorage helpers (no-op on server / private browsing) ───────────
+// Safe localStorage helpers — no-op on server or when storage is blocked
 const ls = {
   get: (k) => {
     try {
@@ -63,21 +63,18 @@ const ls = {
   },
 };
 
-// ─── RoomClient ───────────────────────────────────────────────────────────────
 export default function RoomClient({ roomId, initialMeta }) {
   const router = useRouter();
   const { toasts, addToast } = useToast();
 
-  // ── Mounted guard ─────────────────────────────────────────────────────────
-  // Prevents SSR/client hydration mismatch on any browser-only state.
-  // Nothing that reads localStorage should render before this is true.
+  // Guard: nothing that reads localStorage should render before this is true
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
   }, []);
 
   // ── Identity ──────────────────────────────────────────────────────────────
-  const [userId, setUserId] = useState(""); // empty on server, set after mount
+  const [userId, setUserId] = useState("");
   useEffect(() => {
     const key = LS_KEYS.userId;
     const stored = ls.get(key) || sessionStorage.getItem(key);
@@ -116,11 +113,10 @@ export default function RoomClient({ roomId, initialMeta }) {
   }, []);
 
   // ── Password gate ─────────────────────────────────────────────────────────
-  // All initial values are safe for SSR. localStorage is read after mount.
   const [roomPassword, setRoomPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
-  const [needsPassword, setNeedsPassword] = useState(false); // safe SSR default
-  const [syncEnabled, setSyncEnabled] = useState(false); // always false until mounted
+  const [needsPassword, setNeedsPassword] = useState(false);
+  const [syncEnabled, setSyncEnabled] = useState(false);
 
   useEffect(() => {
     const stored = ls.get(`pw_${roomId}`);
@@ -171,50 +167,77 @@ export default function RoomClient({ roomId, initialMeta }) {
   const displayNamesRef = useRef(displayNames);
   displayNamesRef.current = displayNames;
 
-  // ── Settings — SSR-safe defaults, corrected from localStorage after mount ─
+  // ── Settings — SSR-safe defaults, then corrected from localStorage after mount
   const [screenshotEnabled, setScreenshotEnabled] = useState(true);
   const [hlsQualityEnabled, setHlsQualityEnabled] = useState(true);
   const [scrubPreviewEnabled, setScrubPreviewEnabled] = useState(true);
   const [speedSyncEnabled, setSpeedSyncEnabled] = useState(true);
   const [ambilightEnabled, setAmbilightEnabled] = useState(true);
+  const [urlBarPosition, setUrlBarPosition] = useState("bottom");
   const [showSettings, setShowSettings] = useState(false);
+  const [showTmdbPanel, setShowTmdbPanel] = useState(false);
+  const [showTmdbSearch, setShowTmdbSearch] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [theatreMode, setTheatreMode] = useState(false);
-
-  useEffect(() => {
-    setScreenshotEnabled(ls.get(LS_KEYS.screenshot) !== "false");
-    setHlsQualityEnabled(ls.get(LS_KEYS.hlsQuality) !== "false");
-    setScrubPreviewEnabled(ls.get(LS_KEYS.scrubPreview) !== "false");
-    setAmbilightEnabled(ls.get(LS_KEYS.ambilight) !== "false");
-  }, []);
-
-  useEffect(() => {
-    ls.set(LS_KEYS.screenshot, screenshotEnabled ? "true" : "false");
-  }, [screenshotEnabled]);
-  useEffect(() => {
-    ls.set(LS_KEYS.hlsQuality, hlsQualityEnabled ? "true" : "false");
-  }, [hlsQualityEnabled]);
-  useEffect(() => {
-    ls.set(LS_KEYS.scrubPreview, scrubPreviewEnabled ? "true" : "false");
-  }, [scrubPreviewEnabled]);
-  useEffect(() => {
-    ls.set(LS_KEYS.ambilight, ambilightEnabled ? "true" : "false");
-  }, [ambilightEnabled]);
-
-  // ── Sidebar ───────────────────────────────────────────────────────────────
   const [showSidebar, setShowSidebar] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(350);
   const isDragging = useRef(false);
   const dragStartX = useRef(0);
   const dragStartW = useRef(0);
+  // Guard that prevents the save effect from firing before the load effect has applied
+  // localStorage values. Both effects are scheduled from the same first render; without
+  // this flag the save effect runs with default state and overwrites stored values.
+  const settingsLoadedRef = useRef(false);
 
+  // Load settings from localStorage on mount — runs BEFORE the save effect (declared first)
+  useEffect(() => {
+    setScreenshotEnabled(ls.get(LS_KEYS.screenshot) !== "false");
+    setHlsQualityEnabled(ls.get(LS_KEYS.hlsQuality) !== "false");
+    setScrubPreviewEnabled(ls.get(LS_KEYS.scrubPreview) !== "false");
+    setAmbilightEnabled(ls.get(LS_KEYS.ambilight) !== "false");
+    setSpeedSyncEnabled(ls.get(LS_KEYS.speedSync) !== "false");
+    setUrlBarPosition(ls.get(LS_KEYS.urlBarPos) || "bottom");
+    setTheatreMode(ls.get(LS_KEYS.theatreMode) === "true");
+    setShowSidebar(ls.get(LS_KEYS.sidebarOpen) !== "false");
+    const savedWidth = ls.get(LS_KEYS.sidebarWidth);
+    if (savedWidth) setSidebarWidth(parseInt(savedWidth, 10));
+    // Mark load complete so the save effect below is now allowed to write
+    settingsLoadedRef.current = true;
+  }, []);
+
+  // Persist settings changes to localStorage — skipped on the first render pass
+  // (before settingsLoadedRef is true) to prevent default values overwriting stored ones
+  useEffect(() => {
+    if (!settingsLoadedRef.current) return;
+    ls.set(LS_KEYS.screenshot, screenshotEnabled ? "true" : "false");
+    ls.set(LS_KEYS.hlsQuality, hlsQualityEnabled ? "true" : "false");
+    ls.set(LS_KEYS.scrubPreview, scrubPreviewEnabled ? "true" : "false");
+    ls.set(LS_KEYS.ambilight, ambilightEnabled ? "true" : "false");
+    ls.set(LS_KEYS.speedSync, speedSyncEnabled ? "true" : "false");
+    ls.set(LS_KEYS.urlBarPos, urlBarPosition);
+    ls.set(LS_KEYS.theatreMode, theatreMode ? "true" : "false");
+    ls.set(LS_KEYS.sidebarOpen, showSidebar ? "true" : "false");
+    ls.set(LS_KEYS.sidebarWidth, sidebarWidth.toString());
+  }, [
+    screenshotEnabled,
+    hlsQualityEnabled,
+    scrubPreviewEnabled,
+    ambilightEnabled,
+    speedSyncEnabled,
+    urlBarPosition,
+    theatreMode,
+    showSidebar,
+    sidebarWidth,
+  ]);
+
+  // ── Sidebar drag-to-resize ────────────────────────────────────────────────
   const onDragStart = useCallback(
     (e) => {
       isDragging.current = true;
       dragStartX.current = e.clientX;
       dragStartW.current = sidebarWidth;
-      document.body.style.cursor = document.body.style.userSelect = "none";
       document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
     },
     [sidebarWidth],
   );
@@ -223,10 +246,12 @@ export default function RoomClient({ roomId, initialMeta }) {
     const up = () => {
       if (!isDragging.current) return;
       isDragging.current = false;
-      document.body.style.cursor = document.body.style.userSelect = "";
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
     };
     const move = (e) => {
       if (!isDragging.current) return;
+      // Drag left = wider sidebar; clamp between 250 and 600
       setSidebarWidth(
         Math.max(
           250,
@@ -259,7 +284,7 @@ export default function RoomClient({ roomId, initialMeta }) {
     return () => document.removeEventListener("fullscreenchange", onFS);
   }, []);
 
-  // ── Global keyboard shortcuts ─────────────────────────────────────────────
+  // Global keyboard shortcuts (T = theatre, ? = shortcuts help)
   useEffect(() => {
     const handler = (e) => {
       const tag = e.target.tagName;
@@ -279,21 +304,21 @@ export default function RoomClient({ roomId, initialMeta }) {
     setLateJoinTime(null);
     const v = videoRef.current;
     if (!v) return;
+    // Seek to the median of all current participant positions
     const times = Object.values(tsMapState)
       .filter((t) => typeof t === "number")
       .sort((a, b) => a - b);
-    if (times.length > 0) v.currentTime = times[Math.floor(times.length / 2)];
+    if (times.length) v.currentTime = times[Math.floor(times.length / 2)];
   }, [tsMapState]);
 
   // ── Refs ──────────────────────────────────────────────────────────────────
   const videoRef = useRef(null);
   const bentoVideoRef = useRef(null);
   const rootAmbiRef = useRef(null);
+  // socketRef: holds the Socket.IO instance exposed by SyncEngine so TMDB can broadcast
+  const socketRef = useRef(null);
 
-  // Ambilight — direct DOM writes to avoid React re-renders at 12fps.
-  // The overlay uses position:fixed so it is never clipped by any overflow:hidden ancestor.
-  // boxShadow on bentoVideoRef handles the glow around the video sides/bottom.
-  // The fixed overlay handles the navbar bleed (top of screen).
+  // Ambilight — direct DOM writes bypass React to avoid re-renders at ~12fps
   const ambilightEnabledRef = useRef(ambilightEnabled);
   useEffect(() => {
     ambilightEnabledRef.current = ambilightEnabled;
@@ -315,9 +340,10 @@ export default function RoomClient({ roomId, initialMeta }) {
     }
     const section = bentoVideoRef.current;
     if (section) {
-      section.style.boxShadow = (colors && ambilightEnabledRef.current)
-        ? `0 0 100px 30px rgba(${colors.r},${colors.g},${colors.b},0.35), inset 0 1px 0 rgba(255,255,255,0.055)`
-        : "";
+      section.style.boxShadow =
+        colors && ambilightEnabledRef.current
+          ? `0 0 100px 30px rgba(${colors.r},${colors.g},${colors.b},0.35), inset 0 1px 0 rgba(255,255,255,0.055)`
+          : "";
     }
   }, []);
 
@@ -341,16 +367,8 @@ export default function RoomClient({ roomId, initialMeta }) {
           "[HOST]": { color: "text-amber-500", Icon: CrownIcon, type: "info" },
           "[VIDEO]": { color: "text-jade", Icon: FilmIcon, type: "success" },
           "[SUBS]": { color: "text-jade", Icon: CcIcon, type: "success" },
-          "[LOCK]": {
-            color: "text-amber-400",
-            Icon: LockSmallIcon,
-            type: "info",
-          },
-          "[UNLOCK]": {
-            color: "text-jade",
-            Icon: UnlockSmallIcon,
-            type: "success",
-          },
+          "[LOCK]": { color: "text-amber-400", Icon: LockIcon, type: "info" },
+          "[UNLOCK]": { color: "text-jade", Icon: UnlockIcon, type: "success" },
           "[STRICT_ON]": {
             color: "text-jade",
             Icon: ShieldIcon,
@@ -465,7 +483,7 @@ export default function RoomClient({ roomId, initialMeta }) {
     [router, handleWrongPassword],
   );
 
-  // ── Playback callbacks ────────────────────────────────────────────────────
+  // ── Playback command handlers ─────────────────────────────────────────────
   const handleSendChat = useCallback(
     (text, dataUrl) => sendRef.current?.({ type: "chat", text, dataUrl }),
     [],
@@ -535,6 +553,7 @@ export default function RoomClient({ roomId, initialMeta }) {
     () => addToast("Reconnected — synced to room.", "success", 2500),
     [addToast],
   );
+
   const handleShare = useCallback(() => {
     addToast("Room link copied!", "success");
     navigator.clipboard
@@ -542,7 +561,15 @@ export default function RoomClient({ roomId, initialMeta }) {
       .catch(() => {});
   }, [addToast, roomId]);
 
-  // hostToken — read from localStorage after mount only
+  // Stable prop for VideoPlayer — new function reference on every render would break React.memo
+  const handleToggleTheatre = useCallback(() => setTheatreMode((v) => !v), []);
+  // Stable prop for VideoPlayer — same reason as handleToggleTheatre
+  const handleSendScreenshot = useCallback(
+    (dataUrl) => handleSendChat("📸 Screenshot", dataUrl),
+    [handleSendChat],
+  );
+
+  // hostToken — read after mount to avoid SSR mismatch
   const [hostToken, setHostToken] = useState("");
   const [hostTokenReady, setHostTokenReady] = useState(false);
   useEffect(() => {
@@ -551,8 +578,7 @@ export default function RoomClient({ roomId, initialMeta }) {
   }, [roomId]);
 
   // ── Derived values ────────────────────────────────────────────────────────
-  // isHost: match server's hostId OR optimistically trust local hostToken before
-  // serverState arrives (prevents gear icon flash on first load).
+  // Optimistic isHost: trust local hostToken before serverState arrives to avoid gear-icon flash
   const isHost =
     serverState?.hostId === userId || (!!hostToken && !serverState);
   const hostId = serverState?.hostId ?? null;
@@ -573,40 +599,7 @@ export default function RoomClient({ roomId, initialMeta }) {
   const leaderTime = tsMapState._leaderTime_ || 0;
   const isTheatre = theatreMode && !isFullscreen;
 
-  useEffect(() => {
-    if (!videoUrl) {
-      setTmdbMeta(null);
-      return;
-    }
-    try {
-      if (
-        videoUrl.includes("youtube.com") ||
-        videoUrl.includes("youtu.be") ||
-        videoUrl.includes("vimeo.com")
-      ) {
-        setTmdbMeta(null);
-        return;
-      }
-      const u = new URL(videoUrl);
-      const filename = u.pathname.split("/").pop();
-      const rawTitle = filename.replace(/\.(mp4|mkv|avi|webm|m3u8)$/i, "");
-      const cleanTitle = rawTitle
-        .replace(/[\._\-]/g, " ")
-        .replace(/(19|20)\d{2}.*/, "")
-        .trim();
-      if (cleanTitle.length > 2) {
-        fetch(`/api/tmdb?q=${encodeURIComponent(cleanTitle)}`)
-          .then((r) => (r.ok ? r.json() : null))
-          .then((d) => setTmdbMeta(d?.title ? d : null))
-          .catch(() => setTmdbMeta(null));
-      } else {
-        setTmdbMeta(null);
-      }
-    } catch {
-      setTmdbMeta(null);
-    }
-  }, [videoUrl]);
-
+  // handleCopyVideoUrl must live AFTER videoUrl is declared to avoid TDZ ReferenceError
   const handleCopyVideoUrl = useCallback(() => {
     if (!videoUrl) {
       addToast("No video loaded yet.", "info");
@@ -617,6 +610,80 @@ export default function RoomClient({ roomId, initialMeta }) {
       .then(() => addToast("Video URL copied!", "success"))
       .catch(() => addToast("Copy failed — try manually.", "error"));
   }, [addToast, videoUrl]);
+
+  // ── TMDB meta broadcast via socketRef ─────────────────────────────────────
+  // Host emits CMD:tmdbMeta so all participants receive the same metadata without re-fetching
+  const updateTmdbMeta = useCallback(
+    (meta) => {
+      setTmdbMeta(meta);
+      if (isHost && socketRef.current?.connected) {
+        socketRef.current.emit("CMD:tmdbMeta", meta);
+      }
+    },
+    [isHost],
+  );
+
+  // Sync tmdbMeta pushed from serverState (e.g. on late join or host change)
+  useEffect(() => {
+    if (serverState?.tmdbMeta === undefined) return;
+    setTmdbMeta((prev) =>
+      JSON.stringify(serverState.tmdbMeta) !== JSON.stringify(prev)
+        ? serverState.tmdbMeta
+        : prev,
+    );
+  }, [serverState?.tmdbMeta]); // eslint-disable-line
+
+  // Auto-detect movie title from video filename — only for MP4/HLS, never for streaming platforms
+  useEffect(() => {
+    if (!videoUrl) {
+      setTmdbMeta(null);
+      return;
+    }
+    if (tmdbMeta) return; // don't overwrite a manual or server-synced selection
+    if (
+      videoUrl.includes("youtube.com") ||
+      videoUrl.includes("youtu.be") ||
+      videoUrl.includes("vimeo.com")
+    ) {
+      setTmdbMeta(null);
+      return;
+    }
+    try {
+      const u = new URL(videoUrl);
+      const filename = u.pathname.split("/").pop();
+      const rawTitle = filename.replace(/\.(mp4|mkv|avi|webm|m3u8)$/i, "");
+      const cleanTitle = rawTitle
+        .replace(/[._-]/g, " ")
+        .replace(/([a-z])([A-Z])/g, "$1 $2") // split CamelCase
+        .replace(/(19|20)\d{2}.*/, "") // strip year and everything after
+        .trim();
+
+      // Skip filenames that look like hashes or random tokens
+      const isHashLike =
+        /^[A-Z0-9]{4,}$/.test(cleanTitle) ||
+        /^[a-f0-9]{6,}$/i.test(cleanTitle) ||
+        !/[aeiou]/i.test(cleanTitle) ||
+        /^[a-zA-Z0-9]{6,}$/.test(cleanTitle.replace(/\s/g, ""));
+
+      if (cleanTitle.length > 2 && !isHashLike) {
+        fetch(`/api/tmdb?q=${encodeURIComponent(cleanTitle)}`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((d) => {
+            // API returns { items: [...] } — take first hit if available
+            const hit = d?.items?.[0] ?? null;
+            setTmdbMeta(hit);
+            if (hit && isHost && socketRef.current?.connected) {
+              socketRef.current.emit("CMD:tmdbMeta", hit);
+            }
+          })
+          .catch(() => setTmdbMeta(null));
+      } else {
+        setTmdbMeta(null);
+      }
+    } catch {
+      setTmdbMeta(null);
+    }
+  }, [videoUrl, isHost]); // intentionally omit tmdbMeta — checked at top of effect
 
   // ── Room expiry display ───────────────────────────────────────────────────
   // Rooms have a 24h Redis TTL. Show a countdown badge once < 2h remain.
@@ -630,8 +697,7 @@ export default function RoomClient({ roomId, initialMeta }) {
     return h > 0 ? `${h}h ${m}m left` : `${m}m left`;
   }, [createdAt]);
 
-  // ── Persist watch history ─────────────────────────────────────────────────
-  // Saved once per session when server state first arrives.
+  // Persist watch history — saved once per session when server state first arrives
   const historySavedRef = useRef(false);
   useEffect(() => {
     if (!serverState || historySavedRef.current || !videoUrl) return;
@@ -655,10 +721,12 @@ export default function RoomClient({ roomId, initialMeta }) {
       localStorage.setItem(
         LS_KEYS.history,
         JSON.stringify(
-          [entry, ...history.filter((h) => h.roomId !== roomId)].slice(0, 10),
+          [entry, ...history.filter((h) => h.roomId !== roomId)].slice(
+            0,
+            MAX_HISTORY_ENTRIES,
+          ),
         ),
       );
-      // Also keep the legacy recent_rooms list (3 entries) for CreateRoomForm
       const recent = JSON.parse(
         localStorage.getItem(LS_KEYS.recentRooms) || "[]",
       );
@@ -674,13 +742,14 @@ export default function RoomClient({ roomId, initialMeta }) {
     } catch {}
   }, [serverState, videoUrl, roomId, isHost]);
 
-  // Fullscreen chat — rendered as a portal directly into the fullscreen element.
-  // This prevents the video player component from re-rendering when chat opens,
-  // which was causing the YouTube iframe to repaint/lift in fullscreen mode.
+  // Fullscreen chat portal — rendered directly into the fullscreen element to avoid
+  // causing the YouTube / Vimeo iframe to repaint when chat state changes.
+  // Uses position:fixed (not absolute) so the overlay anchors to the fullscreen viewport
+  // and is completely outside the video container's block-flow layout.
   const fullscreenChatPortal =
     isFullscreen && fsElement
       ? createPortal(
-          <div className="absolute top-3 right-3 z-[100] flex flex-col items-end pointer-events-none">
+          <div className="fixed top-3 right-3 z-[100] flex flex-col items-end pointer-events-none">
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -730,13 +799,11 @@ export default function RoomClient({ roomId, initialMeta }) {
         )
       : null;
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div
-      className={`h-dvh flex flex-col overflow-hidden text-text font-body antialiased${theatreMode ? " theatre-mode" : ""}`}
+      className={`h-dvh flex flex-col overflow-hidden font-body antialiased${theatreMode ? " theatre-mode" : ""}`}
     >
-      {/* Ambilight fixed overlay — position:fixed escapes all overflow:hidden clipping.
-          Covers the top of the viewport (navbar area) with the sampled video color. */}
+      {/* Ambilight fixed overlay — position:fixed escapes overflow:hidden, bleeds into navbar */}
       <div
         ref={rootAmbiRef}
         aria-hidden
@@ -749,7 +816,8 @@ export default function RoomClient({ roomId, initialMeta }) {
           transition: "opacity 0.6s ease",
         }}
       />
-      {/* Password modal — mounted only client-side to avoid SSR hydration mismatch */}
+
+      {/* Password modal — client-only to avoid SSR hydration mismatch */}
       {mounted && needsPassword && (
         <PasswordModal
           roomId={roomId}
@@ -758,13 +826,13 @@ export default function RoomClient({ roomId, initialMeta }) {
         />
       )}
 
-      {/* Ambient background gradient */}
+      {/* Ambient background radial gradient */}
       <div
         aria-hidden
         className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(ellipse_at_15%_20%,rgba(245,158,11,0.07),transparent_50%),radial-gradient(ellipse_at_85%_80%,rgba(16,185,129,0.05),transparent_50%)]"
       />
 
-      {/* SyncEngine — only after userId is ready and password gate is passed */}
+      {/* SyncEngine — only mount after identity + password gate are resolved */}
       {userId && nameReady && syncEnabled && hostTokenReady && (
         <SyncEngine
           roomId={roomId}
@@ -781,6 +849,7 @@ export default function RoomClient({ roomId, initialMeta }) {
           onConnStatus={setConnStatus}
           onKicked={handleKicked}
           sendRef={sendRef}
+          socketRef={socketRef}
           onTsMapUpdate={handleTsMapUpdate}
           onLateJoin={handleLateJoin}
           onReconnected={handleReconnected}
@@ -791,7 +860,6 @@ export default function RoomClient({ roomId, initialMeta }) {
       <ReconnectBanner connStatus={connStatus} />
       <ToastContainer toasts={toasts} />
 
-      {/* Late-join catch-up banner */}
       {lateJoinTime && !isFullscreen && (
         <CatchUpBanner
           videoTS={lateJoinTime}
@@ -802,7 +870,7 @@ export default function RoomClient({ roomId, initialMeta }) {
 
       {/* ── Navbar ─────────────────────────────────────────────────────────── */}
       <nav className="room-navbar relative z-10 shrink-0 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2">
-        {/* Left: logo + room ID + expiry + name */}
+        {/* Left: logo + room ID + expiry + display name */}
         <div className="flex items-center gap-1.5 min-w-0">
           <button
             onClick={() => router.push("/")}
@@ -819,7 +887,7 @@ export default function RoomClient({ roomId, initialMeta }) {
           <div className="flex items-center gap-2 px-2.5 py-2 rounded-[2rem] glass-card text-[10px] font-mono uppercase tracking-[0.2em] shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-jade/70 animate-pulse" />
             {hasPassword && (
-              <LockNavIcon
+              <LockIcon
                 className="w-3 h-3 text-amber-400/70"
                 strokeWidth={2}
                 title="Password protected"
@@ -905,8 +973,6 @@ export default function RoomClient({ roomId, initialMeta }) {
             <KeyboardIcon className="w-4 h-4" />
           </button>
 
-          <ThemeToggle />
-
           {isHost && (
             <button
               onClick={() => setShowSettings(true)}
@@ -917,7 +983,6 @@ export default function RoomClient({ roomId, initialMeta }) {
             </button>
           )}
 
-          {/* Copy video URL */}
           <button
             onClick={handleCopyVideoUrl}
             title={videoUrl ? "Copy video URL" : "No video loaded"}
@@ -941,10 +1006,25 @@ export default function RoomClient({ roomId, initialMeta }) {
       <main
         className={`relative z-10 flex-1 min-h-0 min-w-0 bento-grid
           ${showSidebar ? "sidebar-open" : "sidebar-closed"}
+          ${urlBarPosition === "top" ? "url-top" : ""}
           ${isFullscreen || isTheatre ? "!p-0 !gap-0" : "px-2 sm:px-4 pb-2 sm:pb-4"}`}
         style={{ "--sidebar-width": `${sidebarWidth}px` }}
       >
-        {/* Video */}
+        {/* URL bar — top position */}
+        {!isFullscreen && !isTheatre && urlBarPosition === "top" && (
+          <section className="bento-url glass-card" style={{ gridArea: "url" }}>
+            <VideoUrlInput
+              isHost={isHost}
+              currentUrl={videoUrl}
+              currentSubtitleUrl={subtitleUrl}
+              onLoad={handleLoadUrl}
+              strictVideoUrlMode={strictVideoUrlMode}
+            />
+          </section>
+        )}
+
+        {/* Video player — wrapped in React.memo inside video-player/index.js so re-renders
+            of RoomClient (e.g. playerChatOpen toggle) don't cause the YouTube iframe to repaint */}
         <section
           ref={bentoVideoRef}
           className={`bento-video glass-card overflow-hidden ${isFullscreen || isTheatre ? "!rounded-none" : ""}`}
@@ -967,18 +1047,16 @@ export default function RoomClient({ roomId, initialMeta }) {
             screenshotEnabled={screenshotEnabled}
             hlsQualityEnabled={hlsQualityEnabled}
             scrubPreviewEnabled={scrubPreviewEnabled}
-            onSendScreenshot={(dataUrl) =>
-              handleSendChat("📸 Screenshot", dataUrl)
-            }
+            onSendScreenshot={handleSendScreenshot}
             addToast={addToast}
             theatreMode={theatreMode}
-            onToggleTheatre={() => setTheatreMode((v) => !v)}
+            onToggleTheatre={handleToggleTheatre}
           />
           {fullscreenChatPortal}
         </section>
 
-        {/* URL bar */}
-        {!isFullscreen && !isTheatre && (
+        {/* URL bar — bottom position (default) */}
+        {!isFullscreen && !isTheatre && urlBarPosition === "bottom" && (
           <section className="bento-url glass-card">
             <VideoUrlInput
               isHost={isHost}
@@ -990,7 +1068,7 @@ export default function RoomClient({ roomId, initialMeta }) {
           </section>
         )}
 
-        {/* Sidebar: chat + participants */}
+        {/* Sidebar: TMDB banner + chat + participants */}
         {showSidebar && !isFullscreen && !isTheatre && (
           <aside className="bento-sidebar hidden lg:flex relative">
             {/* Drag handle */}
@@ -1000,17 +1078,78 @@ export default function RoomClient({ roomId, initialMeta }) {
             >
               <div className="w-1 h-12 bg-white/20 rounded-full group-hover:bg-amber-400/80 transition-colors shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
             </div>
+
+            {/* Chat panel with optional TMDB banner */}
             <div className="flex-[2] min-h-0 glass-card overflow-hidden flex flex-col relative">
-              {tmdbMeta && (
-                <div className="p-4 border-b border-white/5 bg-black/20 flex gap-4 shrink-0 shadow-lg relative z-10">
+              {tmdbMeta ? (
+                // TMDB metadata banner — clickable to open the detail modal
+                <div
+                  onClick={() => setShowTmdbPanel(true)}
+                  className="p-4 border-b border-white/5 bg-black/20 flex gap-4 shrink-0 relative z-10 cursor-pointer hover:bg-white/5 transition-colors group"
+                >
                   {tmdbMeta.poster && (
-                    <img src={tmdbMeta.poster} alt={tmdbMeta.title} className="w-10 h-14 object-cover rounded shadow border border-white/10 shrink-0" />
+                    <img
+                      src={tmdbMeta.poster}
+                      alt={tmdbMeta.title}
+                      className="w-12 h-[4.5rem] object-cover rounded border border-white/10 shrink-0"
+                    />
                   )}
                   <div className="flex flex-col justify-center min-w-0 flex-1">
-                    <h3 className="text-sm font-bold text-white/90 truncate">{tmdbMeta.title} {tmdbMeta.year ? `(${tmdbMeta.year})` : ""}</h3>
-                    <p className="text-[10px] text-white/50 line-clamp-2 mt-0.5 leading-snug">{tmdbMeta.overview}</p>
+                    <h3 className="text-sm font-bold text-white/90 truncate group-hover:text-amber-400 transition-colors">
+                      {tmdbMeta.title}{" "}
+                      {tmdbMeta.year ? `(${tmdbMeta.year})` : ""}
+                    </h3>
+                    <p className="text-[10px] text-white/50 line-clamp-2 mt-0.5 leading-snug">
+                      {tmdbMeta.overview}
+                    </p>
                   </div>
+                  {isHost && (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowTmdbSearch(true);
+                        }}
+                        className="absolute right-12 top-3 w-7 h-7 rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95"
+                        style={{
+                          backgroundColor: "var(--color-surface)",
+                          border: "1px solid var(--color-border)",
+                          color: "var(--color-muted)",
+                        }}
+                        title="Change title info"
+                      >
+                        <PencilIcon className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateTmdbMeta(null);
+                        }}
+                        className="absolute right-3 top-3 w-7 h-7 rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95"
+                        style={{
+                          backgroundColor: "var(--color-surface)",
+                          border: "1px solid var(--color-border)",
+                          color: "var(--color-muted)",
+                        }}
+                        title="Clear title info"
+                      >
+                        <XIcon className="w-3.5 h-3.5" />
+                      </button>
+                    </>
+                  )}
                 </div>
+              ) : (
+                // Host-only prompt to identify the currently playing title
+                isHost && (
+                  <button
+                    onClick={() => setShowTmdbSearch(true)}
+                    className="p-3 border-b border-white/5 bg-black/10 flex items-center justify-center gap-2 hover:bg-white/5 transition-colors text-[11px] font-mono tracking-widest uppercase opacity-40 hover:opacity-100"
+                    style={{ color: "var(--color-muted)" }}
+                  >
+                    <FilmIcon className="w-3.5 h-3.5" />
+                    Identify Movie Title
+                  </button>
+                )
               )}
               <ChatPanel
                 messages={messages}
@@ -1021,6 +1160,8 @@ export default function RoomClient({ roomId, initialMeta }) {
                 onTyping={handleTyping}
               />
             </div>
+
+            {/* Participants panel */}
             <div className="flex-1 min-h-0 glass-card overflow-hidden flex flex-col">
               <ParticipantList
                 participants={participants}
@@ -1163,11 +1304,24 @@ export default function RoomClient({ roomId, initialMeta }) {
         onToggleStrictVideoUrlMode={handleToggleStrictMode}
         hasPassword={hasPassword}
         onSetPassword={handleSetPassword}
+        urlBarPosition={urlBarPosition}
+        onSetUrlBarPosition={setUrlBarPosition}
+      />
+      <TmdbPanel
+        isOpen={showTmdbPanel}
+        onClose={() => setShowTmdbPanel(false)}
+        tmdbMeta={tmdbMeta}
       />
       <KeyboardShortcutsModal
         isOpen={showShortcuts}
         onClose={() => setShowShortcuts(false)}
       />
+      {showTmdbSearch && (
+        <TmdbSearch
+          onSelect={(item) => updateTmdbMeta(item)}
+          onHide={() => setShowTmdbSearch(false)}
+        />
+      )}
     </div>
   );
 }

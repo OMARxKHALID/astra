@@ -628,14 +628,22 @@ export default function NativeVideoPlayer({
     const onVisibilityChange = () => {
       const v = videoRef.current;
       if (!v) return;
-      if (document.visibilityState === "hidden" && !v.paused && window.innerWidth < 1024) {
-        if (document.pictureInPictureEnabled && !document.pictureInPictureElement) {
+      if (
+        document.visibilityState === "hidden" &&
+        !v.paused &&
+        window.innerWidth < 1024
+      ) {
+        if (
+          document.pictureInPictureEnabled &&
+          !document.pictureInPictureElement
+        ) {
           v.requestPictureInPicture().catch(() => {});
         }
       }
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", onVisibilityChange);
   }, []);
 
   function handleScreenshot() {
@@ -674,11 +682,12 @@ export default function NativeVideoPlayer({
       onTouchStart={showCtrl}
       onWheel={handleWheel}
     >
-      {/* Video element */}
+      {/* Video element — absolute inset-0 so any portal siblings injected into containerRef never shift it */}
       <video
         ref={videoRef}
-        className="w-full h-full object-contain"
+        className="absolute inset-0 w-full h-full object-contain"
         playsInline
+        autoPlay
         preload="metadata"
         crossOrigin="anonymous"
         onClick={handlePlayPause}
@@ -764,10 +773,7 @@ export default function NativeVideoPlayer({
           </div>
         </div>
 
-        <div
-          className="flex-1 overflow-y-auto p-4 pt-3"
-          style={{ scrollbarWidth: "none" }}
-        >
+        <div className="flex-1 overflow-y-auto no-scrollbar p-4 pt-3">
           {/* Search tab */}
           {activePanel === "search" && (
             <div className="space-y-4">

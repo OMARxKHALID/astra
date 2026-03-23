@@ -61,21 +61,8 @@ export const viewport = { themeColor: "#f59e0b" };
 
 export default function RootLayout({ children }) {
   return (
-    <html
-      lang="en"
-      data-theme="dark"
-      suppressHydrationWarning
-      className={`${dmSans.variable} ${dmMono.variable}`}
-    >
+    <html lang="en" className={`${dmSans.variable} ${dmMono.variable}`}>
       <head>
-        {/* Theme: apply stored preference before first paint to prevent flash */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `try{if(localStorage.getItem('wt_theme')==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}`,
-          }}
-        />
-
-        {/* PWA */}
         <link rel="manifest" href="/manifest.json" />
         <meta name="application-name" content="WatchTogether" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -86,8 +73,6 @@ export default function RootLayout({ children }) {
         <meta name="apple-mobile-web-app-title" content="WatchTogether" />
         <meta name="mobile-web-app-capable" content="yes" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-
-        {/* Preconnects */}
         <link rel="preconnect" href="https://img.youtube.com" />
         <link rel="preconnect" href="https://www.youtube.com" />
         <link rel="preconnect" href="https://player.vimeo.com" />

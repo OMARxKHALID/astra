@@ -6,7 +6,8 @@ import {
   isStrictVideoUrl,
   SOURCE_LABELS,
 } from "@/lib/videoSource";
-import { Link2 as LinkIcon, Shield as ShieldIcon } from "lucide-react";
+import { Link2 as LinkIcon, Shield as ShieldIcon, Youtube } from "lucide-react";
+import YouTubeSearch from "./YouTubeSearch";
 
 export default function VideoUrlInput({
   isHost,
@@ -18,6 +19,7 @@ export default function VideoUrlInput({
   const [input, setInput] = useState("");
   const [focused, setFocused] = useState(false);
   const [strictError, setStrictError] = useState("");
+  const [mode, setMode] = useState("url"); // "url" | "youtube"
 
   const source = classifyUrl(currentUrl);
   const inputSource = classifyUrl(input);
@@ -26,6 +28,7 @@ export default function VideoUrlInput({
   function handleChange(e) {
     const val = e.target.value;
     setInput(val);
+    // Validate in real-time when strict mode is on so user sees the error immediately
     if (strictVideoUrlMode && val.trim()) {
       setStrictError(
         isStrictVideoUrl(val.trim())
@@ -49,10 +52,7 @@ export default function VideoUrlInput({
     setInput("");
   }
 
-  function handleKeyDown(e) {
-    if (e.key === "Enter") handleSubmit();
-  }
-
+  // Guest view — read-only display of the currently playing URL
   if (!isHost) {
     return (
       <div className="flex items-center gap-4 w-full h-full">
@@ -98,85 +98,96 @@ export default function VideoUrlInput({
   }
 
   return (
-    <div className="flex items-center gap-4 w-full h-full min-w-0">
+    <div className="flex items-center gap-3 w-full h-full min-w-0">
+      {/* Mode toggle: URL | YouTube */}
       <div
-        className={`flex items-center justify-center w-9 h-9 rounded-[2rem] border transition-all duration-300 shrink-0
-          ${strictVideoUrlMode ? "bg-jade/10 border-jade/30" : focused ? "bg-amber-500/10 border-amber-500/40" : ""}`}
-        style={
-          !strictVideoUrlMode && !focused
-            ? {
-                backgroundColor: "var(--color-surface)",
-                borderColor: "var(--color-border)",
-              }
-            : undefined
-        }
+        className="flex items-center gap-0.5 shrink-0 p-0.5 rounded-[2rem] border"
+        style={{
+          backgroundColor: "var(--color-surface)",
+          borderColor: "var(--color-border)",
+        }}
       >
-        {strictVideoUrlMode ? (
-          <ShieldIcon
-            className={`w-4 h-4 transition-colors duration-300 ${focused ? "text-jade" : "text-jade/50"}`}
-          />
-        ) : (
-          <LinkIcon
-            className={`w-4.5 h-4.5 transition-colors duration-300 ${focused ? "text-amber-400" : ""}`}
-            style={!focused ? { color: "var(--color-muted)" } : undefined}
-          />
-        )}
+        <button
+          onClick={() => setMode("url")}
+          title="Paste video URL"
+          className={`w-8 h-8 flex items-center justify-center rounded-[2rem] transition-all duration-200
+            ${mode === "url" ? "bg-amber-500 text-void shadow-sm" : ""}`}
+          style={mode !== "url" ? { color: "var(--color-muted)" } : undefined}
+        >
+          <LinkIcon className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => setMode("youtube")}
+          title="Search YouTube"
+          className={`w-8 h-8 flex items-center justify-center rounded-[2rem] transition-all duration-200
+            ${mode === "youtube" ? "bg-[#FF0000] text-white shadow-sm" : ""}`}
+          style={
+            mode !== "youtube" ? { color: "var(--color-muted)" } : undefined
+          }
+        >
+          <Youtube className="w-4 h-4" />
+        </button>
       </div>
 
-      <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-        <label htmlFor="video-url" className="sr-only">
-          Video URL
-        </label>
-
-        {strictVideoUrlMode && (
-          <div className="flex items-center gap-1.5 text-[9px] font-black text-jade/70 uppercase tracking-[0.15em] mb-0.5">
-            <ShieldIcon className="w-3 h-3 shrink-0" />
-            Direct files only · .mp4 · .webm · .ogg · .mkv · .mov · .avi
+      {/* URL paste mode */}
+      {mode === "url" && (
+        <>
+          <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+            <label htmlFor="video-url" className="sr-only">
+              Video URL
+            </label>
+            {strictVideoUrlMode && (
+              <div className="flex items-center gap-1.5 text-[9px] font-black text-jade/70 uppercase tracking-[0.15em] mb-0.5">
+                <ShieldIcon className="w-3 h-3 shrink-0" />
+                Direct files only · .mp4 · .webm · .ogg · .mkv · .mov · .avi
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <input
+                id="video-url"
+                type="url"
+                value={input}
+                onChange={handleChange}
+                onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                onFocus={() => setFocused(true)}
+                onBlur={() => setFocused(false)}
+                placeholder={
+                  currentUrl
+                    ? `Current: ${currentUrl.slice(0, 48)}…`
+                    : strictVideoUrlMode
+                      ? "Paste a direct video URL (.mp4, .webm…)"
+                      : "Paste a video URL to sync…"
+                }
+                className="flex-1 bg-transparent text-sm font-mono outline-none truncate"
+                style={{ color: "var(--color-text)" }}
+              />
+              {/* Real-time URL type badge */}
+              {showDetected && !strictError && (
+                <span className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-[2rem] bg-jade/10 border border-jade/20 text-[9px] font-black text-jade uppercase tracking-tighter shrink-0 animate-in fade-in zoom-in-95">
+                  <span className="w-1 h-1 rounded-full bg-jade animate-pulse" />
+                  {SOURCE_LABELS[inputSource.type]}
+                </span>
+              )}
+            </div>
+            {strictError && (
+              <p className="text-[10px] font-mono text-danger/80 leading-tight mt-0.5 animate-in fade-in slide-in-from-top-1">
+                {strictError}
+              </p>
+            )}
           </div>
-        )}
+          <button
+            onClick={handleSubmit}
+            disabled={!input.trim() || Boolean(strictError)}
+            title="Load video for all participants"
+            className="shrink-0 h-10 px-4 sm:px-6 rounded-[2rem] bg-amber-500 text-void text-[11px] font-black uppercase tracking-widest hover:bg-amber-400 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all duration-200 shadow-lg shadow-amber-500/10 border border-amber-400/50"
+          >
+            Load
+          </button>
+        </>
+      )}
 
-        <div className="flex items-center gap-2">
-          <input
-            id="video-url"
-            type="url"
-            value={input}
-            onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            placeholder={
-              currentUrl
-                ? `Current: ${currentUrl.slice(0, 48)}…`
-                : strictVideoUrlMode
-                  ? "Paste a direct video URL (.mp4, .webm…)"
-                  : "Paste a video URL to sync…"
-            }
-            className="flex-1 bg-transparent text-sm font-mono outline-none truncate"
-            style={{ color: "var(--color-text)" }}
-          />
-          {showDetected && !strictError && (
-            <span className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-[2rem] bg-jade/10 border border-jade/20 text-[9px] font-black text-jade uppercase tracking-tighter shrink-0 animate-in fade-in zoom-in-95">
-              <span className="w-1 h-1 rounded-full bg-jade animate-pulse" />
-              {SOURCE_LABELS[inputSource.type]}
-            </span>
-          )}
-        </div>
-
-        {strictError && (
-          <p className="text-[10px] font-mono text-danger/80 leading-tight mt-0.5 animate-in fade-in slide-in-from-top-1">
-            {strictError}
-          </p>
-        )}
-      </div>
-
-      <button
-        onClick={handleSubmit}
-        disabled={!input.trim() || Boolean(strictError)}
-        title="Load video for all participants"
-        className="shrink-0 h-10 px-4 sm:px-6 rounded-[2rem] bg-amber-500 text-void text-[11px] font-black uppercase tracking-widest hover:bg-amber-400 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all duration-200 shadow-lg shadow-amber-500/10 border border-amber-400/50"
-      >
-        Load
-      </button>
+      {/* YouTube search mode */}
+      {mode === "youtube" && <YouTubeSearch onLoad={onLoad} />}
     </div>
   );
 }

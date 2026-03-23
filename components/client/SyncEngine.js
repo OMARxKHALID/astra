@@ -32,11 +32,14 @@ export default function SyncEngine({
   onConnStatus,
   onKicked,
   sendRef,
+  socketRef: externalSocketRef, // RoomClient's ref so it can emit TMDB events directly
   onTsMapUpdate,
   onLateJoin,
   onReconnected,
   roomPassword,
 }) {
+  // p.current holds all props; intervals and socket handlers always read from here
+  // to avoid stale closures — never destructure props at the top and use them inside intervals
   const p = useRef();
   p.current = {
     roomId,
@@ -68,17 +71,12 @@ export default function SyncEngine({
   const clockOffset = useRef(0);
   const initialSeekDone = useRef(false);
 
-  // Prevents sync-engine-driven v.play()/v.pause() from re-firing CMD:play/pause.
-  // When the engine calls v.play() programmatically, native "play" DOM event fires,
-  // which would otherwise call onPlay → CMD:play → unnecessary server round-trip.
+  // suppressNativeRef prevents engine-driven v.play()/v.pause() from re-firing CMD:play/CMD:pause
   const suppressNativeRef = useRef(false);
 
-  // Expose the suppress flag on videoRef.current so NativeVideoPlayer can read it.
-  // We tag it on the videoRef.current object (safe: it's just a ref value).
   useEffect(() => {
     const v = videoRef?.current;
     if (!v) return;
-    // Tag the video element / proxy with our suppress flag accessor
     v._suppressNative = false;
   }, [videoRef]);
 
@@ -107,7 +105,11 @@ export default function SyncEngine({
   const send = useCallback(
     (type, data) => {
       const socket = socketRef.current;
-      if (socket?.connected) socket.emit(type, data);
+      // Emit unconditionally — Socket.IO buffers events when briefly disconnected.
+      // The previous socket?.connected guard was silently dropping user commands
+      // (e.g. CMD:host from YouTube search) during reconnect windows.
+      socket?.emit(type, data);
+      // Block the sync loop after commands to absorb network round-trip + server latency
       if (
         ["CMD:play", "CMD:pause", "CMD:host", "CMD:playbackRate"].includes(type)
       )
@@ -117,6 +119,7 @@ export default function SyncEngine({
     [preventSync],
   );
 
+  // Expose send interface on sendRef so RoomClient can dispatch without importing socket
   useEffect(() => {
     if (!sendRef) return;
     sendRef.current = (msg) => {
@@ -126,14 +129,15 @@ export default function SyncEngine({
         send("CMD:play", { videoTS: msg.currentTime });
       else if (msg.type === "pause")
         send("CMD:pause", { videoTS: msg.currentTime });
-      else if (msg.type === "seek") send("CMD:seek", msg.currentTime);
+      else if (msg.type === "seek")
+        send("CMD:seek", msg.currentTime); // always bare float, never an object
       else if (msg.type === "speed")
         send("CMD:playbackRate", { rate: msg.rate, videoTS: msg.currentTime });
       else if (msg.type === "change_video")
         send("CMD:host", {
           video: msg.videoUrl,
           subtitleUrl: msg.subtitleUrl,
-          paused: true,
+          paused: false,
         });
       else if (msg.type === "kick")
         send("CMD:kick", { targetUserId: msg.targetUserId });
@@ -152,7 +156,7 @@ export default function SyncEngine({
     };
   }, [send, sendRef]);
 
-  // CMD:ts — report current position every second while playing
+  // CMD:ts — report current position every 1s while playing and not buffering
   useEffect(() => {
     const int = setInterval(() => {
       const v = videoRef?.current;
@@ -187,7 +191,7 @@ export default function SyncEngine({
     };
   }, [videoRef]);
 
-  // ── Core sync loop ─────────────────────────────────────────────────────────
+  // ── Core sync loop — runs at SYNC_CHECK_INTERVAL (200ms) ─────────────────
   const loop = useCallback(() => {
     clearInterval(timer.current);
     timer.current = setInterval(() => {
@@ -198,9 +202,10 @@ export default function SyncEngine({
 
       const inPreventWindow = Date.now() < preventUpdateEnd.current;
 
+      // Apply play/pause outside the prevent window
       if (!inPreventWindow) {
         if (s.isPlaying && v.paused && !isBufferingNow(v)) {
-          suppressNext(); // suppress the native "play" event that v.play() will fire
+          suppressNext();
           v.play().catch(() => {});
         } else if (!s.isPlaying && !v.paused) {
           suppressNext();
@@ -208,6 +213,7 @@ export default function SyncEngine({
         }
       }
 
+      // Skip rate correction while buffering or in prevent window
       if (v.readyState < 3 || isBufferingNow(v) || inPreventWindow) {
         const targetRate = s.playbackRate || 1;
         if (Math.abs(v.playbackRate - targetRate) > 0.005)
@@ -220,21 +226,26 @@ export default function SyncEngine({
       const leaderTime = lt > 0 ? lt : target;
       if (leaderTime === 0) return;
 
-      const myTime = v.currentTime;
-      const drift = leaderTime - myTime;
-
+      const drift = leaderTime - v.currentTime;
       const newStatus = Math.abs(drift) <= SYNC_TOLERANCE_S ? "synced" : "soft";
       if (newStatus !== lastStatus.current) {
         lastStatus.current = newStatus;
         od?.(newStatus);
       }
 
+      // One-shot hard seek on initial join if drift > 1s
       if (!initialSeekDone.current && Math.abs(drift) > 1) {
         v.currentTime = leaderTime;
         initialSeekDone.current = true;
       }
 
-      const correction = computeCorrection(myTime, leaderTime, s.isPlaying);
+      // Bidirectional proportional rate correction — max 1.1×, min 0.9×
+      // Never revert this to asymmetric: clients ahead accumulate permanent drift
+      const correction = computeCorrection(
+        v.currentTime,
+        leaderTime,
+        s.isPlaying,
+      );
       const commandedRate = s.playbackRate || 1;
       const correctedRate =
         correction.action === "soft"
@@ -248,6 +259,7 @@ export default function SyncEngine({
       if (Math.abs(v.playbackRate - correctedRate) > 0.005)
         v.playbackRate = correctedRate;
 
+      // Re-check play/pause after rate correction
       if (!inPreventWindow) {
         if (s.isPlaying && v.paused) {
           suppressNext();
@@ -269,10 +281,6 @@ export default function SyncEngine({
       displayName,
       roomPassword,
       onConnStatus,
-      onUserChange,
-      onStateUpdate,
-      onChatMessage,
-      onKicked,
     } = p.current;
 
     if (socketRef.current) socketRef.current.disconnect();
@@ -285,6 +293,8 @@ export default function SyncEngine({
     });
 
     socketRef.current = socket;
+    // Expose socket to RoomClient for direct TMDB broadcasts
+    if (externalSocketRef) externalSocketRef.current = socket;
 
     socket.on("connect", () => {
       onConnStatus?.("connected");
@@ -298,18 +308,14 @@ export default function SyncEngine({
       });
       loop();
 
-      // ── Clock offset calibration ──────────────────────────────────────────
-      // Measures the difference between client and server wall-clock time.
-      // Without this, a client whose system clock is 200ms fast would always
-      // "lead" the room and never converge. We calibrate once on connect,
-      // then every 30 seconds (slow drift from JS engine, power-save mode, etc.)
+      // Clock offset calibration — measures client vs server wall-clock delta to
+      // prevent clients with fast system clocks from always "leading" the room
       function calibrateClock() {
         const t0 = Date.now();
         socket.emit("PING_CLOCK", t0, (serverTime) => {
           if (typeof serverTime !== "number") return;
           const rtt = Date.now() - t0;
-          const serverNow = serverTime + rtt / 2; // estimate server time "now"
-          clockOffset.current = serverNow - Date.now();
+          clockOffset.current = serverTime + rtt / 2 - Date.now();
         });
       }
       calibrateClock();
@@ -331,8 +337,9 @@ export default function SyncEngine({
         const wasInitial = !serverLine.current;
         const prev = serverLine.current;
         serverLine.current = state;
-        onStateUpdate?.(state);
+        p.current.onStateUpdate?.(state);
 
+        // Emit system chat messages for settings changes
         if (!wasInitial && prev) {
           const ocm = p.current.onChatMessage;
           if (prev.strictVideoUrlMode !== m.strictVideoUrlMode)
@@ -372,11 +379,9 @@ export default function SyncEngine({
             suppressNext();
             v.play().catch(() => {});
           }
-          if (m.reconnected) {
-            p.current.onReconnected?.();
-          } else if (state.currentTime > 120) {
+          if (m.reconnected) p.current.onReconnected?.();
+          else if (state.currentTime > 120)
             p.current.onLateJoin?.(state.currentTime);
-          }
         }
       },
 
@@ -415,16 +420,19 @@ export default function SyncEngine({
         tsMap.current = data;
         p.current.onTsMapUpdate?.(data);
       },
-
-      "REC:roster": (users) => onUserChange?.({ type: "participants", users }),
-      user_joined: (m) => onUserChange?.({ type: "user_joined", ...m }),
-      user_left: (m) => onUserChange?.({ type: "user_left", ...m }),
-      name_changed: (m) => onUserChange?.({ type: "name_changed", ...m }),
-      user_typing: (m) => onUserChange?.({ type: "user_typing", ...m }),
+      "REC:roster": (users) =>
+        p.current.onUserChange?.({ type: "participants", users }),
+      user_joined: (m) =>
+        p.current.onUserChange?.({ type: "user_joined", ...m }),
+      user_left: (m) => p.current.onUserChange?.({ type: "user_left", ...m }),
+      name_changed: (m) =>
+        p.current.onUserChange?.({ type: "name_changed", ...m }),
+      user_typing: (m) =>
+        p.current.onUserChange?.({ type: "user_typing", ...m }),
 
       host_changed: (m) => {
-        onUserChange?.({ type: "host_changed", ...m });
-        onStateUpdate?.((prev) =>
+        p.current.onUserChange?.({ type: "host_changed", ...m });
+        p.current.onStateUpdate?.((prev) =>
           prev ? { ...prev, hostId: m.newHostId } : prev,
         );
         if (m.transferredFrom)
@@ -436,16 +444,17 @@ export default function SyncEngine({
       },
 
       "REC:subtitle": (url) =>
-        onStateUpdate?.((prev) =>
+        p.current.onStateUpdate?.((prev) =>
           prev ? { ...prev, subtitleUrl: url } : prev,
         ),
 
-      chat: (m) => onChatMessage?.(m),
-      chat_history: (m) => onChatMessage?.({ type: "chat_history", ...m }),
+      chat: (m) => p.current.onChatMessage?.(m),
+      chat_history: (m) =>
+        p.current.onChatMessage?.({ type: "chat_history", ...m }),
 
       "REC:error": (m) => {
         if (m.code === "STRICT_VIDEO_MODE") {
-          onChatMessage?.({
+          p.current.onChatMessage?.({
             senderId: "system",
             ts: Date.now(),
             text: `[STRICT] ${m.message}`,
@@ -453,7 +462,7 @@ export default function SyncEngine({
           return;
         }
         if (m.code === "WRONG_PASSWORD") {
-          onChatMessage?.({
+          p.current.onChatMessage?.({
             senderId: "system",
             ts: Date.now(),
             text: "[LOCK] Wrong room password — access denied.",
@@ -462,7 +471,7 @@ export default function SyncEngine({
             socketRef.current.io.opts.reconnection = false;
             socketRef.current.disconnect();
           }
-          onKicked?.("WRONG_PASSWORD");
+          p.current.onKicked?.("WRONG_PASSWORD");
           return;
         }
         if (
@@ -473,21 +482,22 @@ export default function SyncEngine({
             socketRef.current.io.opts.reconnection = false;
             socketRef.current.disconnect();
           }
-          onKicked?.();
+          p.current.onKicked?.();
         }
       },
     };
 
     Object.entries(handlers).forEach(([ev, fn]) => socket.on(ev, fn));
-  }, [loop]);
+  }, [loop, externalSocketRef]);
 
   useEffect(() => {
     connect();
     return () => {
       if (socketRef.current) socketRef.current.disconnect();
+      if (externalSocketRef) externalSocketRef.current = null;
       clearInterval(timer.current);
     };
-  }, [connect]);
+  }, [connect, externalSocketRef]);
 
   return null;
 }

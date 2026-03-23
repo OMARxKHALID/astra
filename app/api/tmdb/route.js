@@ -16,19 +16,22 @@ export async function GET(req) {
       `https://api.themoviedb.org/3/search/multi?api_key=${key}&query=${encodeURIComponent(q)}&language=en-US&page=1&include_adult=false`
     );
     const data = await res.json();
-    const hit = data.results?.find(r => r.media_type === "movie" || r.media_type === "tv") || data.results?.[0];
+    const items = (data.results || [])
+      .filter(r => r.media_type === "movie" || r.media_type === "tv")
+      .map(hit => ({
+        id: hit.id,
+        title: hit.title || hit.name,
+        overview: hit.overview,
+        poster: hit.poster_path ? `https://image.tmdb.org/t/p/w200${hit.poster_path}` : null,
+        backdrop: hit.backdrop_path ? `https://image.tmdb.org/t/p/w1280${hit.backdrop_path}` : null,
+        rating: hit.vote_average ? hit.vote_average.toFixed(1) : null,
+        type: hit.media_type,
+        year: (hit.release_date || hit.first_air_date || "").substring(0, 4)
+      }));
 
-    if (!hit) return NextResponse.json({});
-
-    return NextResponse.json({
-      title: hit.title || hit.name,
-      overview: hit.overview,
-      poster: hit.poster_path ? `https://image.tmdb.org/t/p/w200${hit.poster_path}` : null,
-      type: hit.media_type,
-      year: (hit.release_date || hit.first_air_date || "").substring(0, 4)
-    });
+    return NextResponse.json({ items });
   } catch (err) {
     console.error("[TMDB API Error]", err);
-    return NextResponse.json({});
+    return NextResponse.json({ items: [] });
   }
 }

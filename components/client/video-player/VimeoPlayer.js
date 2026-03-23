@@ -144,6 +144,7 @@ export default function VimeoPlayer({
         controls: false,
         responsive: true,
         dnt: true,
+        autoplay: true,
       });
       playerRef.current = player;
       player
@@ -247,7 +248,7 @@ export default function VimeoPlayer({
     >
       <iframe
         ref={iframeRef}
-        src={`https://player.vimeo.com/video/${videoId}?controls=0&dnt=1`}
+        src={`https://player.vimeo.com/video/${videoId}?controls=0&dnt=1&autoplay=1`}
         className="w-full h-full"
         allow="autoplay; fullscreen"
         allowFullScreen

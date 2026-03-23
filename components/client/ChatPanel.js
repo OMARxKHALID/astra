@@ -28,6 +28,7 @@ export default function ChatPanel({
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
+    // Track whether the user has scrolled up so we don't auto-scroll over their reading
     atBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 50;
   }, []);
 
@@ -96,8 +97,7 @@ export default function ChatPanel({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5"
-        style={{ scrollbarWidth: "none" }}
+        className="flex-1 overflow-y-auto no-scrollbar px-4 py-3 space-y-2.5"
       >
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-3 opacity-30">
@@ -170,16 +170,13 @@ export default function ChatPanel({
               borderColor: "var(--color-border)",
               color: "var(--color-text)",
             }}
-            className="w-full border rounded-full pl-4 pr-12 py-3 text-sm font-body outline-none
-                       transition-all focus:ring-2 focus:ring-amber-500/25 placeholder:opacity-40"
+            className="w-full border rounded-full pl-4 pr-12 py-3 text-sm font-body outline-none transition-all focus:ring-2 focus:ring-amber-500/25 placeholder:opacity-40"
           />
           <button
             onClick={handleSubmit}
             disabled={!input.trim()}
             aria-label="Send message"
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center
-                       rounded-full bg-amber-500 text-void transition-all
-                       hover:bg-amber-400 active:scale-90 disabled:opacity-0 disabled:scale-75"
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-amber-500 text-void transition-all hover:bg-amber-400 active:scale-90 disabled:opacity-0 disabled:scale-75"
           >
             <SendIcon className="w-3.5 h-3.5" strokeWidth={2.5} />
           </button>
@@ -201,6 +198,7 @@ function ChatMessage({ msg, isOwn, displayNames = {} }) {
     displayNames[msg.senderId] ||
     (msg.senderId ? msg.senderId.slice(0, 6) : "Guest");
 
+  // System events — centered pill with an icon prefix
   if (msg.senderId === "system") {
     const ICONS = {
       "[HOST]": (
@@ -248,6 +246,7 @@ function ChatMessage({ msg, isOwn, displayNames = {} }) {
     );
   }
 
+  // Screenshot message — image bubble
   if (msg.dataUrl) {
     return (
       <div
@@ -285,6 +284,7 @@ function ChatMessage({ msg, isOwn, displayNames = {} }) {
     );
   }
 
+  // Regular chat message
   return (
     <div
       className={`flex ${isOwn ? "flex-row-reverse" : "flex-row"} gap-2 items-end`}
@@ -305,8 +305,7 @@ function ChatMessage({ msg, isOwn, displayNames = {} }) {
           </span>
         )}
         <div
-          className={`px-3.5 py-2 rounded-2xl text-sm leading-relaxed break-words
-          ${isOwn ? "chat-bubble-own rounded-br-sm" : "chat-bubble-other rounded-bl-sm"}`}
+          className={`px-3.5 py-2 rounded-2xl text-sm leading-relaxed break-words ${isOwn ? "rounded-br-sm" : "rounded-bl-sm"}`}
           style={
             isOwn
               ? {
@@ -314,7 +313,7 @@ function ChatMessage({ msg, isOwn, displayNames = {} }) {
                   color: "var(--color-text)",
                 }
               : {
-                  backgroundColor: "var(--color-surface)",
+                  backgroundColor: "var(--color-card)",
                   color: "var(--color-text)",
                 }
           }

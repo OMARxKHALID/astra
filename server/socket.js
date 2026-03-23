@@ -124,6 +124,7 @@ class Room {
     this.subtitleUrl = "";
     this.videoTS = 0;
     this.paused = true;
+    this.tmdbMeta = null; // Synced movie/show info
     this.lastUpdated = Date.now();
     this.createdAt = Date.now();
     this.hostId = hostId;
@@ -203,6 +204,7 @@ class Room {
     this.videoTS = videoTS;
     this.paused = paused;
     this.subtitleUrl = subtitleUrl;
+    this.tmdbMeta = null; // Clear metadata on video change
     this.tsMap = {};
     this.lockTs(1500);
     this.lastUpdated = Date.now();
@@ -223,12 +225,13 @@ class Room {
       hostOnlyControls: this.hostOnlyControls,
       strictVideoUrlMode: this.strictVideoUrlMode,
       hasPassword: Boolean(this.passwordHash),
+      tmdbMeta: this.tmdbMeta,
     };
   }
 
   // Lightweight fingerprint — only broadcast REC:host when something changed
   _stateFingerprint() {
-    return `${this.video}|${this.videoTS.toFixed(1)}|${this.paused}|${this.playbackRate}|${this.hostId}|${this.hostOnlyControls}|${this.strictVideoUrlMode}|${Boolean(this.passwordHash)}`;
+    return `${this.video}|${this.videoTS.toFixed(1)}|${this.paused}|${this.playbackRate}|${this.hostId}|${this.hostOnlyControls}|${this.strictVideoUrlMode}|${Boolean(this.passwordHash)}|${this.tmdbMeta?.id || ""}`;
   }
 
   // ── Broadcast interval ─────────────────────────────────────────────────────
@@ -292,6 +295,7 @@ function saveRoom(room) {
               hostOnlyControls: r.hostOnlyControls,
               strictVideoUrlMode: r.strictVideoUrlMode,
               passwordHash: r.passwordHash || "",
+              tmdbMeta: r.tmdbMeta || null,
               // Only store text messages — no dataUrls
               messages: (r.messages || []).map((m) => ({
                 ...m,
@@ -384,6 +388,7 @@ io.on("connection", (socket) => {
           room.hostOnlyControls = stored.hostOnlyControls ?? false;
           room.strictVideoUrlMode = stored.strictVideoUrlMode ?? false;
           room.passwordHash = stored.passwordHash || "";
+          room.tmdbMeta = stored.tmdbMeta || null;
           room.messages = (stored.messages || []).filter((m) => m.text); // text only
           room.lastUpdated = stored.lastUpdated ?? Date.now();
           rooms.set(roomId, room);
@@ -613,7 +618,16 @@ io.on("connection", (socket) => {
     saveRoom(ctx.room);
   });
 
-  // ── Password ───────────────────────────────────────────────────────────────
+  // ── TMDB Meta override ───────────────────────────────────────────────────
+  socket.on("CMD:tmdbMeta", (meta) => {
+    const meta_ctx = getCtx(false); // Anyone can help fix metadata? Let's allow everyone or just host.
+    // Given the user's request "i can cancel", I'll allow host/authorized members.
+    // To keep it simple and useful, let's allow the current host only for now.
+    if (!meta_ctx?.meta.isHost) return;
+    meta_ctx.room.tmdbMeta = meta || null;
+    io.to(meta_ctx.room.roomId).emit("REC:host", meta_ctx.room.publicState());
+    saveRoom(meta_ctx.room);
+  });
   socket.on("CMD:setPassword", (msg) => {
     const ctx = getCtx(false);
     if (!ctx?.meta.isHost) return;

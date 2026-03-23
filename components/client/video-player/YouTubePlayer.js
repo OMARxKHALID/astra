@@ -46,6 +46,15 @@ export default function YouTubePlayer({
   const ccEnabledRef = useRef(ccEnabled);
   const isBufferingRef = useRef(false);
   const adPollRef = useRef(null);
+  // Ref so onReady callback always sees the live isPlaying value.
+  // The player init useEffect only re-runs when videoId changes, so without this
+  // the closure captures a stale isPlaying from that render — by the time onReady
+  // fires (1-3s later) the SyncEngine may have already issued play/pause commands
+  // that were no-ops because playerRef.current was still null.
+  const isPlayingRef = useRef(isPlaying);
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
 
   useEffect(() => {
     ccEnabledRef.current = ccEnabled;
@@ -250,7 +259,7 @@ export default function YouTubePlayer({
       playerRef.current = new window.YT.Player(divId, {
         videoId,
         playerVars: {
-          autoplay: 0,
+          autoplay: 1,
           controls: 0,
           disablekb: 1,
           fs: 0,
@@ -268,6 +277,12 @@ export default function YouTubePlayer({
                 playerRef.current?.seekTo?.(pendingSeekRef.current, true);
               } catch {}
               pendingSeekRef.current = null;
+            }
+            // Read from ref to get the live value — the closure captures stale isPlaying
+            if (isPlayingRef.current) {
+              try {
+                playerRef.current?.playVideo?.();
+              } catch {}
             }
           },
           onStateChange: (e) => {
