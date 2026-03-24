@@ -18,6 +18,9 @@
   --color-dim: #94a3b8;
   --color-text: #dde4f0;
   --color-bright: #f8fafc;
+
+  --radius-pill: 2rem;
+  --radius-panel: 2.5rem;
 }
 
 @keyframes fadeIn {
@@ -97,7 +100,7 @@
   .glass-card {
     background: rgba(255, 255, 255, 0.028);
     border: 1px solid rgba(255, 255, 255, 0.075);
-    border-radius: 2rem;
+    border-radius: var(--radius-pill);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     box-shadow:
@@ -203,7 +206,7 @@
     box-shadow: none !important;
   }
 
-  /* Video controls always render over a dark surface, never apply light-mode CSS inside */
+  /* Video controls always render over a dark surface */
   .video-controls {
     color-scheme: dark;
   }
@@ -227,7 +230,7 @@
     justify-content: center;
     gap: 0.5rem;
     padding: 0.6rem 1.5rem;
-    border-radius: 9999px;
+    border-radius: var(--radius-pill);
     background: #f59e0b;
     color: var(--color-void);
     font-weight: 700;

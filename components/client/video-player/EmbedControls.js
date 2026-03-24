@@ -55,7 +55,6 @@ export default function EmbedControls({
   canControl = true,
   onFullscreen,
   isFullscreen = false,
-  // Theatre mode
   theatreMode = false,
   onToggleTheatre,
 }) {

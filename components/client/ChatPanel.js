@@ -170,13 +170,13 @@ export default function ChatPanel({
               borderColor: "var(--color-border)",
               color: "var(--color-text)",
             }}
-            className="w-full border rounded-full pl-4 pr-12 py-3 text-sm font-body outline-none transition-all focus:ring-2 focus:ring-amber-500/25 placeholder:opacity-40"
+            className="w-full border rounded-[2rem] pl-4 pr-12 py-3 text-sm font-body outline-none transition-all focus:ring-2 focus:ring-amber-500/25 placeholder:opacity-40"
           />
           <button
             onClick={handleSubmit}
             disabled={!input.trim()}
             aria-label="Send message"
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-amber-500 text-void transition-all hover:bg-amber-400 active:scale-90 disabled:opacity-0 disabled:scale-75"
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-[2rem] bg-amber-500 text-void transition-all hover:bg-amber-400 active:scale-90 disabled:opacity-0 disabled:scale-75"
           >
             <SendIcon className="w-3.5 h-3.5" strokeWidth={2.5} />
           </button>
@@ -232,7 +232,7 @@ function ChatMessage({ msg, isOwn, displayNames = {} }) {
     return (
       <div className="flex justify-center">
         <div
-          className="px-3.5 py-1 rounded-full border text-[10px] font-mono uppercase tracking-wide flex items-center gap-1.5"
+          className="px-3.5 py-1 rounded-[2rem] border text-[10px] font-mono uppercase tracking-wide flex items-center gap-1.5"
           style={{
             backgroundColor: "var(--color-surface)",
             borderColor: "var(--color-border)",
@@ -305,13 +305,10 @@ function ChatMessage({ msg, isOwn, displayNames = {} }) {
           </span>
         )}
         <div
-          className={`px-3.5 py-2 rounded-2xl text-sm leading-relaxed break-words ${isOwn ? "rounded-br-sm" : "rounded-bl-sm"}`}
+          className={`px-3.5 py-2 rounded-[2rem] text-sm leading-relaxed break-words ${isOwn ? "rounded-br-sm bg-amber-500/15" : "rounded-bl-sm"}`}
           style={
             isOwn
-              ? {
-                  backgroundColor: "rgba(245,158,11,0.15)",
-                  color: "var(--color-text)",
-                }
+              ? { color: "var(--color-text)" }
               : {
                   backgroundColor: "var(--color-card)",
                   color: "var(--color-text)",

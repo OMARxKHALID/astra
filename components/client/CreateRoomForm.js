@@ -166,7 +166,7 @@ export default function CreateRoomForm({ onResultsChange }) {
         </div>
 
         <div
-          className="flex p-1 rounded-2xl border shadow-inner"
+          className="flex p-1 rounded-[2rem] border shadow-inner"
           style={{
             backgroundColor: "var(--color-surface)",
             borderColor: "var(--color-border)",
@@ -252,10 +252,10 @@ export default function CreateRoomForm({ onResultsChange }) {
                     key={item.id}
                     type="button"
                     onClick={() => handleCreate(null, item.url)}
-                    className="flex items-center gap-4 p-2.5 rounded-2xl hover:bg-white/5 active:bg-white/10 transition-all text-left group border border-transparent"
+                    className="flex items-center gap-4 p-2.5 rounded-[2rem] hover:bg-white/5 active:bg-white/10 transition-all text-left group border border-transparent"
                   >
                     {item.thumb && (
-                      <div className="w-24 aspect-video rounded-xl overflow-hidden border border-white/5 shrink-0 bg-black/40">
+                      <div className="w-24 aspect-video rounded-2xl overflow-hidden border border-white/5 shrink-0 bg-black/40">
                         <img
                           src={item.thumb}
                           alt=""
@@ -277,7 +277,7 @@ export default function CreateRoomForm({ onResultsChange }) {
                         {item.channel}
                       </p>
                     </div>
-                    <div className="shrink-0 w-8 h-8 rounded-full border border-white/5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0">
+                    <div className="shrink-0 w-8 h-8 rounded-[2rem] border border-white/5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0">
                       <ChevronRight className="w-4 h-4 text-amber-500" />
                     </div>
                   </button>
@@ -352,7 +352,7 @@ function ModeBtn({ active, onClick, icon, children }) {
     <button
       type="button"
       onClick={onClick}
-      className={`px-4 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all duration-300 flex items-center gap-2
+      className={`px-4 py-1.5 rounded-[2rem] text-[10px] font-bold uppercase tracking-widest transition-all duration-300 flex items-center gap-2
         ${active ? "bg-amber-500 text-void shadow-[0_0_15px_rgba(245,158,11,0.3)]" : "opacity-40 hover:opacity-100 hover:bg-white/5"}`}
       style={active ? undefined : { color: "var(--color-text)" }}
     >

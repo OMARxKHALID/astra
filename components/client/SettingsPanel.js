@@ -40,7 +40,7 @@ function Row({ label, description, enabled, onToggle, disabled, icon }) {
       <div className="flex items-center gap-3 min-w-0">
         {icon && (
           <div
-            className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${enabled ? "bg-amber-500/10 text-amber-400" : "bg-white/5 text-white/25"}`}
+            className={`w-8 h-8 rounded-[2rem] flex items-center justify-center shrink-0 transition-colors ${enabled ? "bg-amber-500/10 text-amber-400" : "bg-white/5 text-white/25"}`}
           >
             {icon}
           </div>
@@ -160,7 +160,7 @@ export default function SettingsPanel({
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-[2rem] hover:bg-white/10 transition-colors"
             style={{ color: "var(--color-muted)" }}
           >
             <XIcon className="w-4 h-4" strokeWidth={2.5} />
@@ -247,7 +247,7 @@ export default function SettingsPanel({
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${hasPassword ? "bg-amber-500/10 text-amber-400" : "bg-white/5 text-white/25"}`}
+                    className={`w-8 h-8 rounded-[2rem] flex items-center justify-center shrink-0 ${hasPassword ? "bg-amber-500/10 text-amber-400" : "bg-white/5 text-white/25"}`}
                   >
                     <KeyIcon className="w-4 h-4" />
                   </div>

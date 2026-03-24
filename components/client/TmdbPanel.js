@@ -54,7 +54,7 @@ export default function TmdbPanel({ isOpen, onClose, tmdbMeta }) {
               <img
                 src={tmdbMeta.poster}
                 alt={tmdbMeta.title}
-                className="w-full h-auto object-cover rounded-2xl border border-white/10"
+                className="w-full h-auto object-cover rounded-[2rem] border border-white/10"
               />
             </div>
           )}
@@ -84,14 +84,14 @@ export default function TmdbPanel({ isOpen, onClose, tmdbMeta }) {
             {/* Metadata badges */}
             <div className="flex flex-wrap gap-2 mb-6 text-[11px] font-mono tracking-wide">
               {tmdbMeta.rating && (
-                <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-xl">
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-[2rem]">
                   <Star className="w-3 h-3 fill-amber-500/80" />
                   {tmdbMeta.rating} / 10
                 </div>
               )}
               {tmdbMeta.year && (
                 <div
-                  className="flex items-center gap-1.5 px-3 py-1 border rounded-xl"
+                  className="flex items-center gap-1.5 px-3 py-1 border rounded-[2rem]"
                   style={{
                     backgroundColor: "rgba(255,255,255,0.05)",
                     borderColor: "rgba(255,255,255,0.1)",
@@ -103,7 +103,7 @@ export default function TmdbPanel({ isOpen, onClose, tmdbMeta }) {
                 </div>
               )}
               <div
-                className="flex items-center gap-1.5 px-3 py-1 border rounded-xl uppercase"
+                className="flex items-center gap-1.5 px-3 py-1 border rounded-[2rem] uppercase"
                 style={{
                   backgroundColor: "rgba(255,255,255,0.05)",
                   borderColor: "rgba(255,255,255,0.1)",
