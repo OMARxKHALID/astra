@@ -144,8 +144,11 @@ export default function NativeVideoPlayer({
         const level = hls.levels[data.level];
         if (level) {
           const h = level.height ? `${level.height}p` : "";
-          const bps = level.bitrate
-            ? `${(level.bitrate / 1000).toFixed(0)}kbps`
+          const kbps = level.bitrate ? level.bitrate / 1000 : 0;
+          const bps = kbps
+            ? kbps >= 1000
+              ? `${(kbps / 1000).toFixed(1)} Mbps`
+              : `${kbps.toFixed(0)} Kbps`
             : "";
           setHlsQuality(h || bps ? { level: h, bitrate: bps } : null);
         }

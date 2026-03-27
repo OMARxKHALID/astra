@@ -1,12 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import CreateRoomForm from "@/components/client/CreateRoomForm";
 import RecentRooms from "@/components/client/RecentRooms";
 import { Film as FilmIcon } from "lucide-react";
 
 export default function HomePage() {
   const [hasResults, setHasResults] = useState(false);
+  const searchParams = useSearchParams();
+  const [kickedMsg, setKickedMsg] = useState(null);
+
+  useEffect(() => {
+    if (searchParams.get("kicked") !== "1") return;
+    let msg = "You were removed from the room.";
+    try {
+      const stored = sessionStorage.getItem("wt_kicked");
+      if (stored) msg = stored;
+      sessionStorage.removeItem("wt_kicked");
+    } catch {}
+    setKickedMsg(msg);
+    const t = setTimeout(() => setKickedMsg(null), 6000);
+    return () => clearTimeout(t);
+  }, [searchParams]);
 
   return (
     <main
@@ -33,6 +49,38 @@ export default function HomePage() {
           }}
         />
       </div>
+
+      {/* Kicked notification — matches toast-pill pattern from Toast.js */}
+      {kickedMsg && (
+        <div
+          aria-live="polite"
+          className="fixed inset-x-0 bottom-0 z-[10000] flex flex-col items-center pb-10 pointer-events-none px-4"
+        >
+          <div
+            style={{
+              animation: "toastIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+            }}
+            className="toast-pill px-5 py-2.5 rounded-full backdrop-blur-2xl border text-[13px] font-semibold flex items-center gap-3 max-w-sm pointer-events-auto"
+          >
+            <div className="w-5 h-5 rounded-full border bg-danger/15 border-danger/30 flex items-center justify-center shrink-0">
+              <svg
+                className="w-3 h-3 text-danger"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </div>
+            <span className="tracking-tight">{kickedMsg}</span>
+          </div>
+        </div>
+      )}
 
       <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
         <RecentRooms />

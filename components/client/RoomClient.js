@@ -478,9 +478,22 @@ export default function RoomClient({ roomId, initialMeta }) {
         handleWrongPassword();
         return;
       }
+      if (reason === "Invalid host token") {
+        ls.remove(`host_${roomId}`);
+        setHostToken("");
+        addToast("Session expired — rejoining as guest.", "info");
+        return;
+      }
+      // Real kick — store reason for the landing page toast, then redirect
+      try {
+        sessionStorage.setItem(
+          "wt_kicked",
+          reason || "You were removed from the room.",
+        );
+      } catch {}
       router.push("/?kicked=1");
     },
-    [router, handleWrongPassword],
+    [router, handleWrongPassword, roomId, addToast],
   );
 
   // ── Playback command handlers ─────────────────────────────────────────────

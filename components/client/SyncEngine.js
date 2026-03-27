@@ -474,15 +474,20 @@ export default function SyncEngine({
           p.current.onKicked?.("WRONG_PASSWORD");
           return;
         }
-        if (
-          m.message === "Invalid host token" ||
-          m.message === "You have been removed from the room."
-        ) {
+        if (m.message === "Invalid host token") {
+          // Recoverable: handleKicked will clear the stale token, which triggers
+          // the useEffect dep array to re-run connect() without a token (as guest).
+          // Do NOT disable reconnection — the React layer handles the retry.
+          if (socketRef.current) socketRef.current.disconnect();
+          p.current.onKicked?.(m.message);
+          return;
+        }
+        if (m.message === "You have been removed from the room.") {
           if (socketRef.current) {
             socketRef.current.io.opts.reconnection = false;
             socketRef.current.disconnect();
           }
-          p.current.onKicked?.();
+          p.current.onKicked?.(m.message);
         }
       },
     };
@@ -497,7 +502,7 @@ export default function SyncEngine({
       if (externalSocketRef) externalSocketRef.current = null;
       clearInterval(timer.current);
     };
-  }, [connect, externalSocketRef]);
+  }, [connect, externalSocketRef, roomId, hostToken]);
 
   return null;
 }
