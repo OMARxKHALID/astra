@@ -481,7 +481,9 @@ export default function RoomClient({ roomId, initialMeta }) {
       if (reason === "Invalid host token") {
         ls.remove(`host_${roomId}`);
         setHostToken("");
-        addToast("Session expired — rejoining as guest.", "info");
+        // Silently rejoin without token — the prevHostToken effect in SyncEngine
+        // will call connect() again as a guest. The user's userId still matches
+        // the stored hostId in serverState, so host UI renders correctly.
         return;
       }
       // Real kick — store reason for the landing page toast, then redirect

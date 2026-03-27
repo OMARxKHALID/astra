@@ -1396,9 +1396,9 @@ export default function NativeVideoPlayer({
 
             {/* HLS badge */}
             {hlsQualityEnabled && hlsQuality && sourceType === "hls" && (
-              <span className="hidden lg:flex items-center gap-1 px-2 py-0.5 rounded-full bg-jade/10 border border-jade/20 text-[9px] font-mono font-bold text-jade/70 shrink-0">
+              <span className="hidden lg:flex items-center h-8 px-3 rounded-[2rem] bg-white/5 hover:bg-white/10 transition-colors border border-white/10 text-[10px] font-mono font-bold text-white/50 shrink-0 select-none">
                 {hlsQuality.level}
-                {hlsQuality.level && hlsQuality.bitrate && " · "}
+                {hlsQuality.level && hlsQuality.bitrate && <span className="text-white/20 mx-1.5">•</span>}
                 {hlsQuality.bitrate}
               </span>
             )}

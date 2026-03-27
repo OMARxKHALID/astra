@@ -502,7 +502,19 @@ export default function SyncEngine({
       if (externalSocketRef) externalSocketRef.current = null;
       clearInterval(timer.current);
     };
-  }, [connect, externalSocketRef, roomId, hostToken]);
+  }, [connect, externalSocketRef]);
+
+  // When hostToken is cleared (stale token removed after "Invalid host token" error),
+  // re-run connect() so we rejoin as a guest without a token.
+  // Skips the initial empty-string render to avoid double-connecting on mount.
+  const prevHostToken = useRef(hostToken);
+  useEffect(() => {
+    if (prevHostToken.current === hostToken) return;
+    prevHostToken.current = hostToken;
+    // Only reconnect if the token was cleared (going from a value to empty)
+    // — not when a new token is set for the first time
+    if (hostToken === "") connect();
+  }, [hostToken, connect]);
 
   return null;
 }
