@@ -95,8 +95,7 @@ export default function SubtitlePanel({
   return (
     <div
       className={`absolute bottom-20 sm:bottom-24 left-3 right-3 sm:left-auto sm:right-6 w-auto sm:w-[360px] h-[65vh] sm:h-[480px] max-h-[520px]
-        bg-black/55 backdrop-blur-3xl border border-white/15 z-50 transition-all duration-200
-        shadow-2xl rounded-[2rem] overflow-hidden flex flex-col origin-bottom-right
+        glass-card z-50 transition-all duration-200 overflow-hidden flex flex-col origin-bottom-right
         ${activePanel ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"}`}
     >
       <div className="p-3 pb-1">
@@ -109,15 +108,15 @@ export default function SubtitlePanel({
           </div>
           <button
             onClick={() => setActivePanel(null)}
-            className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-white/5 text-white/20 hover:text-white transition-colors"
+            className="w-7 h-7 rounded-[var(--radius-pill)] flex items-center justify-center hover:bg-white/5 text-white/20 hover:text-white transition-colors"
           >
             ✕
           </button>
         </div>
 
-        <div className="bg-white/5 p-1 rounded-2xl flex relative border border-white/5">
+        <div className="bg-white/5 p-1 rounded-[var(--radius-pill)] flex relative border border-white/5">
           <div
-            className="absolute top-1 bottom-1 bg-white/10 rounded-xl transition-all duration-200"
+            className="absolute top-1 bottom-1 bg-white/10 rounded-[var(--radius-pill)] transition-all duration-200"
             style={{
               left:
                 activePanel === "search"
@@ -155,12 +154,12 @@ export default function SubtitlePanel({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Find a track…"
-                className="w-full bg-white/5 border border-white/10 rounded-[2rem] px-3.5 py-2 text-[10px] text-white placeholder:text-white/20 focus:border-amber-500/40 outline-none transition-all"
+                className="w-full bg-white/5 border border-white/10 rounded-[var(--radius-pill)] px-3.5 py-2 text-[10px] text-white placeholder:text-white/20 focus:border-amber-500/40 outline-none transition-all"
               />
               <button
                 disabled={searching || !searchQuery.trim()}
                 type="submit"
-                className="absolute right-1 top-1 bottom-1 w-8 rounded-full bg-amber-500 text-void transition-all disabled:opacity-30 active:scale-95 flex items-center justify-center"
+                className="absolute right-1 top-1 bottom-1 w-8 rounded-[var(--radius-pill)] bg-amber-500 text-void transition-all disabled:opacity-30 active:scale-95 flex items-center justify-center"
               >
                 {searching ? (
                   <div className="w-3 h-3 border-2 border-void/30 border-t-void rounded-full animate-spin mx-auto" />
@@ -188,7 +187,7 @@ export default function SubtitlePanel({
                       <button
                         key={sub.id}
                         onClick={() => handleSelect(sub)}
-                        className={`w-full min-w-0 text-left px-3 py-1.5 rounded-xl transition-all border flex items-center justify-between overflow-hidden
+                        className={`w-full min-w-0 text-left px-3 py-1.5 rounded-[var(--radius-pill)] transition-all border flex items-center justify-between overflow-hidden
                             ${
                               isActive || selectingId === (sub.id || sub.url)
                                 ? "bg-amber-500/10 border-amber-500/30 text-amber-500 font-bold"

@@ -26,7 +26,7 @@ export default function MediaHero({ items, onPick, onPlay }) {
     return () => clearInterval(timer.current);
   }, [items.length, go]);
 
-  if (!items.length) return <div className="h-[750px] bg-[var(--color-void)]" />;
+  if (!items.length) return <div className="h-[750px] bg-void" />;
 
   const item = items[idx];
   const genres = (item.genreIds || [])
@@ -46,8 +46,8 @@ export default function MediaHero({ items, onPick, onPlay }) {
           className={`object-cover object-[center_25%] transition-opacity duration-[260ms] ease-in-out ${fading ? "opacity-0" : "opacity-100"}`}
         />
       )}
-      <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-void)] via-[var(--color-void)]/70 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-void)] to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-r from-void via-void/70 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-void to-transparent" />
 
       <div
         className={`absolute inset-0 flex items-end px-6 lg:px-12 pb-[120px] transition-opacity duration-[260ms] ease-in-out ${fading ? "opacity-0" : "opacity-100"}`}
@@ -55,7 +55,7 @@ export default function MediaHero({ items, onPick, onPlay }) {
         <div className="max-w-[520px] z-10">
           <div className="flex gap-2 mb-4 items-center flex-wrap">
             <span
-              className={`text-[10px] font-bold px-2.5 py-0.5 rounded-[20px] uppercase tracking-[0.12em] font-mono border ${item.type === "tv" ? "bg-jade/15 text-jade border-jade/30" : "bg-transparent text-white/10 border-white/10"}`}
+              className={`text-[10px] font-bold px-2.5 py-0.5 rounded-[var(--radius-pill)] uppercase tracking-[0.12em] font-mono border ${item.type === "tv" ? "bg-jade/15 text-jade border-jade/30" : "bg-transparent text-white/40 border-white/10"}`}
             >
               {item.type === "tv" ? "Series" : "Movie"}
             </span>
@@ -66,39 +66,39 @@ export default function MediaHero({ items, onPick, onPlay }) {
               </span>
             )}
             {item.year && (
-              <span className="text-[11px] text-white/10 font-mono">
+              <span className="text-[11px] text-white/40 font-mono">
                 {item.year}
               </span>
             )}
             {genres.map((g) => (
               <span
                 key={g}
-                className="text-[10px] text-white/10 font-mono uppercase tracking-widest"
+                className="text-[10px] text-white/40 font-mono uppercase tracking-widest"
               >
                 · {g}
               </span>
             ))}
           </div>
 
-          <h1 className="font-display text-[54px] font-bold text-slate-50 leading-none mb-4 tracking-tight">
+          <h1 className="font-display text-[54px] font-bold text-bright leading-none mb-4 tracking-tight">
             {item.title}
           </h1>
 
-          <p className="text-sm text-white/10 leading-relaxed mb-7 line-clamp-3 font-body">
+          <p className="text-sm text-white/60 leading-relaxed mb-7 line-clamp-3 font-body">
             {item.overview}
           </p>
 
           <div className="flex gap-3">
             <button
               onClick={() => onPlay && onPlay(item)}
-              className="flex items-center gap-2 px-7 py-3 rounded-[var(--radius-pill)] bg-amber text-[var(--color-void)] font-bold text-sm border-none cursor-pointer hover:bg-amber transition-all font-body shadow-[0_4px_16px_rgba(var(--color-amber-rgb), 0.2)] active:scale-95"
+              className="flex items-center gap-2 px-7 py-3 rounded-[var(--radius-pill)] bg-amber text-void font-bold text-sm border-none cursor-pointer hover:bg-amber transition-all font-body shadow-[0_4px_16px_rgba(var(--color-amber-rgb), 0.2)] active:scale-95"
             >
               <Play className="w-4 h-4 fill-current" />
               Play
             </button>
             <button
               onClick={() => onPick(item)}
-              className="flex items-center gap-2 px-5 py-3 rounded-[var(--radius-pill)] bg-white/10 text-white/10 font-medium text-sm cursor-pointer border border-white/10 hover:bg-white/10 transition-all font-body active:scale-95"
+              className="flex items-center gap-2 px-6 py-3 rounded-[var(--radius-pill)] bg-white/5 backdrop-blur-xl text-white/80 font-bold text-sm cursor-pointer border border-white/10 hover:bg-white/10 hover:text-white transition-all font-body active:scale-95"
             >
               See More
             </button>

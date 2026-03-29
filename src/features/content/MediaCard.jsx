@@ -39,7 +39,7 @@ export default function MediaCard({ item, onPick }) {
           </div>
         )}
       </div>
-      <p className="text-xs font-medium mt-[7px] text-white/10 leading-[1.35] line-clamp-2 font-body">
+      <p className="text-[11px] font-bold mt-2 text-white/50 leading-snug line-clamp-2 font-display group-hover:text-white transition-colors">
         {item.title}
       </p>
     </button>

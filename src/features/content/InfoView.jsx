@@ -216,21 +216,14 @@ export default function InfoView({ initialData, type, id }) {
             ) : (
               <div className="w-full h-full bg-void" />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-void via-transparent to-transparent" />
           </div>
-
-          {/* Bottom: poster + info card */}
           <div className="absolute bottom-0 left-0 w-full p-2 lg:p-[0.5rem] flex items-end justify-start z-10">
-            {/* [Note] Concave corner details standardized with void background */}
-            <div className="absolute z-20 pointer-events-none left-0 bottom-[10.65rem] lg:bottom-[15.8rem] w-[2.2rem] h-[2.2rem] rounded-bl-[2.2rem] shadow-[-10px_10px_0_10px_var(--color-void)]" />
-            <div className="absolute z-20 pointer-events-none left-[7.85rem] lg:left-[11rem] bottom-[6.85rem] lg:bottom-[7.3rem] w-[2.2rem] h-[2.2rem] rounded-bl-[2.2rem] shadow-[-10px_10px_0_10px_var(--color-void)]" />
-            <div className="absolute z-20 pointer-events-none left-0 bottom-[6.28rem] lg:bottom-[6.8rem] w-[2.2rem] h-[2.2rem] rounded-bl-[2.2rem] shadow-[-10px_10px_0_10px_var(--color-void)]" />
-
-            {/* Poster card */}
+            <div className="hidden lg:block absolute z-20 pointer-events-none left-0 bottom-[15.8rem] w-[2.2rem] h-[2.2rem] rounded-bl-[2.2rem] shadow-[-10.5px_10.5px_0.5px_10px_#050505] transform-gpu" />
+            <div className="hidden lg:block absolute z-20 pointer-events-none left-[11rem] bottom-[7.3rem] w-[2.2rem] h-[2.2rem] rounded-bl-[2.2rem] shadow-[-10.5px_10.5px_0.5px_10px_#050505] transform-gpu" />
+            <div className="hidden lg:block absolute z-20 pointer-events-none left-0 bottom-[6.8rem] w-[2.2rem] h-[2.2rem] rounded-bl-[2.2rem] shadow-[-10.5px_10.5px_0.5px_10px_#050505] transform-gpu" />
             <div className="relative w-[7rem] lg:w-[10rem] shrink-0 outline-[0.9rem] lg:outline-[1rem] outline-void rounded-[1rem] bg-void bottom-[-0.5rem] lg:bottom-[-1rem] left-[0.2rem] lg:left-[-0.5rem] z-30 overflow-visible">
-              <div className="absolute z-20 top-0 left-[3.85rem] lg:left-[4.9rem] w-[1rem] lg:w-[2rem] h-[1rem] lg:h-[2rem] rounded-tr-[1rem] lg:rounded-tr-[2rem] shadow-[5px_-5px_0_5px_var(--color-void)] lg:shadow-[7px_-7px_0_7px_var(--color-void)]" />
-              <div className="absolute z-20 top-[2.15rem] lg:top-[3.1rem] left-[6rem] lg:left-[8rem] w-[1rem] lg:w-[2rem] h-[1rem] lg:h-[2rem] rounded-tr-[1rem] lg:rounded-tr-[2rem] shadow-[5px_-5px_0_5px_var(--color-void)] lg:shadow-[7px_-7px_0_7px_var(--color-void)]" />
-
+              <div className="hidden lg:block absolute z-20 top-0 left-[4.9rem] w-[2.1rem] h-[2.1rem] rounded-tr-[2.1rem] shadow-[7.5px_-7.5px_0.5px_7px_#050505] transform-gpu" />
+              <div className="hidden lg:block absolute z-20 top-[3.1rem] left-[8rem] w-[2.1rem] h-[2.1rem] rounded-tr-[2.1rem] shadow-[7.5px_-7.5px_0.5px_7px_#050505] transform-gpu" />
               <div className="w-full aspect-[2/3] rounded-[1rem] overflow-hidden relative bg-[var(--color-panel)] flex items-center justify-center border border-white/10">
                 {data.poster ? (
                   <Image
@@ -254,11 +247,7 @@ export default function InfoView({ initialData, type, id }) {
                 </div>
               )}
             </div>
-
-            {/* Info card: title + action buttons + server select */}
             <div className="relative bottom-[-2.5rem] lg:bottom-[-2.7rem] left-[0.2rem] lg:left-[0.5rem] mb-2 lg:mb-[2rem] rounded-[1.25rem] lg:rounded-[1.5rem] outline-[0.4rem] lg:outline-[0.7rem] outline-void glass-card backdrop-blur-xl bg-white/[0.02] border border-white/10 p-2 lg:p-[0.75rem] lg:pr-[1rem] min-w-[9rem] lg:min-w-[13rem] max-w-[16rem] lg:max-w-[18rem] flex flex-col gap-1 lg:gap-2 text-center z-30 shadow-2xl ml-2 lg:ml-0">
-              <div className="absolute -right-[2.18rem] bottom-0 lg:bottom-[0.2rem] w-[1.5rem] h-[1.5rem] rounded-bl-[2.2rem] shadow-[-6px_6px_0_6px_var(--color-void)] z-20" />
-
               <div className="flex flex-col items-center gap-0.5 lg:gap-1 mb-1 lg:pr-2">
                 <span className="text-[8px] lg:text-[10px] font-black text-amber/60 uppercase tracking-[0.2em] lg:tracking-[0.3em] select-none lg:hidden">
                   {type === "tv" ? "SHOW" : "MOVIE"}
@@ -327,10 +316,8 @@ export default function InfoView({ initialData, type, id }) {
         </div>
       </div>
 
-      {/* Right: tabs + content panel */}
       <div className="flex-[1] hover:lg:flex-[2] transition-all duration-1000 ease flex flex-col min-h-[70vh] lg:h-screen lg:min-h-0 lg:overflow-y-auto no-scrollbar bg-void py-4 lg:py-0 overflow-visible">
         <div className="flex-1 lg:h-full p-4 lg:p-6 lg:mt-[2.5vh] lg:mx-4 lg:rounded-[var(--radius-panel)]">
-          {/* Tab navigation */}
           <div className="flex border-b border-white/10 mb-6">
             {(type === "tv"
               ? ["Episodes", "Overview", "Casts", "Reviews", "Related"]
@@ -350,7 +337,6 @@ export default function InfoView({ initialData, type, id }) {
             ))}
           </div>
 
-          {/* Overview tab */}
           {activeTab === "overview" && (
             <div className="flex flex-col gap-5">
               {data.providers?.length > 0 && (
@@ -378,7 +364,6 @@ export default function InfoView({ initialData, type, id }) {
                 </div>
               )}
 
-              {/* Tagline + overview description */}
               <div className="flex flex-col gap-2.5">
                 {data.tagline && (
                   <p className="text-[14px] lg:text-[15px] font-bold text-bright italic leading-snug">
@@ -390,7 +375,6 @@ export default function InfoView({ initialData, type, id }) {
                 </p>
               </div>
 
-              {/* Metadata list — clean label / value pairs, no box backgrounds */}
               <div className="flex flex-col gap-4 pt-1">
                 {[
                   { label: "Release", value: data.release || data.year },
@@ -434,8 +418,6 @@ export default function InfoView({ initialData, type, id }) {
               </div>
             </div>
           )}
-
-          {/* Casts tab */}
           {activeTab === "casts" && (
             <div className="flex flex-col gap-3">
               {(data.credits || []).map((person) => (
@@ -468,8 +450,6 @@ export default function InfoView({ initialData, type, id }) {
               ))}
             </div>
           )}
-
-          {/* Reviews tab */}
           {activeTab === "reviews" && (
             <div className="flex flex-col gap-4">
               {(data.reviews || []).length > 0 ? (
@@ -498,7 +478,6 @@ export default function InfoView({ initialData, type, id }) {
             </div>
           )}
 
-          {/* Related tab */}
           {activeTab === "related" && (
             <div className="grid grid-cols-2 gap-3">
               {(data.related || []).map((item) => (
@@ -529,7 +508,6 @@ export default function InfoView({ initialData, type, id }) {
             </div>
           )}
 
-          {/* Episodes tab */}
           {activeTab === "episodes" && (
             <div className="flex flex-col gap-4">
               {data.seasons && data.seasons.length > 1 && (

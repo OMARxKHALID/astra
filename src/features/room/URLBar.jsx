@@ -66,14 +66,7 @@ export default function URLBar({
             <span className="text-[10px] font-mono font-bold text-jade uppercase tracking-wider">
               Now Playing
             </span>
-            <span
-              className="text-[9px] font-mono px-2 py-0.5 rounded-[var(--radius-pill)] uppercase tracking-tight flex items-center gap-1.5"
-              style={{
-                color: "var(--color-jade)",
-                backgroundColor: "rgba(var(--color-jade-rgb),  0.1)",
-                border: "1px solid rgba(var(--color-jade-rgb),  0.2)",
-              }}
-            >
+            <span className="text-[9px] font-mono px-2 py-0.5 rounded-[var(--radius-pill)] uppercase tracking-tight flex items-center gap-1.5 border border-jade/20 bg-jade/10 text-jade">
               <span className="w-1 h-1 rounded-full bg-jade animate-pulse" />
               {SOURCE_LABELS[source.type]}
             </span>
@@ -85,8 +78,7 @@ export default function URLBar({
             )}
           </div>
           <div
-            className="text-sm font-mono truncate max-w-full"
-            style={{ color: "var(--color-muted)" }}
+            className="text-sm font-mono truncate max-w-full text-muted"
           >
             {currentUrl || "No video loaded"}
             {currentSubtitleUrl && (
@@ -103,18 +95,13 @@ export default function URLBar({
   return (
     <div className="flex items-center gap-3 w-full h-full min-w-0 px-4">
       <div
-        className="flex items-center gap-0.5 shrink-0 p-0.5 rounded-[var(--radius-pill)] border"
-        style={{
-          backgroundColor: "var(--color-surface)",
-          borderColor: "var(--color-border)",
-        }}
+        className="flex items-center gap-0.5 shrink-0 p-0.5 rounded-[var(--radius-pill)] border border-border bg-surface"
       >
         <button
           onClick={() => setMode("url")}
           title="Paste video URL"
           className={`w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] transition-all duration-200
-            ${mode === "url" ? "bg-amber text-void shadow-sm" : ""}`}
-          style={mode !== "url" ? { color: "var(--color-muted)" } : undefined}
+            ${mode === "url" ? "bg-amber text-void shadow-sm" : "text-muted"}`}
         >
           <LinkIcon className="w-4 h-4" />
         </button>
@@ -122,10 +109,7 @@ export default function URLBar({
           onClick={() => setMode("youtube")}
           title="Search YouTube"
           className={`w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] transition-all duration-200
-            ${mode === "youtube" ? "bg-[#FF0000] text-white shadow-sm" : ""}`}
-          style={
-            mode !== "youtube" ? { color: "var(--color-muted)" } : undefined
-          }
+            ${mode === "youtube" ? "bg-danger text-white shadow-sm" : "text-muted"}`}
         >
           <Youtube className="w-4 h-4" />
         </button>
@@ -141,11 +125,7 @@ export default function URLBar({
           )}
           <div className="flex items-center gap-3">
             <div
-              className={`flex-1 min-w-0 relative flex items-center gap-3 px-4 h-10 rounded-[var(--radius-pill)] border transition-all duration-300 ${focused ? "ring-2 ring-amber/20 shadow-lg" : ""}`}
-              style={{
-                backgroundColor: "var(--color-surface)",
-                borderColor: focused ? "rgba(var(--color-amber-rgb), 0.4)" : "var(--color-border)",
-              }}
+              className={`flex-1 min-w-0 relative flex items-center gap-3 px-4 h-10 rounded-[var(--radius-pill)] border transition-all duration-300 bg-surface ${focused ? "ring-2 ring-amber/20 shadow-lg border-amber/40" : "border-border"}`}
             >
               <div className="flex-1 min-w-0 flex flex-col justify-center">
                 <div className="flex items-center gap-2">
@@ -168,12 +148,7 @@ export default function URLBar({
                   />
                   {showDetected && !strictError && (
                     <span
-                      className="hidden sm:flex items-center gap-1.5 px-2.5 py-0.5 rounded-[var(--radius-pill)] text-[9px] font-black uppercase tracking-tighter shrink-0 animate-in fade-in zoom-in-95"
-                      style={{
-                        color: "var(--color-jade)",
-                        backgroundColor: "rgba(var(--color-jade-rgb),  0.08)",
-                        border: "1px solid rgba(var(--color-jade-rgb),  0.15)",
-                      }}
+                      className="hidden sm:flex items-center gap-1.5 px-2.5 py-0.5 rounded-[var(--radius-pill)] text-[9px] font-black uppercase tracking-tighter shrink-0 animate-in fade-in zoom-in-95 border border-jade/15 bg-jade/10 text-jade"
                     >
                       <span className="w-1 h-1 rounded-full bg-jade animate-pulse" />
                       {SOURCE_LABELS[inputSource.type]}

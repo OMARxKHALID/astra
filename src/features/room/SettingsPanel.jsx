@@ -141,7 +141,7 @@ export default function SettingsPanel({
 
       <div
         ref={panelRef}
-        className="relative z-10 w-full sm:max-w-[480px] mx-4 sm:mx-auto glass-card rounded-[var(--radius-panel)] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 duration-300 border-none"
+        className="relative z-10 w-full sm:max-w-[480px] mx-4 sm:mx-auto glass-card overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 duration-300 border-none"
       >
         <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-white/[0.05]">
           <div>

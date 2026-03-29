@@ -75,13 +75,11 @@ export default function ChatSidebar({
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-3 opacity-30">
             <ChatBubbleIcon
-              className="w-10 h-10"
-              style={{ color: "var(--color-muted)" }}
+              className="w-10 h-10 text-muted"
               strokeWidth={1}
             />
             <p
-              className="text-[11px] font-mono text-center max-w-[160px] leading-relaxed uppercase tracking-wider"
-              style={{ color: "var(--color-muted)" }}
+              className="text-[11px] font-mono text-center max-w-[160px] leading-relaxed uppercase tracking-wider text-muted"
             >
               The thread is quiet.
             </p>
@@ -108,8 +106,7 @@ export default function ChatSidebar({
               ))}
             </div>
             <span
-              className="text-[10px] font-mono italic"
-              style={{ color: "var(--color-muted)" }}
+              className="text-[10px] font-mono italic text-muted"
             >
               {activeTypers.length === 1
                 ? `${activeTypers[0]} is typing…`
@@ -121,8 +118,7 @@ export default function ChatSidebar({
       </div>
 
       <div
-        className="px-4 py-2.5 border-t shrink-0"
-        style={{ borderColor: "var(--color-border)" }}
+        className="px-4 py-2.5 border-t border-border shrink-0"
       >
         <div className="relative">
           <label htmlFor="chat-input" className="sr-only">
@@ -138,11 +134,9 @@ export default function ChatSidebar({
             maxLength={500}
             autoComplete="off"
             style={{
-              backgroundColor: "var(--color-surface)",
               borderColor: "var(--color-border)",
-              color: "var(--color-text)",
             }}
-            className="w-full border rounded-[var(--radius-pill)] pl-4 pr-11 py-2 text-sm font-body outline-none transition-all focus:ring-2 focus:ring-amber/25 placeholder:opacity-40"
+            className="w-full border bg-surface text-text rounded-[var(--radius-pill)] pl-4 pr-11 py-2 text-sm font-body outline-none transition-all focus:ring-2 focus:ring-amber/25 placeholder:opacity-40"
           />
           <button
             onClick={handleSubmit}

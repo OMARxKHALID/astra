@@ -50,16 +50,12 @@ export default function RecentRooms() {
     <div className="relative recent-rooms-container">
       <button
         onClick={() => setShowRecent(!showRecent)}
-        className={`w-10 h-10 flex items-center justify-center rounded-full transition-all border
+        className={`w-11 h-11 flex items-center justify-center rounded-full transition-all border backdrop-blur-xl
           ${
             showRecent
               ? "bg-amber text-void border-amber shadow-[0_0_20px_rgba(var(--color-amber-rgb), 0.3)]"
-              : "text-white/60 hover:text-white/60 hover:bg-white/10"
+              : "text-white/40 hover:text-white bg-white/5 border-white/10 hover:bg-white/10"
           }`}
-        style={{
-          borderColor: showRecent ? undefined : "var(--color-border)",
-          backgroundColor: showRecent ? undefined : "var(--color-surface)",
-        }}
       >
         <History className="w-5 h-5" />
       </button>
@@ -73,7 +69,7 @@ export default function RecentRooms() {
               </span>
               <button
                 onClick={clearAll}
-                className="text-[9px] font-bold text-danger/60 hover:text-danger uppercase tracking-wider text-left transition-colors"
+                className="text-[9px] font-bold text-danger hover:text-danger-bright uppercase tracking-wider text-left transition-colors"
               >
                 Clear All
               </button>

@@ -96,7 +96,7 @@ export default function SearchOverlay({ onClose, onPick }) {
             }
           }}
           placeholder="Search movies, series, anime…"
-          className="w-full bg-white/[0.04] backdrop-blur-3xl border border-white/10 rounded-[var(--radius-pill)] py-4 pr-12 pl-[52px] text-[var(--color-bright)] text-base font-body outline-none focus:border-amber/50 transition-all placeholder:text-white/10 shadow-2xl"
+          className="w-full glass-card !bg-white/5 !backdrop-blur-3xl rounded-[var(--radius-pill)] py-4 pr-12 pl-[52px] text-bright text-base font-body outline-none focus:border-amber/40 focus:ring-4 focus:ring-amber/5 transition-all placeholder:text-white/30 shadow-2xl"
         />
         {loading ? (
           <div className="absolute right-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] rounded-full border-2 border-amber/20 border-t-amber animate-spin" />
@@ -147,7 +147,7 @@ export default function SearchOverlay({ onClose, onPick }) {
 
               <div className="flex-1 min-w-0 ml-1">
                 <p
-                  className={`text-[15px] font-bold font-body mb-1 truncate transition-colors ${i === activeIdx ? "text-amber" : "text-[var(--color-bright)]"}`}
+                  className={`text-[15px] font-bold font-body mb-1 truncate transition-colors ${i === activeIdx ? "text-amber" : "text-bright"}`}
                 >
                   {item.title}
                 </p>
@@ -158,7 +158,7 @@ export default function SearchOverlay({ onClose, onPick }) {
                     {item.type === "tv" ? "Series" : "Movie"}
                   </span>
                   {item.year && (
-                    <span className="text-[11px] text-[var(--color-muted)] font-mono font-medium">
+                    <span className="text-[11px] text-muted font-mono font-medium">
                       {item.year}
                     </span>
                   )}
@@ -179,7 +179,7 @@ export default function SearchOverlay({ onClose, onPick }) {
       )}
 
       {q.trim().length > 1 && !loading && results.length === 0 && (
-        <p className="text-[var(--color-muted)] text-sm font-body mt-2 animate-in fade-in duration-500">
+        <p className="text-muted text-sm font-body mt-2 animate-in fade-in duration-500">
           No results for "{q}"
         </p>
       )}

@@ -57,17 +57,17 @@ export default function HomeView({ initialData }) {
   }, []);
 
   if (loading && !data) return <Loading />;
-  if (!data) return <div className="h-screen bg-[var(--color-void)]" />;
+  if (!data) return <div className="h-screen bg-void" />;
 
   return (
-    <div className="min-h-screen bg-[var(--color-void)] font-body text-[var(--color-text)]">
+    <div className="min-h-screen bg-void font-body text-text">
       <nav className="absolute top-0 left-0 right-0 h-[72px] flex items-center justify-between px-6 lg:px-12 z-[100] bg-gradient-to-b from-black/80 to-transparent pt-4">
         <div className="flex items-center gap-[42px]">
           <button
             onClick={() => router.push("/")}
             className="text-xl font-bold font-display text-white tracking-[0.02em] flex items-center gap-2 cursor-pointer bg-none border-none p-0"
           >
-            <div className="w-6 h-6 rounded-[var(--radius-pill)] bg-gradient-to-br from-amber to-amber-600 flex items-center justify-center text-[var(--color-void)] font-black text-sm">
+            <div className="w-6 h-6 rounded-[var(--radius-pill)] bg-gradient-to-br from-amber to-amber-600 flex items-center justify-center text-void font-black text-sm">
               W
             </div>
             WatchTogether
@@ -77,18 +77,18 @@ export default function HomeView({ initialData }) {
         <div className="flex items-center gap-5">
           <button
             onClick={() => setShowSearch(true)}
-            className="hidden lg:flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius-pill)] border border-white/10 text-white/10 bg-white/[0.04] backdrop-blur-xl hover:bg-white/[0.08] cursor-text group transition-all"
+            className="hidden lg:flex items-center gap-2.5 px-4 h-11 rounded-[var(--radius-pill)] glass-card bg-white/5 backdrop-blur-xl border border-white/10 text-white/40 hover:bg-white/10 hover:text-white cursor-text group transition-all active:scale-95"
           >
-            <Search className="w-4 h-4 group-hover:text-white transition-colors" />
+            <Search className="w-4 h-4 group-hover:text-amber transition-colors" />
             <span className="text-sm font-medium pr-1">Search…</span>
-            <kbd className="hidden sm:flex items-center justify-center bg-white/10 border border-white/10 rounded px-1.5 h-[22px] text-[10px] font-bold text-white/10 font-mono">
+            <kbd className="hidden sm:flex items-center justify-center bg-white/10 border border-white/20 rounded px-1.5 h-[22px] text-[10px] font-bold text-white/50 font-mono">
               ⌘K
             </kbd>
           </button>
 
           <button
             onClick={() => setShowSearch(true)}
-            className="lg:hidden w-10 h-10 rounded-[var(--radius-pill)] bg-white/10 border border-white/10 text-white flex items-center justify-center cursor-pointer hover:bg-white/10 transition-colors"
+            className="lg:hidden w-10 h-10 rounded-[var(--radius-pill)] bg-surface border border-border text-white/40 flex items-center justify-center cursor-pointer hover:bg-white/10 hover:text-white transition-colors active:scale-95"
           >
             <Search className="w-4 h-4" />
           </button>
@@ -106,14 +106,14 @@ export default function HomeView({ initialData }) {
                 setCreating(false);
               }
             }}
-            className="flex items-center gap-2 px-5 py-2.5 bg-white/10 border border-white/10 rounded-[var(--radius-pill)] text-white text-[13px] font-bold cursor-pointer hover:bg-white/10 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2.5 px-6 h-11 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[var(--radius-pill)] text-white/80 text-[13px] font-bold cursor-pointer hover:bg-white/10 hover:border-white/20 transition-all active:scale-95 disabled:opacity-50"
           >
             {creating ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <Users className="w-4 h-4" />
             )}
-            Create Room
+            <span className="hidden sm:inline">Create Room</span>
           </button>
         </div>
       </nav>

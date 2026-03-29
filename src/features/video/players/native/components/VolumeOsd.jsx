@@ -10,7 +10,7 @@ export default function VolumeOsd({ value }) {
 
   return (
     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40 pointer-events-none animate-in fade-in duration-150">
-      <div className="flex flex-col items-center gap-2 px-5 py-3 rounded-2xl bg-void/75 backdrop-blur-md border border-white/10 shadow-2xl min-w-[110px]">
+      <div className="flex flex-col items-center gap-2 px-5 py-3 glass-card min-w-[110px]">
         <div className="text-white/40">
           {value === 0 ? <MuteIcon className="w-5 h-5" /> : <VolumeIcon className="w-5 h-5" />}
         </div>

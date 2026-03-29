@@ -5,11 +5,8 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   Share2 as ShareIcon,
-  Crown as CrownIcon,
   MessageSquare as ChatIcon,
   Users as UsersIcon,
-  Shield as ShieldIcon,
-  SkipForward as SeekIcon,
   Settings as SettingsIcon,
   Keyboard as KeyboardIcon,
   Pencil as PencilIcon,
@@ -156,8 +153,11 @@ export default function RoomView({ roomId, initialMeta }) {
       ls.set(
         LS_KEYS.history,
         JSON.stringify(
-          [entry, ...history.filter((h) => h.roomId !== roomId)].slice(0, MAX_HISTORY_ENTRIES)
-        )
+          [entry, ...history.filter((h) => h.roomId !== roomId)].slice(
+            0,
+            MAX_HISTORY_ENTRIES,
+          ),
+        ),
       );
     } catch {}
   }, [room.serverState, videoUrl, roomId, isHost]);
@@ -189,9 +189,7 @@ export default function RoomView({ roomId, initialMeta }) {
           roomId={roomId}
           userId={identity.userId}
           hostToken={
-            typeof window !== "undefined"
-              ? ls.get(`host_${roomId}`) || ""
-              : ""
+            typeof window !== "undefined" ? ls.get(`host_${roomId}`) || "" : ""
           }
           videoUrl={videoUrl}
           displayName={identity.displayName}
@@ -525,14 +523,14 @@ export default function RoomView({ roomId, initialMeta }) {
             className="lg:hidden fixed inset-0 z-40 bg-void/60 backdrop-blur-sm"
             onClick={() => room.setMobileSheet(null)}
           />
-          <div className="lg:hidden fixed bottom-0 inset-x-0 z-50 h-[70vh] flex flex-col bg-surface backdrop-blur-3xl rounded-t-[3rem] border-t border-white/10 overflow-hidden">
+          <div className="lg:hidden fixed bottom-0 inset-x-0 z-50 h-[70vh] flex flex-col glass-card !rounded-t-[var(--radius-sheet)] border-t border-white/10 overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
               <span className="font-display font-semibold text-white/40">
                 {room.mobileSheet === "chat" ? "Chat" : "Participants"}
               </span>
-              <button
+                <button
                 onClick={() => room.setMobileSheet(null)}
-                className="w-8 h-8 flex items-center justify-center rounded-full glass-card text-white/40"
+                className="w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] glass-card text-white/40"
               >
                 ✕
               </button>
@@ -615,16 +613,16 @@ export default function RoomView({ roomId, initialMeta }) {
         createPortal(
           <div className="fixed top-6 right-6 bottom-24 w-[350px] z-[100] pointer-events-none">
             <div className="w-full h-full glass-card overflow-hidden flex flex-col pointer-events-auto shadow-2xl animate-in slide-in-from-right-8 duration-300">
-              <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between shrink-0 bg-white/[0.03]">
+              <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between shrink-0 bg-white/5">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-amber/80 animate-pulse" />
                   <span className="text-[10px] font-mono font-black text-white/40 uppercase tracking-widest">
                     FS CHAT
                   </span>
                 </div>
-                <button
+                  <button
                   onClick={() => setFsChatOpen(false)}
-                  className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/10 text-white/40 transition-colors"
+                  className="w-6 h-6 flex items-center justify-center rounded-[var(--radius-pill)] hover:bg-white/10 text-white/40 transition-colors"
                 >
                   ✕
                 </button>
@@ -661,8 +659,8 @@ function CatchUpBanner({ videoTS, onSync, onDismiss }) {
     <div className="relative z-40 shrink-0 flex items-center gap-3 px-4 py-2.5 bg-amber/10 border-b border-amber/20 backdrop-blur-sm">
       <div className="w-2 h-2 rounded-full bg-amber animate-pulse" />
       <p className="flex-1 text-sm font-medium text-amber-200/90">
-        You joined <span className="font-bold text-amber">{fmt}</span> —
-        video synced.
+        You joined <span className="font-bold text-amber">{fmt}</span> — video
+        synced.
       </p>
       <div className="flex items-center gap-2">
         <button
