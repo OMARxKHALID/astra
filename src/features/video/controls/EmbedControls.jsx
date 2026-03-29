@@ -67,13 +67,13 @@ export default function EmbedControls({
     >
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
       <div className="relative px-4 pb-4 pt-8 space-y-2">
-        <div className="relative h-1.5 bg-white/15 rounded-full hover:h-2 transition-all duration-150 cursor-pointer overflow-hidden group/seek">
+        <div className="relative h-1.5 bg-white/10 rounded-full hover:h-2 transition-all duration-150 cursor-pointer overflow-hidden group/seek">
           <div
-            className="absolute inset-y-0 left-0 bg-white/20 transition-all duration-200"
+            className="absolute inset-y-0 left-0 bg-white/10 transition-all duration-200"
             style={{ width: `${bufferedPct}%` }}
           />
           <div
-            className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-600 to-amber-400 rounded-full transition-all duration-150"
+            className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-600 to-amber rounded-full transition-all duration-150"
             style={{ width: `${progressPct}%` }}
           />
           <input
@@ -104,8 +104,8 @@ export default function EmbedControls({
             onClick={onPlayPause}
             aria-label={isPlaying ? "Pause" : "Play"}
             disabled={!canControl}
-            className={`w-11 h-11 flex items-center justify-center rounded-[var(--radius-pill)] border border-white/8 transition-all active:scale-90 backdrop-blur-sm
-              ${canControl ? "bg-white/8 hover:bg-white/18 text-white" : "bg-white/4 text-white/30 cursor-not-allowed"}`}
+            className={`w-11 h-11 flex items-center justify-center rounded-[var(--radius-pill)] border border-white/10 transition-all active:scale-90 backdrop-blur-sm
+              ${canControl ? "bg-white/10 hover:bg-white/10 text-white" : "bg-white/10 text-white/40 cursor-not-allowed"}`}
           >
             {isPlaying ? (
               <PauseIcon className="w-5 h-5" />
@@ -119,7 +119,7 @@ export default function EmbedControls({
               <button
                 onClick={onMuteToggle}
                 aria-label={muted ? "Unmute" : "Mute"}
-                className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] text-white/60 hover:text-white transition-colors"
+                className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] text-white/40 hover:text-white transition-colors"
               >
                 {muted || volume === 0 ? (
                   <MuteIcon className="w-4 h-4" />
@@ -128,9 +128,9 @@ export default function EmbedControls({
                 )}
               </button>
               <div className="w-0 group-hover/vol:w-20 transition-all duration-300 overflow-hidden flex items-center h-9">
-                <div className="relative w-18 h-1.5 ml-2 bg-white/15 rounded-full cursor-pointer overflow-hidden">
+                <div className="relative w-18 h-1.5 ml-2 bg-white/10 rounded-full cursor-pointer overflow-hidden">
                   <div
-                    className="absolute inset-y-0 left-0 bg-white/80 rounded-full pointer-events-none transition-all duration-150"
+                    className="absolute inset-y-0 left-0 bg-amber rounded-full pointer-events-none transition-all duration-150"
                     style={{ width: `${(muted ? 0 : volume) * 100}%` }}
                   />
                   <input
@@ -148,12 +148,12 @@ export default function EmbedControls({
             </div>
           )}
 
-          <span className="text-[11px] font-mono text-white/80 tabular-nums bg-white/5 px-2.5 py-1 rounded-[var(--radius-pill)] border border-white/5">
+          <span className="text-[11px] font-mono text-white/40 tabular-nums bg-white/10 px-2.5 py-1 rounded-[var(--radius-pill)] border border-white/10">
             {formatTime(localTime)} / {formatTime(duration)}
           </span>
 
           {!canControl && (
-            <span className="text-[9px] font-mono text-amber-400/60 uppercase tracking-wider flex items-center gap-1.5">
+            <span className="text-[9px] font-mono text-amber/60 uppercase tracking-wider flex items-center gap-1.5">
               <LockSmallIcon className="w-3 h-3" /> Host only
             </span>
           )}
@@ -165,7 +165,7 @@ export default function EmbedControls({
               onClick={onCcToggle}
               aria-label="Toggle subtitles"
               className={`w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] border transition-all active:scale-90 backdrop-blur-sm
-                ${ccEnabled ? "bg-amber-500/20 text-amber-500 border-amber-500/30" : "bg-white/8 hover:bg-white/18 text-white border-white/8"}`}
+                ${ccEnabled ? "bg-amber/20 text-amber border-amber/30" : "bg-white/10 hover:bg-white/10 text-white border-white/10"}`}
             >
               <CcIcon className="w-5 h-5" />
             </button>
@@ -183,8 +183,8 @@ export default function EmbedControls({
               className={`w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] border transition-all active:scale-90 backdrop-blur-sm
                 ${
                   theatreMode
-                    ? "bg-amber-500/20 text-amber-400 border-amber-500/30"
-                    : "bg-white/8 hover:bg-white/18 text-white border-white/8"
+                    ? "bg-amber/20 text-amber border-amber/30"
+                    : "bg-white/10 hover:bg-white/10 text-white border-white/10"
                 }`}
             >
               <TheatreIconInline className="w-4 h-4" />
@@ -195,7 +195,7 @@ export default function EmbedControls({
             <button
               onClick={onFullscreen}
               aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-              className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/8 hover:bg-white/18 border border-white/8 text-white transition-all active:scale-90 backdrop-blur-sm"
+              className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white transition-all active:scale-90 backdrop-blur-sm"
             >
               {isFullscreen ? (
                 <CompressIcon className="w-4 h-4" />

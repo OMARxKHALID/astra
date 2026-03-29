@@ -22,6 +22,7 @@ export default function URLBar({
   const [focused, setFocused] = useState(false);
   const [strictError, setStrictError] = useState("");
   const [mode, setMode] = useState("url");
+  const [loading, setLoading] = useState(false);
 
   const source = classifyUrl(currentUrl);
   const inputSource = classifyUrl(input);
@@ -69,8 +70,8 @@ export default function URLBar({
               className="text-[9px] font-mono px-2 py-0.5 rounded-[var(--radius-pill)] uppercase tracking-tight flex items-center gap-1.5"
               style={{
                 color: "var(--color-jade)",
-                backgroundColor: "rgba(16, 185, 129, 0.1)",
-                border: "1px solid rgba(16, 185, 129, 0.2)",
+                backgroundColor: "rgba(var(--color-jade-rgb),  0.1)",
+                border: "1px solid rgba(var(--color-jade-rgb),  0.2)",
               }}
             >
               <span className="w-1 h-1 rounded-full bg-jade animate-pulse" />
@@ -89,7 +90,7 @@ export default function URLBar({
           >
             {currentUrl || "No video loaded"}
             {currentSubtitleUrl && (
-              <span className="ml-2 text-[10px] text-amber-500/80 bg-amber-500/10 px-1.5 py-0.5 rounded-[var(--radius-pill)]">
+              <span className="ml-2 text-[10px] text-amber/80 bg-amber/10 px-1.5 py-0.5 rounded-[var(--radius-pill)]">
                 CC ACTIVE
               </span>
             )}
@@ -112,7 +113,7 @@ export default function URLBar({
           onClick={() => setMode("url")}
           title="Paste video URL"
           className={`w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] transition-all duration-200
-            ${mode === "url" ? "bg-amber-500 text-void shadow-sm" : ""}`}
+            ${mode === "url" ? "bg-amber text-void shadow-sm" : ""}`}
           style={mode !== "url" ? { color: "var(--color-muted)" } : undefined}
         >
           <LinkIcon className="w-4 h-4" />
@@ -140,10 +141,10 @@ export default function URLBar({
           )}
           <div className="flex items-center gap-3">
             <div
-              className={`flex-1 min-w-0 relative flex items-center gap-3 px-4 h-10 rounded-[var(--radius-pill)] border transition-all duration-300 ${focused ? "ring-2 ring-amber-500/20 shadow-lg" : ""}`}
+              className={`flex-1 min-w-0 relative flex items-center gap-3 px-4 h-10 rounded-[var(--radius-pill)] border transition-all duration-300 ${focused ? "ring-2 ring-amber/20 shadow-lg" : ""}`}
               style={{
                 backgroundColor: "var(--color-surface)",
-                borderColor: focused ? "rgba(245,158,11,0.4)" : "var(--color-border)",
+                borderColor: focused ? "rgba(var(--color-amber-rgb), 0.4)" : "var(--color-border)",
               }}
             >
               <div className="flex-1 min-w-0 flex flex-col justify-center">
@@ -170,8 +171,8 @@ export default function URLBar({
                       className="hidden sm:flex items-center gap-1.5 px-2.5 py-0.5 rounded-[var(--radius-pill)] text-[9px] font-black uppercase tracking-tighter shrink-0 animate-in fade-in zoom-in-95"
                       style={{
                         color: "var(--color-jade)",
-                        backgroundColor: "rgba(16, 185, 129, 0.08)",
-                        border: "1px solid rgba(16, 185, 129, 0.15)",
+                        backgroundColor: "rgba(var(--color-jade-rgb),  0.08)",
+                        border: "1px solid rgba(var(--color-jade-rgb),  0.15)",
                       }}
                     >
                       <span className="w-1 h-1 rounded-full bg-jade animate-pulse" />
@@ -189,11 +190,19 @@ export default function URLBar({
 
             <button
               type="submit"
-              disabled={!input.trim() || Boolean(strictError)}
+              disabled={!input.trim() || Boolean(strictError) || loading}
               title="Load video for all participants"
-              className="shrink-0 h-10 px-6 rounded-[var(--radius-pill)] bg-amber-500 text-void text-[11px] font-black uppercase tracking-widest hover:bg-amber-400 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all duration-200 shadow-lg shadow-amber-500/10 border border-amber-400/50"
+              className="shrink-0 h-10 px-6 rounded-[var(--radius-pill)] bg-amber text-void text-[11px] font-black uppercase tracking-widest hover:bg-amber active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all duration-200 shadow-lg shadow-amber/10 border border-amber/50 relative overflow-hidden"
+              onClick={() => {
+                setLoading(true);
+                setTimeout(() => setLoading(false), 2000); // [Note] simple visual feedback lock
+              }}
             >
-              Load
+              {loading ? (
+                <div className="w-3.5 h-3.5 border-2 border-void/30 border-t-void rounded-full animate-spin mx-auto" />
+              ) : (
+                "Load"
+              )}
             </button>
           </div>
         </form>

@@ -17,6 +17,7 @@ export default function YouTubePlayer({
   onSpeed,
   canControl = true,
   onAmbiColors,
+  ambilightEnabled = true,
   theatreMode = false,
   onToggleTheatre,
   onToggleChat,
@@ -57,7 +58,7 @@ export default function YouTubePlayer({
 
   // [Note] Static Ambilight: cross-origin blocks canvas reads; sample thumbnail once for themed glow
   useEffect(() => {
-    if (!onAmbiColors || !thumbnailUrl) return;
+    if (!onAmbiColors || !thumbnailUrl || !ambilightEnabled) return;
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.src = thumbnailUrl;
@@ -354,7 +355,7 @@ export default function YouTubePlayer({
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full bg-black overflow-hidden group/yt"
+      className="relative w-full h-full bg-void overflow-hidden group/yt"
       onMouseMove={showCtrl}
       onTouchStart={showCtrl}
     >
@@ -376,13 +377,13 @@ export default function YouTubePlayer({
       />
 
       {isAdPlaying && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-4 py-2 rounded-[var(--radius-pill)] bg-black/70 backdrop-blur-md border border-amber-500/30 text-amber-400 text-[11px] font-bold uppercase tracking-widest pointer-events-none animate-pulse">
-          <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-4 py-2 rounded-[var(--radius-pill)] bg-void/70 backdrop-blur-md border border-amber/30 text-amber text-[11px] font-bold uppercase tracking-widest pointer-events-none animate-pulse">
+          <span className="w-2 h-2 rounded-full bg-amber animate-ping" />
           Skipping ad…
         </div>
       )}
 
-      <div className="absolute top-3 left-3 px-2 py-1 rounded-[var(--radius-pill)] bg-red-600/80 text-[10px] font-bold text-white backdrop-blur-sm z-20 pointer-events-none opacity-0 group-hover/yt:opacity-100 transition-opacity">
+      <div className="absolute top-3 left-3 px-2 py-1 rounded-[var(--radius-pill)] bg-danger/80 text-[10px] font-bold text-white backdrop-blur-sm z-20 pointer-events-none opacity-0 group-hover/yt:opacity-100 transition-opacity">
         YouTube
       </div>
 

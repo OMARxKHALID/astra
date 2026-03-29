@@ -176,16 +176,12 @@ export default function RoomView({ roomId, initialMeta }) {
 
   return (
     <div
-      className={`h-dvh flex flex-col overflow-hidden font-body antialiased ${settings.theatreMode ? "theatre-mode" : ""}`}
+      className={`h-dvh flex flex-col overflow-hidden font-body antialiased bg-void ${settings.theatreMode ? "theatre-mode" : ""}`}
     >
       <div
         ref={rootAmbiRef}
         aria-hidden
         className="fixed inset-0 z-5 pointer-events-none opacity-0 transition-opacity duration-600"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(ellipse_at_15%_20%,rgba(245,158,11,0.07),transparent_50%),radial-gradient(ellipse_at_85%_80%,rgba(10,185,129,0.05),transparent_50%)]"
       />
 
       {identity.userId && identity.nameReady && room.syncEnabled && (
@@ -232,22 +228,22 @@ export default function RoomView({ roomId, initialMeta }) {
         <div className="flex items-center gap-1.5 min-w-0">
           <button
             onClick={() => router.push("/")}
-            className="flex items-center gap-2 px-3 py-2 rounded-[var(--radius-pill)] glass-card hover:border-white/15 transition-all active:scale-95 shrink-0"
+            className="flex items-center gap-2 px-3 py-2 rounded-[var(--radius-pill)] glass-card hover:border-white/10 transition-all active:scale-95 shrink-0"
           >
             <div className="w-7 h-7 rounded-[var(--radius-pill)] bg-amber flex items-center justify-center font-display font-black text-void text-[10px]">
               WT
             </div>
-            <span className="font-display font-bold text-base tracking-tight text-white/90 hidden md:block">
+            <span className="font-display font-bold text-base tracking-tight text-white/40 hidden md:block">
               WatchTogether
             </span>
           </button>
 
           <div className="flex items-center gap-2 px-2.5 py-2 rounded-[var(--radius-pill)] glass-card text-[10px] font-mono uppercase tracking-[0.2em] shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-jade/70 animate-pulse" />
-            <span className="text-white/70 font-black hidden xs:inline">
+            <span className="text-white/40 font-black hidden xs:inline">
               {roomId}
             </span>
-            <span className="text-white/70 font-black xs:hidden">
+            <span className="text-white/40 font-black xs:hidden">
               {roomId?.slice?.(0, 4)}
             </span>
           </div>
@@ -271,7 +267,7 @@ export default function RoomView({ roomId, initialMeta }) {
                     )
                   }
                   maxLength={24}
-                  className="w-28 bg-transparent text-xs font-mono text-white/80 outline-none"
+                  className="w-28 bg-transparent text-xs font-mono text-white/40 outline-none"
                 />
               </form>
             ) : (
@@ -280,7 +276,7 @@ export default function RoomView({ roomId, initialMeta }) {
                   identity.setNameInput(identity.displayName);
                   identity.setEditingName(true);
                 }}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-[var(--radius-pill)] glass-card hover:border-white/15 transition-all text-[10px] font-mono text-white/50 hover:text-white/80 max-w-[140px] min-w-0"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-[var(--radius-pill)] glass-card hover:border-white/10 transition-all text-[10px] font-mono text-white/40 hover:text-white/40 max-w-[140px] min-w-0"
               >
                 <PencilIcon className="w-3.5 h-3.5 shrink-0" />
                 <span className="truncate">{identity.displayName}</span>
@@ -295,11 +291,11 @@ export default function RoomView({ roomId, initialMeta }) {
               settings.setShowSidebar(next);
               if (next) room.setUnreadCount(0);
             }}
-            className={`relative w-9 h-9 items-center justify-center rounded-[var(--radius-pill)] glass-card transition-all hidden lg:flex ${settings.showSidebar ? "text-amber-400 bg-amber-400/5" : "text-muted hover:text-white"}`}
+            className={`relative w-9 h-9 items-center justify-center rounded-[var(--radius-pill)] glass-card transition-all hidden lg:flex ${settings.showSidebar ? "text-amber bg-amber/5" : "text-muted hover:text-white"}`}
           >
             <SidebarIcon className="w-4 h-4" />
             {!settings.showSidebar && room.unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber rounded-full shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber rounded-full shadow-[0_0_8px_rgba(var(--color-amber-rgb), 0.5)]" />
             )}
           </button>
 
@@ -312,7 +308,7 @@ export default function RoomView({ roomId, initialMeta }) {
 
           <button
             onClick={() => settings.setTheatreMode(!settings.theatreMode)}
-            className={`w-9 h-9 items-center justify-center rounded-[var(--radius-pill)] glass-card transition-all hidden lg:flex ${isTheatre ? "text-amber-400 bg-amber-400/5" : "text-muted hover:text-white"}`}
+            className={`w-9 h-9 items-center justify-center rounded-[var(--radius-pill)] glass-card transition-all hidden lg:flex ${isTheatre ? "text-amber bg-amber/5" : "text-muted hover:text-white"}`}
           >
             <TheatreIcon className="w-4 h-4" />
           </button>
@@ -365,7 +361,7 @@ export default function RoomView({ roomId, initialMeta }) {
               navigator.clipboard.writeText(window.location.href);
               addToast("Room link copied!", "success");
             }}
-            className="h-9 sm:h-10 px-3 sm:px-4 rounded-[var(--radius-pill)] bg-amber text-void font-black text-[10px] sm:text-[11px] uppercase tracking-widest hover:bg-amber-400 active:scale-95 transition-all shadow-lg flex items-center gap-1.5 ring-1 ring-amber-400/60"
+            className="h-9 sm:h-10 px-3 sm:px-4 rounded-[var(--radius-pill)] bg-amber text-void font-black text-[10px] sm:text-[11px] uppercase tracking-widest hover:bg-amber active:scale-95 transition-all shadow-lg flex items-center gap-1.5 ring-1 ring-amber/60"
           >
             <ShareIcon className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Invite</span>
@@ -436,19 +432,19 @@ export default function RoomView({ roomId, initialMeta }) {
               className="absolute -left-[14px] top-0 bottom-0 w-7 cursor-col-resize z-50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity group"
               onMouseDown={onDragStart}
             >
-              <div className="w-1.5 h-16 bg-white/10 rounded-full group-hover:bg-amber-400/60 transition-colors shadow-[0_0_15px_rgba(245,158,11,0.3)]" />
+              <div className="w-1.5 h-16 bg-white/10 rounded-full group-hover:bg-amber/60 transition-colors shadow-[0_0_15px_rgba(var(--color-amber-rgb), 0.3)]" />
             </div>
 
             <div className="glass-card flex-1 min-h-0 flex flex-col relative overflow-hidden">
-              <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2 shrink-0">
+              <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2 shrink-0">
                 <div className="w-8 h-8 rounded-full bg-amber/10 flex items-center justify-center text-amber">
                   <ChatIcon className="w-4 h-4" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-mono font-black text-white/70 uppercase tracking-widest">
+                  <span className="text-[10px] font-mono font-black text-white/40 uppercase tracking-widest">
                     Live Feed
                   </span>
-                  <span className="text-[9px] font-mono text-white/30 uppercase">
+                  <span className="text-[9px] font-mono text-white/40 uppercase">
                     {room.messages.length} messages
                   </span>
                 </div>
@@ -466,15 +462,15 @@ export default function RoomView({ roomId, initialMeta }) {
             </div>
 
             <div className="glass-card h-[280px] shrink-0 flex flex-col overflow-hidden">
-              <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2 shrink-0">
+              <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2 shrink-0">
                 <div className="w-8 h-8 rounded-full bg-jade/10 flex items-center justify-center text-jade">
                   <UsersIcon className="w-4 h-4" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-mono font-black text-white/70 uppercase tracking-widest">
+                  <span className="text-[10px] font-mono font-black text-white/40 uppercase tracking-widest">
                     Watching
                   </span>
-                  <span className="text-[9px] font-mono text-white/30 uppercase">
+                  <span className="text-[9px] font-mono text-white/40 uppercase">
                     {room.participants.length} person
                   </span>
                 </div>
@@ -526,12 +522,12 @@ export default function RoomView({ roomId, initialMeta }) {
       {room.mobileSheet && (
         <>
           <div
-            className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+            className="lg:hidden fixed inset-0 z-40 bg-void/60 backdrop-blur-sm"
             onClick={() => room.setMobileSheet(null)}
           />
           <div className="lg:hidden fixed bottom-0 inset-x-0 z-50 h-[70vh] flex flex-col bg-surface backdrop-blur-3xl rounded-t-[3rem] border-t border-white/10 overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-              <span className="font-display font-semibold text-white/90">
+              <span className="font-display font-semibold text-white/40">
                 {room.mobileSheet === "chat" ? "Chat" : "Participants"}
               </span>
               <button
@@ -619,16 +615,16 @@ export default function RoomView({ roomId, initialMeta }) {
         createPortal(
           <div className="fixed top-6 right-6 bottom-24 w-[350px] z-[100] pointer-events-none">
             <div className="w-full h-full glass-card overflow-hidden flex flex-col pointer-events-auto shadow-2xl animate-in slide-in-from-right-8 duration-300">
-              <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between shrink-0 bg-white/[0.03]">
+              <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between shrink-0 bg-white/[0.03]">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-amber/80 animate-pulse" />
-                  <span className="text-[10px] font-mono font-black text-white/70 uppercase tracking-widest">
+                  <span className="text-[10px] font-mono font-black text-white/40 uppercase tracking-widest">
                     FS CHAT
                   </span>
                 </div>
                 <button
                   onClick={() => setFsChatOpen(false)}
-                  className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/10 text-white/20 transition-colors"
+                  className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/10 text-white/40 transition-colors"
                 >
                   ✕
                 </button>
@@ -663,9 +659,9 @@ function CatchUpBanner({ videoTS, onSync, onDismiss }) {
         : `${s}s in`;
   return (
     <div className="relative z-40 shrink-0 flex items-center gap-3 px-4 py-2.5 bg-amber/10 border-b border-amber/20 backdrop-blur-sm">
-      <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+      <div className="w-2 h-2 rounded-full bg-amber animate-pulse" />
       <p className="flex-1 text-sm font-medium text-amber-200/90">
-        You joined <span className="font-bold text-amber-400">{fmt}</span> —
+        You joined <span className="font-bold text-amber">{fmt}</span> —
         video synced.
       </p>
       <div className="flex items-center gap-2">
@@ -677,7 +673,7 @@ function CatchUpBanner({ videoTS, onSync, onDismiss }) {
         </button>
         <button
           onClick={onDismiss}
-          className="text-amber-400/50 hover:text-amber-400 px-2"
+          className="text-amber/50 hover:text-amber px-2"
         >
           ✕
         </button>
@@ -690,7 +686,7 @@ function MobileTabBtn({ label, active, onClick, icon }) {
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center gap-1 px-4 py-1.5 rounded-[var(--radius-pill)] transition-all text-[10px] font-bold uppercase tracking-wider ${active ? "text-amber-400 bg-amber/10" : "text-muted hover:text-white/60"}`}
+      className={`flex flex-col items-center gap-1 px-4 py-1.5 rounded-[var(--radius-pill)] transition-all text-[10px] font-bold uppercase tracking-wider ${active ? "text-amber bg-amber/10" : "text-muted hover:text-white/40"}`}
     >
       {icon}
       {label}

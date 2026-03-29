@@ -23,7 +23,7 @@ export default function MediaRow({ title, items, onPick, accent = "var(--color-a
             <button
               key={d}
               onClick={() => scroll(d)}
-              className="w-[30px] h-[30px] rounded-[var(--radius-pill)] bg-white/5 border-none text-[var(--color-muted)] cursor-pointer flex items-center justify-center hover:bg-white/10 hover:text-white transition-colors"
+              className="w-[30px] h-[30px] rounded-[var(--radius-pill)] bg-white/10 border-none text-[var(--color-muted)] cursor-pointer flex items-center justify-center hover:bg-white/10 hover:text-white transition-colors"
             >
               {d < 0 ? (
                 <ChevronLeft className="w-[15px] h-[15px]" />

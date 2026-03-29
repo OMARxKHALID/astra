@@ -96,7 +96,7 @@ export default function SearchOverlay({ onClose, onPick }) {
             }
           }}
           placeholder="Search movies, series, anime…"
-          className="w-full bg-white/[0.04] backdrop-blur-3xl border border-white/5 rounded-[var(--radius-pill)] py-4 pr-12 pl-[52px] text-[var(--color-bright)] text-base font-body outline-none focus:border-amber/50 transition-all placeholder:text-white/30 shadow-2xl"
+          className="w-full bg-white/[0.04] backdrop-blur-3xl border border-white/10 rounded-[var(--radius-pill)] py-4 pr-12 pl-[52px] text-[var(--color-bright)] text-base font-body outline-none focus:border-amber/50 transition-all placeholder:text-white/10 shadow-2xl"
         />
         {loading ? (
           <div className="absolute right-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] rounded-full border-2 border-amber/20 border-t-amber animate-spin" />
@@ -113,7 +113,7 @@ export default function SearchOverlay({ onClose, onPick }) {
       </div>
 
       {results.length > 0 && (
-        <div className="w-full max-w-[640px] glass-card !rounded-[var(--radius-panel)] !border-white/5 overflow-hidden max-h-[calc(100vh-220px)] overflow-y-auto no-scrollbar shadow-[0_0_50px_rgba(255,255,255,0.03)] animate-in slide-in-from-top-4 duration-500">
+        <div className="w-full max-w-[640px] glass-card !rounded-[var(--radius-panel)] !border-white/10 overflow-hidden max-h-[calc(100vh-220px)] overflow-y-auto no-scrollbar shadow-[0_0_50px_rgba(255,255,255,0.03)] animate-in slide-in-from-top-4 duration-500">
           {results.map((item, i) => (
             <button
               key={item.id}
@@ -125,8 +125,8 @@ export default function SearchOverlay({ onClose, onPick }) {
               className={`w-full flex gap-3.5 py-3.5 px-5 bg-transparent border-none cursor-pointer text-left items-center transition-all ${
                 i === activeIdx
                   ? "bg-white/10 ring-1 ring-inset ring-white/10"
-                  : "hover:bg-white/5"
-              } ${i < results.length - 1 ? "border-b border-white/5" : ""}`}
+                  : "hover:bg-white/10"
+              } ${i < results.length - 1 ? "border-b border-white/10" : ""}`}
             >
               <div className="relative shrink-0">
                 {item.poster ? (
@@ -138,7 +138,7 @@ export default function SearchOverlay({ onClose, onPick }) {
                     className={`w-10 h-[60px] object-cover rounded-md transition-transform duration-300 ${i === activeIdx ? "scale-105 shadow-lg" : ""}`}
                   />
                 ) : (
-                  <div className="w-10 h-[60px] rounded-md bg-white/5 shrink-0" />
+                  <div className="w-10 h-[60px] rounded-md bg-white/10 shrink-0" />
                 )}
                 {i === activeIdx && (
                   <div className="absolute inset-0 bg-amber/10 rounded-md" />
@@ -171,7 +171,7 @@ export default function SearchOverlay({ onClose, onPick }) {
                 </div>
               </div>
               <Play
-                className={`w-4 h-4 transition-all ${i === activeIdx ? "text-amber scale-125 opacity-100" : "text-white/15 opacity-50"}`}
+                className={`w-4 h-4 transition-all ${i === activeIdx ? "text-amber scale-125 opacity-100" : "text-white/10 opacity-50"}`}
               />
             </button>
           ))}

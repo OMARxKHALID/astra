@@ -8,18 +8,18 @@ import Image from "next/image";
 function QualityDot({ deviation }) {
   const base = "w-2 h-2 rounded-full shrink-0 flex-none";
   if (deviation === null)
-    return <span className={`${base} bg-white/15`} title="No data" />;
+    return <span className={`${base} bg-white/10`} title="No data" />;
   if (deviation < 0.5)
     return (
       <span
-        className={`${base} bg-jade shadow-[0_0_6px_rgba(16,185,129,0.5)]`}
+        className={`${base} bg-jade shadow-[0_0_6px_rgba(var(--color-jade-rgb), 0.5)]`}
         title="In sync"
       />
     );
   if (deviation < 2)
     return (
       <span
-        className={`${base} bg-amber-400`}
+        className={`${base} bg-amber`}
         title={`${deviation.toFixed(1)}s drift`}
       />
     );
@@ -45,7 +45,7 @@ function Avatar({ name, isHost }) {
       />
       {isHost && (
         <div
-          className="absolute -top-1 -right-0.5 w-3 h-3 rounded-full bg-amber-500 flex items-center justify-center border shadow-[0_0_6px_rgba(245,158,11,0.5)]"
+          className="absolute -top-1 -right-0.5 w-3 h-3 rounded-full bg-amber flex items-center justify-center border shadow-[0_0_6px_rgba(var(--color-amber-rgb), 0.5)]"
           style={{ borderColor: "var(--color-void)", zIndex: 10 }}
         >
           <Crown className="w-2 h-2 text-void" strokeWidth={3} />
@@ -117,17 +117,17 @@ export default function UserList({
 
               <div className="flex flex-col gap-0.5 min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[12px] font-bold text-white/80 transition-colors truncate">
+                  <span className="text-[12px] font-bold text-white/40 transition-colors truncate">
                     {name}
                   </span>
                   {isMe && (
-                    <span className="text-[9px] text-white/20 font-mono">
+                    <span className="text-[9px] text-white/40 font-mono">
                       (you)
                     </span>
                   )}
                 </div>
                 {isThisHost && (
-                  <span className="text-[8px] font-mono text-amber-500/70 uppercase tracking-[0.15em] leading-none">
+                  <span className="text-[8px] font-mono text-amber/70 uppercase tracking-[0.15em] leading-none">
                     host
                   </span>
                 )}
@@ -142,8 +142,8 @@ export default function UserList({
                     className={`opacity-0 group-hover:opacity-100 transition-all w-6 h-6 shrink-0 flex items-center justify-center rounded-[var(--radius-pill)] text-xs
                       ${
                         confirming
-                          ? "bg-amber-500/20 border border-amber-500/40 text-amber-500 !opacity-100 animate-pulse"
-                          : "bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 hover:border-amber-500/40 text-amber-500/60 hover:text-amber-500"
+                          ? "bg-amber/20 border border-amber/40 text-amber !opacity-100 animate-pulse"
+                          : "bg-amber/10 hover:bg-amber/20 border border-amber/20 hover:border-amber/40 text-amber/60 hover:text-amber"
                       }`}
                   >
                     <Crown className="w-2.5 h-2.5" strokeWidth={2} />
@@ -167,7 +167,7 @@ export default function UserList({
 
       {confirmTransfer && (
         <div className="px-4 pb-3 shrink-0">
-          <p className="text-[10px] font-mono text-center text-amber-500/60">
+          <p className="text-[10px] font-mono text-center text-amber/60">
             Tap crown again to confirm
           </p>
         </div>

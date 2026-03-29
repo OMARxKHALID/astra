@@ -16,11 +16,11 @@ export default function StatusBanner({ connStatus }) {
         ${
           isReconnecting
             ? "bg-danger/15 text-danger border-b border-danger/20"
-            : "bg-amber-500/12 text-amber-400 border-b border-amber-500/20"
+            : "bg-amber/12 text-amber border-b border-amber/20"
         }`}
     >
       <span
-        className={`w-2 h-2 rounded-full ${isReconnecting ? "bg-danger animate-pulse" : "bg-amber-400 animate-spin"}`}
+        className={`w-2 h-2 rounded-full ${isReconnecting ? "bg-danger animate-pulse" : "bg-amber animate-spin"}`}
         style={isConnecting ? { borderRadius: "2px" } : undefined}
       />
       {isReconnecting

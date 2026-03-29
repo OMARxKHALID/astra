@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   Play as PlayIcon,
   Pause as PauseIcon,
@@ -82,9 +81,13 @@ export default function ControlBar({
             onClick={onPlayPause}
             disabled={!canControl}
             className={`w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius-pill)] border border-white/10 transition-all active:scale-90 shrink-0
-              ${canControl ? "bg-white/10 hover:bg-white/20 text-white" : "bg-white/4 text-white/30 cursor-not-allowed"}`}
+              ${canControl ? "bg-white/10 hover:bg-white/10 text-white" : "bg-white/10 text-white/40 cursor-not-allowed"}`}
           >
-            {isPlaying ? <PauseIcon className="w-4 h-4" /> : <PlayIcon className="w-4 h-4 ml-px" />}
+            {isPlaying ? (
+              <PauseIcon className="w-4 h-4" />
+            ) : (
+              <PlayIcon className="w-4 h-4 ml-px" />
+            )}
           </button>
 
           <VolumeControl
@@ -94,29 +97,33 @@ export default function ControlBar({
             onMuteToggle={onMuteToggle}
           />
 
-          <span className="text-[10px] font-mono text-white/75 tabular-nums shrink-0 hidden xs:inline">
+          <span className="text-[10px] font-mono text-white/40 tabular-nums shrink-0 hidden xs:inline">
             {formatTime(localTime)} / {formatTime(duration)}
           </span>
 
           {hlsQualityEnabled && hlsQuality && sourceType === "hls" && (
-            <span className="hidden lg:flex items-center h-8 px-3 rounded-[var(--radius-pill)] bg-white/5 hover:bg-white/10 transition-colors border border-white/10 text-[10px] font-mono font-bold text-white/50 shrink-0 select-none">
+            <span className="hidden lg:flex items-center h-8 px-3 rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 transition-colors border border-white/10 text-[10px] font-mono font-bold text-white/40 shrink-0 select-none">
               {hlsQuality.level}
-              {hlsQuality.level && hlsQuality.bitrate && <span className="text-white/20 mx-1.5">•</span>}
+              {hlsQuality.level && hlsQuality.bitrate && (
+                <span className="text-white/40 mx-1.5">•</span>
+              )}
               {hlsQuality.bitrate}
             </span>
           )}
 
           {!canControl && (
-            <span className="text-[9px] font-mono text-amber-400/60 flex items-center gap-1 shrink-0">
+            <span className="text-[9px] font-mono text-amber/60 flex items-center gap-1 shrink-0">
               <LockSmallIcon className="w-3 h-3" />
-              <span className="hidden sm:inline uppercase tracking-wider">Host only</span>
+              <span className="hidden sm:inline uppercase tracking-wider">
+                Host only
+              </span>
             </span>
           )}
 
           <div className="flex-1 min-w-0" />
 
           <div
-            className="flex items-center bg-white/8 border border-white/10 rounded-[var(--radius-pill)] p-0.5 transition-all duration-400 overflow-hidden shrink-0"
+            className="flex items-center bg-white/10 border border-white/10 rounded-[var(--radius-pill)] p-0.5 transition-all duration-400 overflow-hidden shrink-0"
             style={{ maxWidth: ccMenuOpen ? "220px" : "36px", width: "auto" }}
           >
             <button
@@ -125,27 +132,39 @@ export default function ControlBar({
                 else if (subtitleUrl) setShowSubtitles((s) => !s);
               }}
               className={`w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] transition-all shrink-0
-                ${!subtitleUrl ? "text-white/40 hover:text-white" : showSubtitles ? "bg-amber-500 text-void" : "text-white/60 hover:text-white"}`}
+                ${!subtitleUrl ? "text-white/40 hover:text-white" : showSubtitles ? "bg-amber text-void" : "text-white/40 hover:text-white"}`}
             >
               <CcIcon className="w-3.5 h-3.5" />
             </button>
 
             {ccMenuOpen && (
               <div className="flex items-center gap-0.5 pl-0.5 animate-in fade-in slide-in-from-left-2 duration-200">
-                <div className="w-px h-4 bg-white/15 mx-0.5 shrink-0" />
+                <div className="w-px h-4 bg-white/10 mx-0.5 shrink-0" />
                 {[
                   { id: "search", Icon: SearchIcon },
-                  { id: "recent", Icon: ({ className }) => (
-                    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-                    </svg>
-                  )},
+                  {
+                    id: "recent",
+                    Icon: ({ className }) => (
+                      <svg
+                        className={className}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                    ),
+                  },
                   { id: "settings", Icon: SettingsIcon },
                 ].map(({ id, Icon }) => (
                   <button
                     key={id}
                     onClick={() => setActivePanel(id)}
-                    className={`w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] transition-all hover:bg-white/10 ${activePanel === id ? "text-amber-400" : "text-white/50 hover:text-white"}`}
+                    className={`w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] transition-all hover:bg-white/10 ${activePanel === id ? "text-amber" : "text-white/40 hover:text-white"}`}
                   >
                     <Icon className="w-3.5 h-3.5" />
                   </button>
@@ -155,9 +174,16 @@ export default function ControlBar({
                     setActivePanel(null);
                     setCcMenuOpen(false);
                   }}
-                  className="w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] text-white/30 hover:text-white transition-all hover:bg-white/10 shrink-0"
+                  className="w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] text-white/40 hover:text-white transition-all hover:bg-white/10 shrink-0"
                 >
-                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                  <svg
+                    className="w-3 h-3"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                  >
                     <path d="M18 6L6 18M6 6l12 12" />
                   </svg>
                 </button>
@@ -165,7 +191,9 @@ export default function ControlBar({
             )}
           </div>
 
-          {canControl && <SpeedPicker value={playbackRate} onChange={onSpeedChange} />}
+          {canControl && (
+            <SpeedPicker value={playbackRate} onChange={onSpeedChange} />
+          )}
 
           <div className="hidden sm:flex items-center gap-1.5">
             {pipSupported && (
@@ -173,7 +201,7 @@ export default function ControlBar({
                 onClick={onPipToggle}
                 title="Picture-in-Picture"
                 className={`w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] border transition-all active:scale-90
-                  ${isPip ? "bg-amber-500/20 text-amber-400 border-amber-500/30" : "bg-white/8 hover:bg-white/18 border-white/10 text-white/70 hover:text-white"}`}
+                  ${isPip ? "bg-amber/20 text-amber border-amber/30" : "bg-white/10 hover:bg-white/10 border-white/10 text-white/40 hover:text-white"}`}
               >
                 <PipIcon className="w-3.5 h-3.5" />
               </button>
@@ -183,7 +211,7 @@ export default function ControlBar({
               <button
                 onClick={onScreenshot}
                 title="Screenshot to chat"
-                className="w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/8 hover:bg-white/18 border border-white/10 text-white/70 hover:text-white transition-all active:scale-90"
+                className="w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white/40 hover:text-white transition-all active:scale-90"
               >
                 <CameraIcon className="w-3.5 h-3.5" />
               </button>
@@ -194,7 +222,7 @@ export default function ControlBar({
                 onClick={onToggleTheatre}
                 title={theatreMode ? "Exit theatre (T)" : "Theatre mode (T)"}
                 className={`w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] border transition-all active:scale-90
-                  ${theatreMode ? "bg-amber-500/20 text-amber-400 border-amber-500/30" : "bg-white/8 hover:bg-white/18 border-white/10 text-white/70 hover:text-white"}`}
+                  ${theatreMode ? "bg-amber/20 text-amber border-amber/30" : "bg-white/10 hover:bg-white/10 border-white/10 text-white/40 hover:text-white"}`}
               >
                 <TheatreIconSvg className="w-3.5 h-3.5" />
               </button>
@@ -203,9 +231,13 @@ export default function ControlBar({
 
           <button
             onClick={onFullscreenToggle}
-            className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all active:scale-90 shrink-0"
+            className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white transition-all active:scale-90 shrink-0"
           >
-            {fullscreen ? <CompressIcon className="w-4 h-4" /> : <ExpandIcon className="w-4 h-4" />}
+            {fullscreen ? (
+              <CompressIcon className="w-4 h-4" />
+            ) : (
+              <ExpandIcon className="w-4 h-4" />
+            )}
           </button>
         </div>
       </div>

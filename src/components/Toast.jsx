@@ -44,7 +44,7 @@ const TYPE_MAP = {
   info: {
     icon: (
       <svg
-        className="w-3 h-3 text-amber-400"
+        className="w-3 h-3 text-amber"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -57,8 +57,8 @@ const TYPE_MAP = {
         />
       </svg>
     ),
-    bg: "bg-amber-400/15",
-    border: "border-amber-400/30",
+    bg: "bg-amber/15",
+    border: "border-amber/30",
   },
 };
 

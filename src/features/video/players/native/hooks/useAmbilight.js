@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-export default function useAmbilight(videoRef, videoUrl, onAmbiColors) {
+export default function useAmbilight(videoRef, videoUrl, onAmbiColors, enabled = true) {
   const ambiRafRef = useRef(null);
   const ambiCurrentRef = useRef({ r: 0, g: 0, b: 0 });
   const ambiDisabledRef = useRef(false);
@@ -28,7 +28,7 @@ export default function useAmbilight(videoRef, videoUrl, onAmbiColors) {
       ambiRafRef.current = requestAnimationFrame(sample);
       if (now - lastT < 83) return; // Cap at ~12fps for performance
       lastT = now;
-      if (ambiDisabledRef.current || v.paused || v.readyState < 2) return;
+      if (ambiDisabledRef.current || !enabled || v.paused || v.readyState < 2) return;
 
       try {
         ctx.drawImage(v, 0, 0, 8, 8);

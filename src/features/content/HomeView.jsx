@@ -67,7 +67,7 @@ export default function HomeView({ initialData }) {
             onClick={() => router.push("/")}
             className="text-xl font-bold font-display text-white tracking-[0.02em] flex items-center gap-2 cursor-pointer bg-none border-none p-0"
           >
-            <div className="w-6 h-6 rounded-[var(--radius-pill)] bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-[var(--color-void)] font-black text-sm">
+            <div className="w-6 h-6 rounded-[var(--radius-pill)] bg-gradient-to-br from-amber to-amber-600 flex items-center justify-center text-[var(--color-void)] font-black text-sm">
               W
             </div>
             WatchTogether
@@ -77,18 +77,18 @@ export default function HomeView({ initialData }) {
         <div className="flex items-center gap-5">
           <button
             onClick={() => setShowSearch(true)}
-            className="hidden lg:flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius-pill)] border border-white/10 text-white/50 bg-white/[0.04] backdrop-blur-xl hover:bg-white/[0.08] cursor-text group transition-all"
+            className="hidden lg:flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius-pill)] border border-white/10 text-white/10 bg-white/[0.04] backdrop-blur-xl hover:bg-white/[0.08] cursor-text group transition-all"
           >
             <Search className="w-4 h-4 group-hover:text-white transition-colors" />
             <span className="text-sm font-medium pr-1">Search…</span>
-            <kbd className="hidden sm:flex items-center justify-center bg-white/10 border border-white/10 rounded px-1.5 h-[22px] text-[10px] font-bold text-white/50 font-mono">
+            <kbd className="hidden sm:flex items-center justify-center bg-white/10 border border-white/10 rounded px-1.5 h-[22px] text-[10px] font-bold text-white/10 font-mono">
               ⌘K
             </kbd>
           </button>
 
           <button
             onClick={() => setShowSearch(true)}
-            className="lg:hidden w-10 h-10 rounded-[var(--radius-pill)] bg-white/10 border border-white/10 text-white flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors"
+            className="lg:hidden w-10 h-10 rounded-[var(--radius-pill)] bg-white/10 border border-white/10 text-white flex items-center justify-center cursor-pointer hover:bg-white/10 transition-colors"
           >
             <Search className="w-4 h-4" />
           </button>
@@ -106,7 +106,7 @@ export default function HomeView({ initialData }) {
                 setCreating(false);
               }
             }}
-            className="flex items-center gap-2 px-5 py-2.5 bg-white/10 border border-white/10 rounded-[var(--radius-pill)] text-white text-[13px] font-bold cursor-pointer hover:bg-white/15 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-5 py-2.5 bg-white/10 border border-white/10 rounded-[var(--radius-pill)] text-white text-[13px] font-bold cursor-pointer hover:bg-white/10 transition-colors disabled:opacity-50"
           >
             {creating ? (
               <Loader2 className="w-4 h-4 animate-spin" />

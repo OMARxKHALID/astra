@@ -102,7 +102,7 @@ export default function ChatSidebar({
               {[0, 1, 2].map((i) => (
                 <span
                   key={i}
-                  className="w-1 h-1 rounded-full bg-amber-400/50 animate-bounce"
+                  className="w-1 h-1 rounded-full bg-amber/50 animate-bounce"
                   style={{ animationDelay: `${i * 150}ms` }}
                 />
               ))}
@@ -148,7 +148,7 @@ export default function ChatSidebar({
             onClick={handleSubmit}
             disabled={!input.trim()}
             aria-label="Send message"
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-[var(--radius-pill)] bg-amber text-void transition-all hover:bg-amber-400 active:scale-90 disabled:opacity-0 disabled:scale-75"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-[var(--radius-pill)] bg-amber text-void transition-all hover:bg-amber active:scale-90 disabled:opacity-0 disabled:scale-75"
           >
             <SendIcon className="w-3 h-3" strokeWidth={2.5} />
           </button>
@@ -205,7 +205,7 @@ function ChatMessage({ msg, isOwn, displayNames = {} }) {
           <img
             src={`https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(name)}`}
             alt={name}
-            className="w-6 h-6 shrink-0 object-contain mb-1 rounded-full bg-white/5 p-0.5"
+            className="w-6 h-6 shrink-0 object-contain mb-1 rounded-full bg-white/10 p-0.5"
           />
         )}
         <div
@@ -241,7 +241,7 @@ function ChatMessage({ msg, isOwn, displayNames = {} }) {
         <img
           src={`https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(name)}`}
           alt={name}
-          className="w-6 h-6 object-contain rounded-full bg-white/5 p-1 border border-white/5"
+          className="w-6 h-6 object-contain rounded-full bg-white/10 p-1 border border-white/10"
           loading="lazy"
         />
       </div>
@@ -250,7 +250,7 @@ function ChatMessage({ msg, isOwn, displayNames = {} }) {
       >
         {!isOwn && (
           <div className="flex items-center gap-1.5 px-0.5 mb-px opacity-60">
-            <span className="text-[10px] font-bold text-white/90">{name}</span>
+            <span className="text-[10px] font-bold text-white/40">{name}</span>
             <span className="text-[9px] font-mono text-white/40">{time}</span>
           </div>
         )}
@@ -259,13 +259,13 @@ function ChatMessage({ msg, isOwn, displayNames = {} }) {
             ${
               isOwn
                 ? "bg-amber text-void rounded-tr-[4px] font-medium"
-                : "bg-white/8 text-white/95 border border-white/5 rounded-tl-[4px]"
+                : "bg-white/10 text-white/40 border border-white/10 rounded-tl-[4px]"
             }`}
         >
           {msg.text}
         </div>
         {isOwn && (
-          <span className="text-[9px] font-mono text-white/20 px-0.5">
+          <span className="text-[9px] font-mono text-white/40 px-0.5">
             {time}
           </span>
         )}

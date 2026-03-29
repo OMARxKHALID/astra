@@ -21,32 +21,32 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-md"
+        className="absolute inset-0 bg-void/60 backdrop-blur-md"
         onClick={onClose}
       />
       <div
         ref={ref}
-        className="relative z-10 w-full max-w-2xl glass-card rounded-[var(--radius-panel)] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200"
+        className="relative z-10 w-full max-w-[600px] glass-card rounded-[var(--radius-panel)] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200"
       >
-        <div className="flex items-center justify-between px-8 pt-6 pb-4 border-b border-white/5 bg-white/[0.02]">
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/10 bg-white/[0.02]">
           <div>
-            <h2 className="font-display font-bold text-xl text-white/90">
+            <h2 className="font-display font-bold text-lg text-white/90">
               Keyboard Shortcuts
             </h2>
-            <p className="text-[11px] text-white/40 mt-1 uppercase tracking-wider font-mono">
+            <p className="text-[10px] text-white/50 mt-0.5 uppercase tracking-wider font-mono">
               Control playback like a pro
             </p>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors"
           >
-            <XIcon className="w-5 h-5" strokeWidth={2} />
+            <XIcon className="w-4 h-4" strokeWidth={2.5} />
           </button>
         </div>
 
-        <div className="p-8 flex flex-col items-center">
-          <div className="flex flex-col mb-10 w-full max-w-xl mx-auto">
+        <div className="p-6 flex flex-col items-center">
+          <div className="flex flex-col mb-6 w-full max-w-xl mx-auto scale-90 sm:scale-95 origin-top">
             {KEYBOARD_ROWS.map((row, i) => (
               <div
                 key={i}
@@ -74,7 +74,7 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-4 text-sm w-full px-4 border-t border-white/5 pt-8">
+          <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm w-full px-2 border-t border-white/10 pt-5">
             <ShortcutRow keys={["Space"]} action="Play / Pause" />
             <ShortcutRow keys={["K"]} action="Play / Pause" />
             <ShortcutRow keys={["F"]} action="Toggle fullscreen" />
@@ -104,10 +104,10 @@ function Key({ label, active, highlighted, lg, sm }) {
         ${lg ? "w-64" : sm ? "w-11" : "w-11"} h-11
         ${
           isInactive
-            ? "bg-transparent border-white/[0.05] text-white/10 font-medium"
+            ? "bg-transparent border-white/[0.05] text-white/40 font-medium"
             : highlighted
-              ? "bg-amber-500/10 text-amber-500 border-x-amber-500/20 border-t-amber-500/20 border-b-amber-500/40 border-b-[3px] font-bold shadow-[0_4px_16px_rgba(245,158,11,0.2)]"
-              : "bg-white/[0.08] text-white/90 border-x-white/10 border-t-white/10 border-b-white/20 border-b-[3px] font-bold shadow-md"
+              ? "bg-amber/10 text-amber border-x-amber/20 border-t-amber/20 border-b-amber/40 border-b-[3px] font-bold shadow-[0_4px_16px_rgba(var(--color-amber-rgb), 0.2)]"
+              : "bg-white/[0.08] text-white/80 border-x-white/10 border-t-white/10 border-b-white/10 border-b-[3px] font-bold shadow-md"
         }
       `}
     >
@@ -119,12 +119,12 @@ function Key({ label, active, highlighted, lg, sm }) {
 function ShortcutRow({ keys, action }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <span className="text-white/50 text-[13px] font-body">{action}</span>
+      <span className="text-white/70 text-[11px] font-body uppercase tracking-wider font-bold">{action}</span>
       <div className="flex gap-[6px] shrink-0">
         {keys.map((k) => (
           <kbd
             key={k}
-            className="px-2 py-0.5 rounded-lg bg-white/5 border border-white/10 text-[11px] font-mono text-white/70 shadow-sm flex items-center justify-center min-w-[24px]"
+            className="px-2 py-0.5 rounded-lg bg-white/10 border border-white/10 text-[10px] font-mono font-bold text-white/90 shadow-sm flex items-center justify-center min-w-[24px] uppercase"
           >
             {k}
           </kbd>

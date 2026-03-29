@@ -3,7 +3,6 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useVideoHotkeys } from "../utils";
 import { LS_KEYS } from "@/constants/config";
-import VideoPoster from "../controls/VideoPoster";
 import { ls } from "@/utils/localStorage";
 
 import useHLS from "./native/hooks/useHLS";
@@ -36,6 +35,7 @@ export default function NativeVideoPlayer({
   screenshotEnabled = true,
   hlsQualityEnabled = true,
   scrubPreviewEnabled = true,
+  ambilightEnabled = true,
   onSendScreenshot,
   addToast,
   theatreMode = false,
@@ -82,7 +82,7 @@ export default function NativeVideoPlayer({
 
   // [Note] Specialized Hooks: Modular logic for player features
   const { hlsQuality } = useHLS(videoRef, videoUrl, sourceType, setVideoError);
-  useAmbilight(videoRef, videoUrl, onAmbiColors);
+  useAmbilight(videoRef, videoUrl, onAmbiColors, ambilightEnabled);
   useSubtitleStyle(videoRef, subtitleUrl, showSubtitles, subtitleOffset, subStyle);
   const { preview, handleMouseMove, handleMouseLeave } = useScrubPreview(
     videoUrl,
@@ -241,7 +241,7 @@ export default function NativeVideoPlayer({
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full bg-black select-none overflow-hidden"
+      className="relative w-full h-full bg-void select-none overflow-hidden"
       onMouseMove={showCtrl}
       onTouchStart={showCtrl}
       onWheel={handleWheel}
@@ -269,11 +269,9 @@ export default function NativeVideoPlayer({
         )}
       </video>
 
-      <VideoPoster visible={posterVisible && !videoError} subtitle="Ready to Sync" />
-
       {buffering && !videoError && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none z-10">
-          <div className="w-14 h-14 rounded-[var(--radius-pill)] border-2 border-amber-500/20 border-t-amber-500 animate-spin" />
+        <div className="absolute inset-0 flex items-center justify-center bg-void/30 pointer-events-none z-30 transition-opacity">
+          <div className="w-14 h-14 rounded-[var(--radius-pill)] border-2 border-amber/20 border-t-amber animate-spin shadow-[0_0_30px_rgba(var(--color-amber-rgb), 0.2)]" />
         </div>
       )}
 
@@ -282,6 +280,7 @@ export default function NativeVideoPlayer({
         setActivePanel={setActivePanel}
         subtitleUrl={subtitleUrl}
         onSubtitleChange={onSubtitleChange}
+        setShowSubtitles={setShowSubtitles}
         onLoad={onLoad}
         videoUrl={videoUrl}
         recentSubs={recentSubs}

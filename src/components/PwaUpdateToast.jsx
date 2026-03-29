@@ -55,17 +55,17 @@ export default function PwaUpdateToast() {
                       backdrop-blur-xl shadow-2xl text-sm font-medium"
         style={{ color: "var(--color-text)" }}
       >
-        <RefreshCw className="w-4 h-4 text-amber-400 shrink-0" />
-        <span className="text-white/80">A new version is available.</span>
+        <RefreshCw className="w-4 h-4 text-amber shrink-0" />
+        <span className="text-white/10">A new version is available.</span>
         <button
           onClick={handleUpdate}
-          className="px-3 py-1 rounded-full bg-amber-500 text-void text-xs font-black uppercase tracking-wider hover:bg-amber-400 active:scale-95 transition-all"
+          className="px-3 py-1 rounded-full bg-amber text-void text-xs font-black uppercase tracking-wider hover:bg-amber active:scale-95 transition-all"
         >
           Update
         </button>
         <button
           onClick={() => setShow(false)}
-          className="text-white/30 hover:text-white/60 transition-colors text-xs"
+          className="text-white/10 hover:text-white/10 transition-colors text-xs"
         >
           ✕
         </button>

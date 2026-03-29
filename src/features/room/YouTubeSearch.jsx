@@ -111,11 +111,11 @@ export default function YouTubeSearch({ onLoad }) {
     <div className="flex-1 min-w-0">
       <div
         ref={containerRef}
-        className={`relative flex items-center gap-3 px-4 py-2 rounded-[var(--radius-pill)] transition-all duration-300 border ${focused || open ? "ring-2 ring-amber-500/20 shadow-lg" : ""}`}
+        className={`relative flex items-center gap-3 px-4 py-2 rounded-[var(--radius-pill)] transition-all duration-300 border ${focused || open ? "ring-2 ring-amber/20 shadow-lg" : ""}`}
         style={{
           backgroundColor: "var(--color-surface)",
           borderColor:
-            focused || open ? "rgba(245,158,11,0.4)" : "var(--color-border)",
+            focused || open ? "rgba(var(--color-amber-rgb), 0.4)" : "var(--color-border)",
         }}
       >
         <Search
@@ -143,7 +143,7 @@ export default function YouTubeSearch({ onLoad }) {
             {[0, 1, 2].map((i) => (
               <span
                 key={i}
-                className="w-1 h-1 rounded-full bg-amber-500 animate-bounce"
+                className="w-1 h-1 rounded-full bg-amber animate-bounce"
                 style={{ animationDelay: `${i * 150}ms` }}
               />
             ))}
@@ -183,7 +183,7 @@ export default function YouTubeSearch({ onLoad }) {
                 style={{ borderColor: "var(--color-border)" }}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse shadow-[0_0_8px_rgba(var(--color-danger-rgb), 0.5)]" />
                   <div>
                     <h3
                       className="text-base font-display font-bold leading-tight"
@@ -191,7 +191,7 @@ export default function YouTubeSearch({ onLoad }) {
                     >
                       YouTube Results
                     </h3>
-                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-amber-500/80">
+                    <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-amber/80">
                       Select to load for everyone
                     </p>
                   </div>
@@ -215,7 +215,7 @@ export default function YouTubeSearch({ onLoad }) {
                       key={item.id}
                       type="button"
                       onClick={() => handleSelect(item)}
-                      className="flex items-center gap-4 text-left p-3 rounded-2xl group transition-all active:scale-[0.98] hover:bg-white/5"
+                      className="flex items-center gap-4 text-left p-3 rounded-2xl group transition-all active:scale-[0.98] hover:bg-white/10"
                     >
                       {item.thumb && (
                         <div
@@ -233,7 +233,7 @@ export default function YouTubeSearch({ onLoad }) {
                       )}
                       <div className="min-w-0 flex-1 pr-2">
                         <p
-                          className="text-[13px] font-bold leading-snug line-clamp-2 group-hover:text-amber-400 transition-colors"
+                          className="text-[13px] font-bold leading-snug line-clamp-2 group-hover:text-amber transition-colors"
                           style={{ color: "var(--color-text)" }}
                         >
                           {item.title}
@@ -258,7 +258,7 @@ export default function YouTubeSearch({ onLoad }) {
                       className="flex items-center gap-2 text-[10px] font-mono opacity-50 uppercase tracking-widest"
                       style={{ color: "var(--color-muted)" }}
                     >
-                      <div className="w-3 h-3 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
+                      <div className="w-3 h-3 border-2 border-amber/30 border-t-amber rounded-full animate-spin" />
                       Loading more…
                     </div>
                   )}

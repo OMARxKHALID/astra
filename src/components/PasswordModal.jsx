@@ -27,15 +27,15 @@ export default function PasswordModal({ roomId, onSubmit, error }) {
       className="fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-xl"
       style={{ backgroundColor: "var(--color-void)", opacity: undefined }}
     >
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_50%_40%,rgba(245,158,11,0.08),transparent_60%)]" />
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_50%_40%,rgba(var(--color-amber-rgb), 0.08),transparent_60%)]" />
 
       <div className="relative z-10 w-full max-w-sm mx-4 glass-card rounded-[var(--radius-panel)] overflow-hidden shadow-2xl">
         <div
           className="flex flex-col items-center gap-3 px-8 pt-8 pb-5"
           style={{ borderBottom: "1px solid var(--color-border)" }}
         >
-          <div className="w-14 h-14 rounded-[1.75rem] bg-amber-500/12 border border-amber-500/25 flex items-center justify-center">
-            <LockIcon className="w-7 h-7 text-amber-500/80" strokeWidth={1.5} />
+          <div className="w-14 h-14 rounded-[1.75rem] bg-amber/12 border border-amber/25 flex items-center justify-center">
+            <LockIcon className="w-7 h-7 text-amber/80" strokeWidth={1.5} />
           </div>
           <div className="text-center">
             <h2
@@ -100,7 +100,7 @@ export default function PasswordModal({ roomId, onSubmit, error }) {
           <button
             type="submit"
             disabled={!pw.trim()}
-            className="w-full h-12 rounded-[var(--radius-pill)] bg-amber-500 text-void font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-amber-400 active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none shadow-lg shadow-amber-500/15 ring-1 ring-amber-400/40"
+            className="w-full h-12 rounded-[var(--radius-pill)] bg-amber text-void font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-amber active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none shadow-lg shadow-amber/15 ring-1 ring-amber/40"
           >
             Join Room
           </button>

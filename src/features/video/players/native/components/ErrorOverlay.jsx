@@ -14,16 +14,16 @@ export default function ErrorOverlay({ error, onRetry, onDismiss }) {
         <ExclamationIcon className="w-7 h-7 text-danger" />
       </div>
       <div className="max-w-sm w-full">
-        <h3 className="font-display font-bold text-lg text-white/90">
+        <h3 className="font-display font-bold text-lg text-white/40">
           {typeof error === "object" ? error.title : "Playback Error"}
         </h3>
-        <p className="text-sm text-white/50 mt-2 leading-relaxed">
+        <p className="text-sm text-white/40 mt-2 leading-relaxed">
           {typeof error === "object" ? error.detail : error}
         </p>
 
         {isFormatError && (
           <div className="mt-4 flex flex-col gap-2 text-left">
-            <p className="text-[10px] font-mono text-white/30 uppercase tracking-widest">
+            <p className="text-[10px] font-mono text-white/40 uppercase tracking-widest">
               Try instead:
             </p>
             {[
@@ -33,10 +33,10 @@ export default function ErrorOverlay({ error, onRetry, onDismiss }) {
             ].map((tip) => (
               <div
                 key={tip}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-[var(--radius-pill)] bg-white/4 border border-white/8"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-[var(--radius-pill)] bg-white/10 border border-white/10"
               >
                 <span className="w-1 h-1 rounded-full bg-jade shrink-0" />
-                <span className="text-[11px] text-white/50">{tip}</span>
+                <span className="text-[11px] text-white/40">{tip}</span>
               </div>
             ))}
           </div>
@@ -46,13 +46,13 @@ export default function ErrorOverlay({ error, onRetry, onDismiss }) {
       <div className="flex gap-3">
         <button
           onClick={onRetry}
-          className="h-10 px-6 rounded-[var(--radius-pill)] bg-amber-500 text-void font-black text-xs uppercase tracking-widest hover:bg-amber-400 active:scale-95 transition-all"
+          className="h-10 px-6 rounded-[var(--radius-pill)] bg-amber text-void font-black text-xs uppercase tracking-widest hover:bg-amber active:scale-95 transition-all"
         >
           Try Again
         </button>
         <button
           onClick={onDismiss}
-          className="h-10 px-5 rounded-[var(--radius-pill)] glass-card text-white/50 hover:text-white text-xs font-bold transition-all"
+          className="h-10 px-5 rounded-[var(--radius-pill)] glass-card text-white/40 hover:text-white text-xs font-bold transition-all"
         >
           Dismiss
         </button>

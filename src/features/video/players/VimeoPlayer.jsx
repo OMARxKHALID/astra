@@ -16,6 +16,7 @@ export default function VimeoPlayer({
   onSpeed,
   canControl = true,
   onAmbiColors,
+  ambilightEnabled = true,
   theatreMode = false,
   onToggleTheatre,
   onToggleChat,
@@ -49,7 +50,7 @@ export default function VimeoPlayer({
 
   // [Note] Sample thumbnail for static room glow (cross-origin limitation)
   useEffect(() => {
-    if (!onAmbiColors || !thumbnailUrl) return;
+    if (!onAmbiColors || !thumbnailUrl || !ambilightEnabled) return;
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.src = thumbnailUrl;
@@ -234,7 +235,7 @@ export default function VimeoPlayer({
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full bg-black overflow-hidden group/vm"
+      className="relative w-full h-full bg-void overflow-hidden group/vm"
       onMouseMove={showCtrl}
       onTouchStart={showCtrl}
     >
@@ -251,8 +252,8 @@ export default function VimeoPlayer({
         onDoubleClick={handleFullscreen}
       />
       {!ready && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black pointer-events-none">
-          <div className="w-10 h-10 rounded-full border-2 border-amber-500/20 border-t-amber-500 animate-spin" />
+        <div className="absolute inset-0 flex items-center justify-center bg-void pointer-events-none">
+          <div className="w-10 h-10 rounded-full border-2 border-amber/20 border-t-amber animate-spin" />
         </div>
       )}
       <VideoPoster

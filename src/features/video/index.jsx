@@ -24,6 +24,7 @@ function VideoPlayer({
   screenshotEnabled = true,
   hlsQualityEnabled = true,
   scrubPreviewEnabled = true,
+  ambilightEnabled = true,
   onSendScreenshot,
   addToast,
   theatreMode = false,
@@ -60,6 +61,7 @@ function VideoPlayer({
         screenshotEnabled={screenshotEnabled}
         hlsQualityEnabled={hlsQualityEnabled}
         scrubPreviewEnabled={scrubPreviewEnabled}
+        ambilightEnabled={ambilightEnabled}
         onSendScreenshot={onSendScreenshot}
         addToast={addToast}
         theatreMode={theatreMode}
@@ -82,6 +84,7 @@ function VideoPlayer({
         canControl={canControl}
         onLoad={onLoad}
         onAmbiColors={onAmbiColors}
+        ambilightEnabled={ambilightEnabled}
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}
         onToggleChat={onToggleChat}
@@ -102,6 +105,7 @@ function VideoPlayer({
         canControl={canControl}
         onLoad={onLoad}
         onAmbiColors={onAmbiColors}
+        ambilightEnabled={ambilightEnabled}
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}
         onToggleChat={onToggleChat}
@@ -120,12 +124,12 @@ function VideoPlayer({
     );
 
   return (
-    <div className="relative w-full h-full bg-black flex flex-col items-center justify-center gap-4">
+    <div className="relative w-full h-full bg-void flex flex-col items-center justify-center gap-4">
       <div className="absolute inset-0 bg-gradient-to-br from-void via-surface/60 to-void" />
       <div className="relative z-10 flex flex-col items-center gap-3 text-center px-8">
-        <div className="w-14 h-14 rounded-[var(--radius-pill)] bg-white/4 border border-white/8 flex items-center justify-center mb-1">
+        <div className="w-14 h-14 rounded-[var(--radius-pill)] bg-white/10 border border-white/10 flex items-center justify-center mb-1">
           <svg
-            className="w-7 h-7 text-white/20"
+            className="w-7 h-7 text-white/10"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"

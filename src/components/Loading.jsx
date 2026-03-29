@@ -10,7 +10,7 @@ export default function Loading({ full = true, size = "md" }) {
   const container = (
     <div className="flex items-center justify-center p-8">
       <div 
-        className={`${sizeClasses[size] || sizeClasses.md} rounded-full border-amber-500/15 border-t-amber-500 animate-spin`} 
+        className={`${sizeClasses[size] || sizeClasses.md} rounded-full border-amber/15 border-t-amber animate-spin`} 
       />
     </div>
   );

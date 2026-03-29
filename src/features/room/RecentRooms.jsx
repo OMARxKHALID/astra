@@ -36,6 +36,14 @@ export default function RecentRooms() {
     ls.set(LS_KEYS.history, JSON.stringify(updated));
   };
 
+  const clearAll = (e) => {
+    e?.stopPropagation();
+    if (!window.confirm("Clear all room history?")) return;
+    setRecentRooms([]);
+    ls.set(LS_KEYS.history, "[]");
+    setShowRecent(false);
+  };
+
   if (recentRooms.length === 0) return null;
 
   return (
@@ -45,8 +53,8 @@ export default function RecentRooms() {
         className={`w-10 h-10 flex items-center justify-center rounded-full transition-all border
           ${
             showRecent
-              ? "bg-amber-500 text-void border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.3)]"
-              : "text-white/40 hover:text-white/80 hover:bg-white/5"
+              ? "bg-amber text-void border-amber shadow-[0_0_20px_rgba(var(--color-amber-rgb), 0.3)]"
+              : "text-white/60 hover:text-white/60 hover:bg-white/10"
           }`}
         style={{
           borderColor: showRecent ? undefined : "var(--color-border)",
@@ -58,14 +66,22 @@ export default function RecentRooms() {
 
       {showRecent && (
         <div className="absolute top-full right-0 mt-3 w-72 glass-card overflow-hidden shadow-2xl animate-in slide-in-from-top-2 fade-in duration-300 z-50">
-          <div className="p-4 border-b border-white/5 flex items-center justify-between">
-            <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">
-              Room History
-            </span>
+          <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/60">
+                Room History
+              </span>
+              <button
+                onClick={clearAll}
+                className="text-[9px] font-bold text-danger/60 hover:text-danger uppercase tracking-wider text-left transition-colors"
+              >
+                Clear All
+              </button>
+            </div>
             <button
               onClick={() => setShowRecent(false)}
               style={{ color: "var(--color-muted)" }}
-              className="hover:opacity-100 opacity-40"
+              className="hover:opacity-100 opacity-40 p-1"
             >
               <XIcon className="w-3 h-3" />
             </button>
@@ -74,11 +90,11 @@ export default function RecentRooms() {
             {recentRooms.map((r) => (
               <div
                 key={r.roomId}
-                className="relative group border-b last:border-0 border-white/5"
+                className="relative group border-b last:border-0 border-white/10"
               >
                 <button
                   onClick={() => router.push(`/room/${r.roomId}`)}
-                  className="w-full flex items-center gap-3 p-3 hover:bg-white/5 transition-colors text-left"
+                  className="w-full flex items-center gap-3 p-3 hover:bg-white/10 transition-colors text-left"
                 >
                   {r.thumbnail ? (
                     <Image
@@ -89,15 +105,15 @@ export default function RecentRooms() {
                       className="w-12 h-8 rounded-lg object-cover brightness-75 shrink-0"
                     />
                   ) : (
-                    <div className="w-12 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
-                      <History className="w-4 h-4 text-white/10" />
+                    <div className="w-12 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                      <History className="w-4 h-4 text-white/60" />
                     </div>
                   )}
                   <div className="flex flex-col min-w-0 pr-4">
                     <span className="text-xs font-bold truncate">
                       {r.title || `Room ${r.roomId.slice(0, 4)}`}
                     </span>
-                    <span className="text-[10px] font-mono text-white/30 truncate">
+                    <span className="text-[10px] font-mono text-white/60 truncate">
                       {new Date(r.lastVisited).toLocaleDateString()}
                     </span>
                   </div>
@@ -105,7 +121,7 @@ export default function RecentRooms() {
                 <button
                   onClick={(e) => removeRoom(r.roomId, e)}
                   title="Remove"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-danger/40 hover:text-danger hover:bg-danger/10 transition-all opacity-0 group-hover:opacity-100"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-danger/70 hover:text-danger hover:bg-danger/10 transition-all opacity-0 group-hover:opacity-100"
                 >
                   <XIcon className="w-3 h-3" />
                 </button>

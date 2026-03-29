@@ -22,7 +22,7 @@ export default function SyncStatusIndicator({ syncStatus, connStatus }) {
 
       {isConnected && (
         <>
-          <div className="w-px h-3 bg-white/10" />
+          <div className="w-px h-3 bg-white/10 hidden md:block" />
           <span
             className={`text-[9px] font-mono uppercase tracking-[0.15em] font-medium hidden md:inline ${s.color}`}
           >

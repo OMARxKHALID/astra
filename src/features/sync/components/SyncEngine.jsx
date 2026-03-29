@@ -33,6 +33,8 @@ export default function SyncEngine({
   onKicked,
   sendRef,
   socketRef: externalSocketRef,
+  onTsMapUpdate,
+  onLateJoin,
   onReconnected,
   roomPassword,
   speedSyncEnabled,
@@ -58,7 +60,6 @@ export default function SyncEngine({
     onReconnected,
     roomPassword,
     speedSyncEnabled,
-    isHost: room.serverState?.hostId === userId,
   };
 
   const socketRef = useRef(null);

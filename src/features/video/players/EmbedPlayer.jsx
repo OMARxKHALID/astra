@@ -34,7 +34,7 @@ export default function EmbedPlayer({
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full bg-black flex flex-col group"
+      className="relative w-full h-full bg-void flex flex-col group"
     >
       {/* Iframe */}
       <div className="flex-1 relative">
@@ -53,7 +53,7 @@ export default function EmbedPlayer({
         <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
           <button
             onClick={onToggleTheatre}
-            className={`pointer-events-auto p-2.5 rounded-[var(--radius-pill)] glass-card transition-all border-none cursor-pointer ${theatreMode ? "text-amber-400 bg-amber-400/10" : "text-white/70 hover:text-white hover:bg-white/10"}`}
+            className={`pointer-events-auto p-2.5 rounded-[var(--radius-pill)] glass-card transition-all border-none cursor-pointer ${theatreMode ? "text-amber bg-amber/10" : "text-white/10 hover:text-white hover:bg-white/10"}`}
           >
             <TheatreIcon className="w-4 h-4" />
           </button>

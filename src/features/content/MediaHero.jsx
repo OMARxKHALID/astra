@@ -55,25 +55,25 @@ export default function MediaHero({ items, onPick, onPlay }) {
         <div className="max-w-[520px] z-10">
           <div className="flex gap-2 mb-4 items-center flex-wrap">
             <span
-              className={`text-[10px] font-bold px-2.5 py-0.5 rounded-[20px] uppercase tracking-[0.12em] font-mono border ${item.type === "tv" ? "bg-emerald-500/15 text-emerald-500 border-emerald-500/30" : "bg-transparent text-white/70 border-white/20"}`}
+              className={`text-[10px] font-bold px-2.5 py-0.5 rounded-[20px] uppercase tracking-[0.12em] font-mono border ${item.type === "tv" ? "bg-jade/15 text-jade border-jade/30" : "bg-transparent text-white/10 border-white/10"}`}
             >
               {item.type === "tv" ? "Series" : "Movie"}
             </span>
             {item.rating && (
-              <span className="text-[11px] px-2 py-0.5 rounded-[var(--radius-pill)] bg-black/40 text-amber-500 font-mono flex items-center gap-[3px] font-bold">
-                <Star className="w-[10px] h-[10px] fill-amber-500" />
+              <span className="text-[11px] px-2 py-0.5 rounded-[var(--radius-pill)] bg-void/40 text-amber font-mono flex items-center gap-[3px] font-bold">
+                <Star className="w-[10px] h-[10px] fill-amber" />
                 {item.rating}
               </span>
             )}
             {item.year && (
-              <span className="text-[11px] text-white/35 font-mono">
+              <span className="text-[11px] text-white/10 font-mono">
                 {item.year}
               </span>
             )}
             {genres.map((g) => (
               <span
                 key={g}
-                className="text-[10px] text-white/40 font-mono uppercase tracking-widest"
+                className="text-[10px] text-white/10 font-mono uppercase tracking-widest"
               >
                 · {g}
               </span>
@@ -84,21 +84,21 @@ export default function MediaHero({ items, onPick, onPlay }) {
             {item.title}
           </h1>
 
-          <p className="text-sm text-white/50 leading-relaxed mb-7 line-clamp-3 font-body">
+          <p className="text-sm text-white/10 leading-relaxed mb-7 line-clamp-3 font-body">
             {item.overview}
           </p>
 
           <div className="flex gap-3">
             <button
               onClick={() => onPlay && onPlay(item)}
-              className="flex items-center gap-2 px-7 py-3 rounded-[var(--radius-pill)] bg-amber-500 text-[var(--color-void)] font-bold text-sm border-none cursor-pointer hover:bg-amber-400 transition-all font-body shadow-[0_4px_16px_rgba(245,158,11,0.2)] active:scale-95"
+              className="flex items-center gap-2 px-7 py-3 rounded-[var(--radius-pill)] bg-amber text-[var(--color-void)] font-bold text-sm border-none cursor-pointer hover:bg-amber transition-all font-body shadow-[0_4px_16px_rgba(var(--color-amber-rgb), 0.2)] active:scale-95"
             >
               <Play className="w-4 h-4 fill-current" />
               Play
             </button>
             <button
               onClick={() => onPick(item)}
-              className="flex items-center gap-2 px-5 py-3 rounded-[var(--radius-pill)] bg-white/5 text-white/80 font-medium text-sm cursor-pointer border border-white/10 hover:bg-white/10 transition-all font-body active:scale-95"
+              className="flex items-center gap-2 px-5 py-3 rounded-[var(--radius-pill)] bg-white/10 text-white/10 font-medium text-sm cursor-pointer border border-white/10 hover:bg-white/10 transition-all font-body active:scale-95"
             >
               See More
             </button>
@@ -112,7 +112,7 @@ export default function MediaHero({ items, onPick, onPlay }) {
             <button
               key={i}
               onClick={() => go(i)}
-              className={`h-1.5 rounded-[var(--radius-pill)] border-none cursor-pointer transition-all duration-300 p-0 ${i === idx ? "w-[22px] bg-amber-500" : "w-1.5 bg-white/20"}`}
+              className={`h-1.5 rounded-[var(--radius-pill)] border-none cursor-pointer transition-all duration-300 p-0 ${i === idx ? "w-[22px] bg-amber" : "w-1.5 bg-white/10"}`}
             />
           ))}
         </div>
