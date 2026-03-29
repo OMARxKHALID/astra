@@ -27,4 +27,4 @@ public/workbox-*.js
 public/swe-worker-*.js
 
 # Documentation
-Codebaserules.md
+RULES.md

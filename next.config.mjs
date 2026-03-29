@@ -6,8 +6,12 @@ const nextConfig = {
 
   images: {
     remotePatterns: [
+      { protocol: "https", hostname: "api.dicebear.com" },
       { protocol: "https", hostname: "img.youtube.com" },
+      { protocol: "https", hostname: "i.ytimg.com" },
       { protocol: "https", hostname: "i.vimeocdn.com" },
+      { protocol: "https", hostname: "image.tmdb.org" },
+      { protocol: "https", hostname: "lh3.googleusercontent.com" },
     ],
   },
 
@@ -22,7 +26,7 @@ const nextConfig = {
         headers: [
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Referrer-Policy", value: "no-referrer-when-downgrade" },
         ],
       },
     ];
@@ -68,7 +72,7 @@ export default withPWA({
       },
       {
         // YouTube thumbnails
-        urlPattern: /^https:\/\/img\.youtube\.com\/.*/,
+        urlPattern: /^https:\/\/(img\.youtube\.com|i\.ytimg\.com)\/.*/,
         handler: "CacheFirst",
         options: {
           cacheName: "yt-thumbs",

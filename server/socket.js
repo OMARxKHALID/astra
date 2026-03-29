@@ -10,14 +10,13 @@ import {
   REDIS_TTL_S,
   SOCKET_PING_INTERVAL,
   SOCKET_PING_TIMEOUT,
-  MAX_CHAT_MESSAGES,
   MAX_DATAURL_BYTES,
 } from "./constants.js";
 
 const { loadEnvConfig } = pkg;
 loadEnvConfig(process.cwd());
 
-// ─── JWT (HS256, zero external dep) ──────────────────────────────────────────
+// [Note] JWT: HS256 implementation without external library dependencies
 function jwtSecret() {
   return process.env.JWT_SECRET || "dev-fallback-not-secure";
 }
@@ -48,8 +47,7 @@ function verifyHostToken(token, expectedRoomId) {
     }
   }
 
-  // Legacy UUID token — accept as-is (backwards compatibility)
-  return { legacy: true };
+  return false;
 }
 
 function extractHostId(token) {
@@ -63,7 +61,6 @@ function extractHostId(token) {
   }
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 const STRICT_EXTS = /\.(mp4|webm|ogg|mkv|mov|avi)$/i;
 function isStrictVideoUrl(raw) {
   if (!raw || typeof raw !== "string") return false;
@@ -90,7 +87,6 @@ function debounce(fn, wait) {
   };
 }
 
-// ─── Config ───────────────────────────────────────────────────────────────────
 const redisUrl =
   process.env.UPSTASH_REDIS_REST_URL || process.env.REDIS_KV_REST_API_URL;
 const redisToken =
@@ -116,7 +112,6 @@ console.log(
   `[socket.io] Starting on port ${PORT} | Origins: [${ALLOWED_ORIGINS.join(", ")}]`,
 );
 
-// ─── Room class ───────────────────────────────────────────────────────────────
 class Room {
   constructor(roomId, video = "", hostId = "", hostToken = "") {
     this.roomId = roomId;
@@ -151,7 +146,6 @@ class Room {
     this.lastBcastState = null; // fingerprint to skip no-op broadcasts
   }
 
-  // ── Participant helpers ────────────────────────────────────────────────────
   addUser(socketId, userId, username) {
     this.socketIds.add(socketId);
     this.usernames.set(userId, username);
@@ -182,7 +176,6 @@ class Room {
     }));
   }
 
-  // ── Sync helpers ───────────────────────────────────────────────────────────
   lockTs(ms = 1500) {
     this.tsLockUntil = Date.now() + ms;
   }
@@ -192,9 +185,8 @@ class Room {
     if (typeof time !== "number" || time < 0) return;
     // Normalize: subtract elapsed time since last broadcast so a late-arriving
     // report doesn't push the room clock forward artificially.
-    // +1 projects to the next broadcast window (~1s away) — mirrors watchparty's formula.
     const staleness = (Date.now() - this.lastBroadcastTime) / 1000;
-    const normalized = Math.max(0, time - staleness + 1);
+    const normalized = Math.max(0, time - staleness);
     if (normalized > this.videoTS) this.videoTS = normalized;
     this.tsMap[userId] = normalized;
   }
@@ -210,7 +202,6 @@ class Room {
     this.lastUpdated = Date.now();
   }
 
-  // ── State ──────────────────────────────────────────────────────────────────
   publicState() {
     return {
       roomId: this.roomId,
@@ -234,7 +225,6 @@ class Room {
     return `${this.video}|${this.videoTS.toFixed(1)}|${this.paused}|${this.playbackRate}|${this.hostId}|${this.hostOnlyControls}|${this.strictVideoUrlMode}|${Boolean(this.passwordHash)}|${this.tmdbMeta?.id || ""}`;
   }
 
-  // ── Broadcast interval ─────────────────────────────────────────────────────
   startBroadcast(io) {
     if (this.broadcastTimer) return;
     this.broadcastTimer = setInterval(() => {
@@ -274,10 +264,8 @@ class Room {
   }
 }
 
-// ─── Redis persistence ────────────────────────────────────────────────────────
-// Debounced per-room save — collapses rapid sequential writes into one
-const debouncedSave = new Map(); // roomId → debounced fn
-
+// [Note] Redis persistence: debounces room saves to avoid write amplification
+const debouncedSave = new Map();
 function saveRoom(room) {
   if (!redis) return;
   if (!debouncedSave.has(room.roomId)) {
@@ -322,9 +310,11 @@ function cleanupRoom(roomId) {
   debouncedSave.delete(roomId);
 }
 
-// ─── HTTP sidecar ─────────────────────────────────────────────────────────────
 const httpServer = http.createServer((req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  const origin = req.headers.origin || "";
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
   res.setHeader("Content-Type", "application/json");
 
   if (req.url === "/" || req.url === "/health") {
@@ -349,7 +339,6 @@ const httpServer = http.createServer((req, res) => {
   res.end("{}");
 });
 
-// ─── Socket.IO ────────────────────────────────────────────────────────────────
 const io = new Server(httpServer, {
   cors: { origin: ALLOWED_ORIGINS, methods: ["GET", "POST"] },
   // Increase ping timeout for slow connections; reduce ping interval
@@ -361,11 +350,7 @@ const io = new Server(httpServer, {
 });
 
 io.on("connection", (socket) => {
-  // ── Clock calibration ──────────────────────────────────────────────────────
-  // Client sends its local Date.now() t0; we reply with our server Date.now().
-  // Client computes: rtt = Date.now() - t0; serverNow ≈ serverTime + rtt/2;
-  // clockOffset = serverNow - Date.now().  Used in expectedTime() to compensate
-  // for client-server clock skew (can be ±200ms on unsynced machines).
+  // [Note] Clock calibration: client measures server clock delta to compensate RTT
   socket.on("PING_CLOCK", (t0, ack) => {
     if (typeof ack === "function") ack(Date.now());
   });
@@ -492,7 +477,6 @@ io.on("connection", (socket) => {
     if (!room.hostId) electNewHost(room);
   });
 
-  // ── Command gating ─────────────────────────────────────────────────────────
   function getCtx(requireControl = true) {
     const meta = clientMeta.get(socket.id);
     if (!meta) return null;
@@ -502,7 +486,6 @@ io.on("connection", (socket) => {
     return { room, meta };
   }
 
-  // ── Timestamp ──────────────────────────────────────────────────────────────
   socket.on("CMD:ts", (_rId, payload) => {
     const meta = clientMeta.get(socket.id);
     if (!meta) return;
@@ -517,8 +500,7 @@ io.on("connection", (socket) => {
     room.receiveTimestamp(meta.userId, time);
   });
 
-  // ── Play ───────────────────────────────────────────────────────────────────
-  socket.on("CMD:play", (msg) => {
+  socket.on("CMD:play", (_rId, msg) => {
     const ctx = getCtx();
     if (!ctx) return;
     ctx.room.paused = false;
@@ -530,8 +512,7 @@ io.on("connection", (socket) => {
     saveRoom(ctx.room);
   });
 
-  // ── Pause ──────────────────────────────────────────────────────────────────
-  socket.on("CMD:pause", (msg) => {
+  socket.on("CMD:pause", (_rId, msg) => {
     const ctx = getCtx();
     if (!ctx) return;
     ctx.room.paused = true;
@@ -543,8 +524,7 @@ io.on("connection", (socket) => {
     saveRoom(ctx.room);
   });
 
-  // ── Seek ───────────────────────────────────────────────────────────────────
-  socket.on("CMD:seek", (time) => {
+  socket.on("CMD:seek", (_rId, time) => {
     const ctx = getCtx();
     if (!ctx) return;
     const t = parseFloat(time);
@@ -557,8 +537,7 @@ io.on("connection", (socket) => {
     saveRoom(ctx.room);
   });
 
-  // ── Playback rate ──────────────────────────────────────────────────────────
-  socket.on("CMD:playbackRate", (msg) => {
+  socket.on("CMD:playbackRate", (_rId, msg) => {
     const ctx = getCtx();
     if (!ctx) return;
     // isFinite guard prevents NaN/Infinity; || 1 would wrongly map rate=0 to 1
@@ -570,8 +549,7 @@ io.on("connection", (socket) => {
     saveRoom(ctx.room);
   });
 
-  // ── Change video ───────────────────────────────────────────────────────────
-  socket.on("CMD:host", (data) => {
+  socket.on("CMD:host", (_rId, data) => {
     const meta = clientMeta.get(socket.id);
     if (!meta?.isHost) return;
     const room = rooms.get(meta.roomId);
@@ -598,8 +576,7 @@ io.on("connection", (socket) => {
     saveRoom(room);
   });
 
-  // ── Subtitle ───────────────────────────────────────────────────────────────
-  socket.on("CMD:subtitle", (url) => {
+  socket.on("CMD:subtitle", (_rId, url) => {
     const ctx = getCtx();
     if (!ctx) return;
     ctx.room.subtitleUrl = url || "";
@@ -607,8 +584,7 @@ io.on("connection", (socket) => {
     saveRoom(ctx.room);
   });
 
-  // ── Host-only lock ─────────────────────────────────────────────────────────
-  socket.on("CMD:lock", () => {
+  socket.on("CMD:lock", (_rId) => {
     const ctx = getCtx(false);
     if (!ctx?.meta.isHost) return;
     ctx.room.hostOnlyControls = !ctx.room.hostOnlyControls;
@@ -616,8 +592,7 @@ io.on("connection", (socket) => {
     saveRoom(ctx.room);
   });
 
-  // ── Strict URL mode ────────────────────────────────────────────────────────
-  socket.on("CMD:strictVideoUrlMode", () => {
+  socket.on("CMD:strictVideoUrlMode", (_rId) => {
     const ctx = getCtx(false);
     if (!ctx?.meta.isHost) return;
     ctx.room.strictVideoUrlMode = !ctx.room.strictVideoUrlMode;
@@ -625,17 +600,14 @@ io.on("connection", (socket) => {
     saveRoom(ctx.room);
   });
 
-  // ── TMDB Meta override ───────────────────────────────────────────────────
-  socket.on("CMD:tmdbMeta", (meta) => {
-    const meta_ctx = getCtx(false); // Anyone can help fix metadata? Let's allow everyone or just host.
-    // Given the user's request "i can cancel", I'll allow host/authorized members.
-    // To keep it simple and useful, let's allow the current host only for now.
-    if (!meta_ctx?.meta.isHost) return;
-    meta_ctx.room.tmdbMeta = meta || null;
-    io.to(meta_ctx.room.roomId).emit("REC:host", meta_ctx.room.publicState());
-    saveRoom(meta_ctx.room);
+  socket.on("CMD:tmdbMeta", (_rId, tmdbData) => {
+    const ctx = getCtx(false);
+    if (!ctx?.meta.isHost) return;
+    ctx.room.tmdbMeta = tmdbData || null;
+    io.to(ctx.room.roomId).emit("REC:host", ctx.room.publicState());
+    saveRoom(ctx.room);
   });
-  socket.on("CMD:setPassword", (msg) => {
+  socket.on("CMD:setPassword", (_rId, msg) => {
     const ctx = getCtx(false);
     if (!ctx?.meta.isHost) return;
     const pw = msg?.password ? String(msg.password).trim().slice(0, 64) : "";
@@ -644,8 +616,7 @@ io.on("connection", (socket) => {
     saveRoom(ctx.room);
   });
 
-  // ── Kick ───────────────────────────────────────────────────────────────────
-  socket.on("CMD:kick", (msg) => {
+  socket.on("CMD:kick", (_rId, msg) => {
     const meta = clientMeta.get(socket.id);
     if (!meta?.isHost) return;
     const { targetUserId } = msg || {};
@@ -661,11 +632,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  // ── Transfer host ─────────────────────────────────────────────────────────
-  // Current host can voluntarily hand ownership to any active viewer.
-  // The new host gets a fresh JWT-style session — they will appear as host
-  // in the UI immediately via the host_changed broadcast.
-  socket.on("CMD:transferHost", (msg) => {
+  socket.on("CMD:transferHost", (_rId, msg) => {
     const meta = clientMeta.get(socket.id);
     if (!meta?.isHost) return;
     const room = rooms.get(meta.roomId);
@@ -696,8 +663,7 @@ io.on("connection", (socket) => {
     saveRoom(room);
   });
 
-  // ── Name change ────────────────────────────────────────────────────────────
-  socket.on("CMD:setName", (msg) => {
+  socket.on("CMD:setName", (_rId, msg) => {
     const meta = clientMeta.get(socket.id);
     if (!meta) return;
     const name = String(msg?.username || "")
@@ -713,8 +679,7 @@ io.on("connection", (socket) => {
     });
   });
 
-  // ── Typing indicator ───────────────────────────────────────────────────────
-  socket.on("CMD:typing", () => {
+  socket.on("CMD:typing", (_rId) => {
     const meta = clientMeta.get(socket.id);
     if (!meta) return;
     socket.to(meta.roomId).emit("user_typing", {
@@ -723,7 +688,6 @@ io.on("connection", (socket) => {
     });
   });
 
-  // ── Chat ───────────────────────────────────────────────────────────────────
   socket.on("chat", (msg) => {
     const meta = clientMeta.get(socket.id);
     if (!meta) return;
@@ -759,7 +723,6 @@ io.on("connection", (socket) => {
     // Screenshot: do NOT save to Redis — only delivered live
   });
 
-  // ── Disconnect ─────────────────────────────────────────────────────────────
   socket.on("disconnect", () => {
     const meta = clientMeta.get(socket.id);
     if (!meta) return;
