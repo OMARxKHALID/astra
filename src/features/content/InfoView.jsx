@@ -8,6 +8,7 @@ import {
   Share2,
   Youtube,
   ChevronDown,
+  ChevronLeft,
   Users,
   Check,
   Loader2,
@@ -71,7 +72,7 @@ function CustomSelect({
 
         {isOpen && (
           <div
-            className={`absolute ${position === "top" ? "bottom-full mb-2" : "top-full mt-2"} left-0 right-0 z-[100] glass-card border border-white/10 rounded-[var(--radius-panel)] overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 ${position === "top" ? "slide-in-from-bottom-2" : "slide-in-from-top-2"} duration-200 p-1.5 backdrop-blur-2xl bg-[var(--color-surface)]/95`}
+            className={`absolute ${position === "top" ? "bottom-full mb-2" : "top-full mt-2"} left-0 right-0 z-[100] glass-card border border-white/10 rounded-[1.25rem] overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 ${position === "top" ? "slide-in-from-bottom-2" : "slide-in-from-top-2"} duration-200 p-1.5 backdrop-blur-2xl bg-[var(--color-surface)]/95`}
           >
             <div className="max-h-[240px] overflow-y-auto no-scrollbar flex flex-col gap-0.5">
               {options.map((opt) => (
@@ -82,7 +83,7 @@ function CustomSelect({
                     onChange(opt.value);
                     setIsOpen(false);
                   }}
-                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-[var(--radius-pill)] text-[11px] lg:text-[12px] font-bold transition-all duration-200 group/item ${
+                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-[0.85rem] text-[11px] lg:text-[12px] font-bold transition-all duration-200 group/item ${
                     opt.value === value
                       ? "bg-amber text-void shadow-lg shadow-amber/10"
                       : "text-[var(--color-muted)] hover:bg-white/10 hover:text-bright"
@@ -199,12 +200,19 @@ export default function InfoView({ initialData, type, id }) {
   return (
     <div
       key={`${type}-${id}`}
-      className="h-screen w-screen bg-void flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden font-body text-[var(--color-text)] animate-in fade-in duration-500"
+      className="h-screen w-screen bg-void flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden font-body text-[var(--color-text)] animate-in fade-in duration-500 relative"
     >
+      <button
+        onClick={() => router.back()}
+        className="absolute top-6 left-6 lg:top-8 lg:left-10 z-[100] w-11 h-11 rounded-full glass-card flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all active:scale-90 shadow-2xl"
+      >
+        <ChevronLeft className="w-6 h-6 pr-0.5" />
+      </button>
+
       {/* Left: backdrop image panel */}
       <div className="flex-[3] relative flex flex-col h-[40vh] lg:h-screen transition-all duration-1000 ease lg:pl-4">
         <div className="flex-1 relative w-full h-full lg:h-[95vh] lg:my-[2.5vh] lg:rounded-[var(--radius-panel)] bg-void">
-          <div className="absolute inset-0 rounded-[var(--radius-panel)] overflow-hidden pointer-events-none">
+          <div className="absolute inset-0 rounded-b-[var(--radius-panel)] lg:rounded-[var(--radius-panel)] overflow-hidden pointer-events-none">
             {data.backdrop ? (
               <Image
                 src={data.backdrop}
@@ -249,44 +257,34 @@ export default function InfoView({ initialData, type, id }) {
             </div>
             <div className="relative bottom-[-2.5rem] lg:bottom-[-2.7rem] left-[0.2rem] lg:left-[0.5rem] mb-2 lg:mb-[2rem] rounded-[1.25rem] lg:rounded-[1.5rem] outline-[0.4rem] lg:outline-[0.7rem] outline-void glass-card backdrop-blur-xl bg-white/[0.02] border border-white/10 p-2 lg:p-[0.75rem] lg:pr-[1rem] min-w-[9rem] lg:min-w-[13rem] max-w-[16rem] lg:max-w-[18rem] flex flex-col gap-1 lg:gap-2 text-center z-30 shadow-2xl ml-2 lg:ml-0">
               <div className="flex flex-col items-center gap-0.5 lg:gap-1 mb-1 lg:pr-2">
-                <span className="text-[8px] lg:text-[10px] font-black text-amber/60 uppercase tracking-[0.2em] lg:tracking-[0.3em] select-none lg:hidden">
-                  {type === "tv" ? "SHOW" : "MOVIE"}
-                </span>
                 <h1 className="font-display text-[0.95rem] lg:text-[1.1rem] xl:text-[1.3rem] font-bold leading-tight truncate w-full m-0 text-bright tracking-tight lg:tracking-tighter">
                   {data.title}
                 </h1>
               </div>
 
               <div className="flex flex-wrap items-center justify-center gap-1 lg:gap-[0.5rem] w-full relative p-0.5 lg:p-1 lg:pr-[1rem]">
-                <span className="absolute -right-[0.5rem] lg:-right-[1rem] top-[40%] text-[10px] lg:text-[0.7rem] font-black text-muted uppercase tracking-wider select-none origin-center rotate-90 hidden lg:block">
-                  {type === "tv" ? "SHOW" : "MOVIE"}
-                </span>
                 <button
                   onClick={handleWatch}
-                  className="bg-amber text-void flex-1 min-w-[60px] sm:flex-none px-2 lg:px-[0.7rem] py-1.5 lg:py-[0.4rem] rounded-[var(--radius-pill)] text-[9px] lg:text-[13px] tracking-tighter lg:tracking-tight font-black uppercase flex items-center justify-center gap-1 cursor-pointer hover:bg-amber transition-colors shadow-lg active:scale-95"
+                  className="bg-amber text-void flex-1 min-w-[70px] sm:flex-none h-10 px-4 rounded-[var(--radius-pill)] text-[13px] font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-[0_4px_12px_rgba(var(--color-amber-rgb),0.3)] hover:brightness-110 active:scale-95"
                 >
                   <Play
-                    size={9}
+                    size={14}
                     fill="currentColor"
-                    strokeWidth={3}
-                    className="lg:w-[11px] lg:h-[11px]"
-                  />{" "}
+                  />
                   Watch
                 </button>
 
                 <button
                   disabled={creating}
                   onClick={handleWatchTogether}
-                  className="bg-jade text-void flex-1 min-w-[75px] sm:flex-none px-2 lg:px-[0.7rem] py-1.5 lg:py-[0.4rem] rounded-[var(--radius-pill)] text-[9px] lg:text-[11px] tracking-tighter lg:tracking-tight font-black uppercase flex items-center justify-center gap-1 cursor-pointer hover:bg-white transition-colors shadow-lg active:scale-95 disabled:opacity-50"
+                  className="bg-jade text-void flex-1 min-w-[85px] sm:flex-none h-10 px-4 rounded-[var(--radius-pill)] text-[13px] font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-[0_4px_12px_rgba(var(--color-jade-rgb),0.3)] hover:brightness-110 active:scale-95 disabled:opacity-50"
                 >
                   {creating ? (
-                    <Loader2 className="w-3 h-3 lg:w-3.5 lg:h-3.5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <Users
-                      size={10}
+                      size={14}
                       fill="currentColor"
-                      strokeWidth={3}
-                      className="lg:w-[11px] lg:h-[11px]"
                     />
                   )}
                   Together
@@ -300,14 +298,12 @@ export default function InfoView({ initialData, type, id }) {
                       "_blank",
                     )
                   }
-                  className={`bg-amber text-void flex-1 min-w-[65px] sm:flex-none px-2 lg:px-[0.6rem] py-1.5 lg:py-[0.3rem] rounded-[var(--radius-pill)] text-[9px] lg:text-[11px] tracking-tighter lg:tracking-tight font-black uppercase flex items-center justify-center gap-1 cursor-pointer hover:bg-amber transition-colors shadow-lg active:scale-95 ${!data.trailer ? "opacity-30 pointer-events-none" : ""}`}
+                  className={`bg-amber text-void flex-1 min-w-[75px] sm:flex-none h-10 px-4 rounded-[var(--radius-pill)] text-[13px] font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-[0_4px_12px_rgba(var(--color-amber-rgb),0.3)] hover:brightness-110 active:scale-95 ${!data.trailer ? "opacity-30 pointer-events-none" : ""}`}
                 >
                   <Youtube
-                    size={10}
+                    size={14}
                     fill="currentColor"
-                    strokeWidth={3}
-                    className="lg:w-[11px] lg:h-[11px]"
-                  />{" "}
+                  />
                   Trailers
                 </button>
               </div>
