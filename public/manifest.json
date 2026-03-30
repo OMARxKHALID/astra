@@ -1,7 +1,7 @@
 {
-  "name": "WatchTogether",
-  "short_name": "WatchTogether",
-  "description": "Watch videos in perfect sync with friends in real time.",
+  "name": "Astra",
+  "short_name": "Astra",
+  "description": "Premium streaming portal to browse and watch movies, series, and anime in perfect sync.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "any",
@@ -32,7 +32,7 @@
     {
       "name": "New Room",
       "short_name": "New Room",
-      "description": "Create a new watch room",
+      "description": "Start a new Astra streaming session",
       "url": "/",
       "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     }

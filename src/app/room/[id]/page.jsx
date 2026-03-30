@@ -38,8 +38,9 @@ async function getRoomMeta(id) {
 export async function generateMetadata({ params }) {
   const { id } = await params;
   return {
-    title: `Room ${id.slice(0, 6).toUpperCase()} — WatchTogether`,
-    description: "Join this WatchTogether room for synchronized viewing.",
+    title: `Room ${id.slice(0, 6).toUpperCase()}`,
+    description: "Join this Astra room for a private synchronized viewing experience with friends.",
+    robots: { index: false }, // Prevent private rooms from being indexed
   };
 }
 

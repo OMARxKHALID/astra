@@ -82,7 +82,7 @@ export default function SearchOverlay({ onClose, onPick }) {
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="w-full max-w-[640px] mb-6 relative animate-in zoom-in-95 duration-300">
-        <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-muted pointer-events-none" />
+        <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-white/50 pointer-events-none" />
         <input
           ref={inputRef}
           value={q}
@@ -96,7 +96,7 @@ export default function SearchOverlay({ onClose, onPick }) {
             }
           }}
           placeholder="Search movies, series, anime…"
-          className="w-full glass-card !bg-white/5 !backdrop-blur-3xl rounded-[var(--radius-pill)] py-4 pr-12 pl-[52px] text-bright text-base font-body outline-none focus:border-amber/40 focus:ring-4 focus:ring-amber/5 transition-all placeholder:text-white/30 shadow-2xl"
+          className="w-full glass-card !bg-white/5 border border-white/20 !backdrop-blur-3xl rounded-[var(--radius-pill)] py-4 pr-12 pl-[52px] text-bright text-base font-body outline-none focus:border-amber/60 focus:ring-4 focus:ring-amber/10 transition-all placeholder:text-white/50 shadow-2xl"
         />
         {loading ? (
           <div className="absolute right-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] rounded-full border-2 border-amber/20 border-t-amber animate-spin" />

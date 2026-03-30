@@ -2,22 +2,31 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Users, Search, Loader2 } from "lucide-react";
 import { buildEmbedUrl } from "@/lib/videoResolver";
 import Loading from "@/components/Loading";
 import RecentRooms from "@/features/room/RecentRooms";
 import { createRoom } from "@/utils/createRoom";
+import { LS_KEYS } from "@/constants/config";
+import { ls } from "@/utils/localStorage";
 
 import Hero from "@/features/content/MediaHero";
 import Row from "@/features/content/MediaRow";
 import SearchOverlay from "@/features/content/SearchOverlay";
+import UserMenu from "@/components/UserMenu";
 
 export default function HomeView({ initialData }) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [data, setData] = useState(initialData);
   const [loading, setLoading] = useState(!initialData);
   const [showSearch, setShowSearch] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [favorites, setFavorites] = useState([]);
+  const [watched, setWatched] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);
+  const [lastWatchedTitle, setLastWatchedTitle] = useState("");
 
   const handleNavigateToInfo = (item) => {
     if (item) router.push(`/info/${item.type || "movie"}/${item.id}`);
@@ -56,6 +65,24 @@ export default function HomeView({ initialData }) {
     return () => window.removeEventListener("keydown", handleKey);
   }, []);
 
+  useEffect(() => {
+    try {
+      setFavorites(JSON.parse(ls.get(LS_KEYS.favorites) || "[]"));
+      
+      const wList = JSON.parse(ls.get(LS_KEYS.watched) || "[]");
+      setWatched(wList);
+
+      if (wList.length > 0) {
+        const last = wList[0];
+        setLastWatchedTitle(last.title);
+        fetch(`/api/tmdb/recommendations?id=${last.id}&type=${last.type}`)
+          .then((r) => r.json())
+          .then((d) => setRecommendations((d.items || []).slice(0, 20)))
+          .catch(console.error);
+      }
+    } catch {}
+  }, []);
+
   if (loading && !data) return <Loading />;
   if (!data) return <div className="h-screen bg-void" />;
 
@@ -63,68 +90,84 @@ export default function HomeView({ initialData }) {
     <div className="min-h-screen bg-void font-body text-text">
       <nav className="absolute top-0 left-0 right-0 h-[72px] flex items-center justify-between px-6 lg:px-12 z-[100] bg-gradient-to-b from-black/80 to-transparent pt-4">
         <div className="flex items-center gap-[42px]">
-          <button
-            onClick={() => router.push("/")}
-            className="text-xl font-bold font-display text-white tracking-[0.02em] flex items-center gap-2 cursor-pointer bg-none border-none p-0"
-          >
-            <div className="w-6 h-6 rounded-[var(--radius-pill)] bg-gradient-to-br from-amber to-amber-600 flex items-center justify-center text-void font-black text-sm">
-              W
-            </div>
-            WatchTogether
-          </button>
+          <h1 className="m-0 p-0 leading-none">
+            <button
+              onClick={() => router.push("/")}
+              className="text-xl font-bold font-display text-white tracking-[0.02em] flex items-center gap-2 cursor-pointer bg-none border-none p-0"
+            >
+              <div className="w-6 h-6 rounded-[var(--radius-pill)] bg-gradient-to-br from-amber to-amber-600 flex items-center justify-center text-void font-black text-sm">
+                A
+              </div>
+              Astra
+            </button>
+          </h1>
         </div>
 
         <div className="flex items-center gap-5">
           <button
             onClick={() => setShowSearch(true)}
-            className="hidden lg:flex items-center gap-2.5 px-4 h-11 rounded-[var(--radius-pill)] glass-card bg-white/5 backdrop-blur-xl border border-white/10 text-white/40 hover:bg-white/10 hover:text-white cursor-text group transition-all active:scale-95"
+            className="hidden lg:flex items-center gap-2.5 px-4 h-9 rounded-[var(--radius-pill)] glass-card bg-white/5 backdrop-blur-xl border border-white/10 text-white/40 hover:bg-white/10 hover:text-white cursor-text group transition-all active:scale-[0.98]"
           >
-            <Search className="w-4 h-4 group-hover:text-amber transition-colors" />
-            <span className="text-sm font-medium pr-1">Search…</span>
-            <kbd className="hidden sm:flex items-center justify-center bg-white/10 border border-white/20 rounded px-1.5 h-[22px] text-[10px] font-bold text-white/50 font-mono">
+            <Search className="w-3.5 h-3.5 group-hover:text-amber transition-colors" />
+            <span className="text-[12px] font-bold pr-1">Search…</span>
+            <kbd className="hidden sm:flex items-center justify-center bg-white/10 border border-white/20 rounded px-1.5 h-[18px] text-[9px] font-black text-white/50 font-mono">
               ⌘K
             </kbd>
           </button>
 
+
           <button
             onClick={() => setShowSearch(true)}
-            className="lg:hidden w-10 h-10 rounded-[var(--radius-pill)] bg-surface border border-border text-white/40 flex items-center justify-center cursor-pointer hover:bg-white/10 hover:text-white transition-colors active:scale-95"
+            className="lg:hidden w-9 h-9 rounded-full bg-surface border border-border text-white/40 flex items-center justify-center cursor-pointer hover:bg-white/10 hover:text-white transition-colors active:scale-95"
           >
             <Search className="w-4 h-4" />
           </button>
 
           <RecentRooms />
 
+          <UserMenu />
+
           <button
-            disabled={creating}
-            onClick={async () => {
-              setCreating(true);
-              try {
-                const { roomId } = await createRoom("");
-                router.push(`/room/${roomId}`);
-              } catch {
-                setCreating(false);
-              }
-            }}
-            className="flex items-center gap-2.5 px-6 h-11 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[var(--radius-pill)] text-white/80 text-[13px] font-bold cursor-pointer hover:bg-white/10 hover:border-white/20 transition-all active:scale-95 disabled:opacity-50"
+            onClick={() => router.push("/create")}
+            className="flex items-center gap-2 px-5 h-9 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[var(--radius-pill)] text-white/80 text-[12px] font-black cursor-pointer hover:bg-white/10 hover:border-white/20 transition-all active:scale-[0.98]"
           >
-            {creating ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Users className="w-4 h-4" />
-            )}
+            <Users className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Create Room</span>
           </button>
         </div>
       </nav>
 
-      <main className="pb-[120px]">
+      <main className="pb-12">
         <Hero
           items={data.hero || []}
           onPick={handleNavigateToInfo}
           onPlay={handlePlay}
         />
         <div className="mt-[-80px] relative z-10 flex flex-col gap-14">
+          {recommendations.length > 0 && (
+            <Row
+              title={`Because you watched ${lastWatchedTitle}`}
+              items={recommendations}
+              onPick={handleNavigateToInfo}
+              accent="var(--color-jade)"
+            />
+          )}
+          {watched.length > 0 && (
+            <Row
+              title="Continue Watching"
+              items={watched.slice(0, 15)}
+              onPick={handleNavigateToInfo}
+              accent="var(--color-jade)"
+            />
+          )}
+          {favorites.length > 0 && (
+            <Row
+              title="My List"
+              items={favorites}
+              onPick={handleNavigateToInfo}
+              accent="var(--color-danger)"
+            />
+          )}
           <Row
             title="Trending Now"
             items={data.trending || []}

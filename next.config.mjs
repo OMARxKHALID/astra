@@ -12,6 +12,8 @@ const nextConfig = {
       { protocol: "https", hostname: "i.vimeocdn.com" },
       { protocol: "https", hostname: "image.tmdb.org" },
       { protocol: "https", hostname: "lh3.googleusercontent.com" },
+      { protocol: "https", hostname: "avatars.githubusercontent.com" },
+      { protocol: "https", hostname: "cdn.discordapp.com" },
     ],
   },
 

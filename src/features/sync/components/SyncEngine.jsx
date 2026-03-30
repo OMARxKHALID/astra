@@ -3,7 +3,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import io from "socket.io-client";
 import {
-  getLeaderTime,
   computeCorrection,
   expectedTime,
   SYNC_CHECK_INTERVAL,
@@ -107,8 +106,7 @@ export default function SyncEngine({
     (type, data) => {
       const socket = socketRef.current;
       const roomId = p.current.roomId;
-      
-      
+
       if (!socket) {
         console.error("[SyncEngine] Cannot dispatch: socket is null");
         return;
@@ -252,7 +250,10 @@ export default function SyncEngine({
         s.isPlaying,
       );
       const isCurrentHost = s?.hostId === p.current.userId;
-      const commandedRate = p.current.speedSyncEnabled !== false || isCurrentHost ? (s.playbackRate || 1) : 1;
+      const commandedRate =
+        p.current.speedSyncEnabled !== false || isCurrentHost
+          ? s.playbackRate || 1
+          : 1;
 
       const correctedRate =
         correction.action === "soft"
@@ -504,7 +505,7 @@ export default function SyncEngine({
       if (externalSocketRef) externalSocketRef.current = null;
       clearInterval(timer.current);
     };
-  }, [connect, externalSocketRef]);
+  }, [connect, externalSocketRef, userId]);
 
   // [Note] Skip initial render to avoid redundant double-connection on first initialization.
   const prevHostToken = useRef(hostToken);

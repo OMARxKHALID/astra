@@ -1,7 +1,7 @@
 {
-  "name": "watch-together-server",
+  "name": "astra-server",
   "version": "1.0.0",
-  "description": "Socket.IO server for WatchTogether",
+  "description": "Socket.IO server for Astra",
   "type": "module",
   "main": "socket.js",
   "engines": {

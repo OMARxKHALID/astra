@@ -39,7 +39,7 @@ export default function MediaHero({ items, onPick, onPlay }) {
       {item.backdrop && (
         <Image
           src={item.backdrop}
-          alt=""
+          alt={`${item.title} backdrop`}
           fill
           priority
           sizes="100vw"
@@ -91,6 +91,7 @@ export default function MediaHero({ items, onPick, onPlay }) {
           <div className="flex gap-3">
             <button
               onClick={() => onPlay && onPlay(item)}
+              aria-label={`Watch ${item.title}`}
               className="flex items-center gap-2 px-7 py-3 rounded-[var(--radius-pill)] bg-amber text-void font-bold text-sm border-none cursor-pointer hover:bg-amber transition-all font-body shadow-[0_4px_16px_rgba(var(--color-amber-rgb), 0.2)] active:scale-95"
             >
               <Play className="w-4 h-4 fill-current" />
@@ -98,6 +99,7 @@ export default function MediaHero({ items, onPick, onPlay }) {
             </button>
             <button
               onClick={() => onPick(item)}
+              aria-label={`View details for ${item.title}`}
               className="flex items-center gap-2 px-6 py-3 rounded-[var(--radius-pill)] bg-white/5 backdrop-blur-xl text-white/80 font-bold text-sm cursor-pointer border border-white/10 hover:bg-white/10 hover:text-white transition-all font-body active:scale-95"
             >
               See More

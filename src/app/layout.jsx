@@ -1,6 +1,7 @@
 import "./globals.css";
 import { DM_Sans, DM_Mono } from "next/font/google";
 import PwaUpdateToast from "@/components/PwaUpdateToast";
+import SessionProvider from "@/providers/SessionProvider";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -17,12 +18,35 @@ const dmMono = DM_Mono({
 });
 
 export const metadata = {
-  title: "WatchTogether — Watch videos in sync",
+  title: {
+    template: "%s | Astra",
+    default: "Astra | Stream Movies, TV Shows & Anime",
+  },
   description:
-    "Create a private room, share the link, and watch any video with friends — all in real time.",
+    "Explore a massive library of movies, TV shows, and anime. Stream content in high quality with a premium, social viewing experience.",
+  applicationName: "Astra",
+  appleWebApp: {
+    title: "Astra",
+    statusBarStyle: "black-translucent",
+    capable: true,
+  },
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL || "https://watch-together.vercel.app",
+    process.env.NEXT_PUBLIC_SITE_URL || "https://astra-sync.vercel.app",
   ),
+  alternates: {
+    canonical: "/",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
   icons: {
     icon: [
       { url: "/favicon.png", type: "image/png" },
@@ -32,17 +56,17 @@ export const metadata = {
     shortcut: "/favicon.svg",
   },
   openGraph: {
-    title: "WatchTogether — Watch videos in sync",
+    title: "Astra — Premium Streaming & Content Discovery",
     description:
-      "Watch videos together with friends in perfect real-time sync.",
-    url: "https://watch-together.vercel.app",
-    siteName: "WatchTogether",
+      "A feature-rich portal to browse and stream movies, series, and anime with global real-time synchronization.",
+    url: "https://astra-sync.vercel.app",
+    siteName: "Astra",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "WatchTogether Logo",
+        alt: "Astra Premium Streaming Portal",
       },
     ],
     locale: "en_US",
@@ -50,9 +74,9 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "WatchTogether — Watch videos in sync",
+    title: "Astra | Premium Streaming & Content Discovery",
     description:
-      "Watch videos together with friends in perfect real-time sync.",
+      "A feature-rich portal to browse and stream movies, series, and anime with global real-time synchronization.",
     images: ["/og-image.png"],
   },
 };
@@ -64,14 +88,6 @@ export default function RootLayout({ children }) {
     <html lang="en" className={`${dmSans.variable} ${dmMono.variable}`}>
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="application-name" content="WatchTogether" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta
-          name="apple-mobile-web-app-status-bar-style"
-          content="black-translucent"
-        />
-        <meta name="apple-mobile-web-app-title" content="WatchTogether" />
-        <meta name="mobile-web-app-capable" content="yes" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="preconnect" href="https://img.youtube.com" />
         <link rel="preconnect" href="https://www.youtube.com" />
@@ -88,8 +104,10 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body>
-        {children}
-        <PwaUpdateToast />
+        <SessionProvider>
+          {children}
+          <PwaUpdateToast />
+        </SessionProvider>
       </body>
     </html>
   );

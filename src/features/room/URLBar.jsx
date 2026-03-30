@@ -6,9 +6,10 @@ import {
   isStrictVideoUrl,
   SOURCE_LABELS,
 } from "@/lib/videoResolver";
-import { Link2 as LinkIcon, Shield as ShieldIcon, Youtube } from "lucide-react";
+import { Link2 as LinkIcon, Shield as ShieldIcon } from "lucide-react";
 import YouTubeSearch from "./YouTubeSearch";
 import { useToast } from "@/components/Toast";
+import YoutubeIcon from "@/components/icons/YoutubeIcon";
 
 export default function URLBar({
   isHost,
@@ -109,9 +110,9 @@ export default function URLBar({
           onClick={() => setMode("youtube")}
           title="Search YouTube"
           className={`w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] transition-all duration-200
-            ${mode === "youtube" ? "bg-danger text-white shadow-sm" : "text-muted"}`}
+            ${mode === "youtube" ? "bg-white/10 text-white shadow-sm border border-white/20" : "text-muted hover:text-white"}`}
         >
-          <Youtube className="w-4 h-4" />
+          <YoutubeIcon size={16} />
         </button>
       </div>
 

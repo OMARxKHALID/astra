@@ -253,7 +253,24 @@
     scrollbar-width: none;
   }
 
-  /* Thin 4px scrollbar — use for result lists that intentionally scroll */
+  /* Premium scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    transition: background 0.3s;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-amber);
+  }
+
+  /* Specific utility for thin scrollbars */
   .thin-scrollbar::-webkit-scrollbar {
     width: 4px;
   }
@@ -262,10 +279,10 @@
   }
   .thin-scrollbar::-webkit-scrollbar-thumb {
     background: var(--color-border);
-    border-radius: 10px;
+    border-radius: 20px;
   }
   .thin-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: var(--color-muted);
+    background: var(--color-amber);
   }
   .thin-scrollbar {
     scrollbar-width: thin;

@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: watch-together-ws
+    name: astra-ws
     runtime: node
     plan: free
     rootDir: server
@@ -12,6 +12,6 @@ services:
       - key: PORT
         value: 10000
       - key: ALLOWED_ORIGINS
-        sync: false # Set to your Vercel URL, e.g. https://watch-together-ebon.vercel.app
+        sync: false # Set to your Vercel URL, e.g. https://astra-sync.vercel.app
       - key: JWT_SECRET
         sync: false # MUST match the JWT_SECRET set in Vercel environment variables

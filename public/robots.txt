@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /_next/
+Disallow: /room/* # Privacy: Don't index private watch rooms
+
+Sitemap: https://astra-sync.vercel.app/sitemap.xml

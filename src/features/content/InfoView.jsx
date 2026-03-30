@@ -2,20 +2,24 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Image from "next/image";
 import {
   Play,
   Share2,
-  Youtube,
   ChevronDown,
   ChevronLeft,
   Users,
   Check,
   Loader2,
+  Heart,
 } from "lucide-react";
 import { buildEmbedUrl, serverOptions } from "@/lib/videoResolver";
 import Loading from "@/components/Loading";
 import { createRoom } from "@/utils/createRoom";
+import { LS_KEYS } from "@/constants/config";
+import { ls } from "@/utils/localStorage";
+import YoutubeIcon from "@/components/icons/YoutubeIcon";
 
 // [Note] Custom Select: Logic to override native <select> UI which breaks premium dark mode immersion
 function CustomSelect({
@@ -105,6 +109,7 @@ function CustomSelect({
 
 export default function InfoView({ initialData, type, id }) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [data, setData] = useState(initialData);
   const [activeTab, setActiveTab] = useState(
     type === "tv" ? "episodes" : "overview",
@@ -141,7 +146,57 @@ export default function InfoView({ initialData, type, id }) {
     window.scrollTo(0, 0);
   }, [id]);
 
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (!data?.id) return;
+      const favs = JSON.parse(ls.get(LS_KEYS.favorites) || "[]");
+      setIsFavorite(favs.some((f) => f.id === data.id && f.type === type));
+    } catch {}
+  }, [data?.id, type]);
+
+  const toggleFavorite = () => {
+    if (!data?.id) return;
+    try {
+      let favs = JSON.parse(ls.get(LS_KEYS.favorites) || "[]");
+      if (isFavorite) {
+        favs = favs.filter((f) => !(f.id === data.id && f.type === type));
+      } else {
+        favs.unshift({
+          id: data.id,
+          type,
+          title: data.title,
+          poster: data.poster,
+          rating: data.rating,
+          year: data.year,
+        });
+      }
+      ls.set(LS_KEYS.favorites, JSON.stringify(favs));
+      setIsFavorite(!isFavorite);
+    } catch {}
+  };
+
+  const markAsWatched = () => {
+    if (!data?.id) return;
+    try {
+      let watched = JSON.parse(ls.get(LS_KEYS.watched) || "[]");
+      watched = watched.filter((w) => !(w.id === data.id && w.type === type));
+      watched.unshift({
+        id: data.id,
+        type,
+        title: data.title,
+        poster: data.poster,
+        rating: data.rating,
+        year: data.year,
+      });
+      if (watched.length > 30) watched.pop();
+      ls.set(LS_KEYS.watched, JSON.stringify(watched));
+    } catch {}
+  };
+
   const handleWatch = () => {
+    markAsWatched();
     const server = serverOptions[0].value;
     const embedUrl = buildEmbedUrl(server, id, type, 1, 1);
     router.push(
@@ -151,10 +206,11 @@ export default function InfoView({ initialData, type, id }) {
 
   const handleWatchTogether = async () => {
     setCreating(true);
+    markAsWatched();
     try {
       const server = serverOptions[0].value;
       const embedUrl = buildEmbedUrl(server, id, type, 1, 1);
-      const { roomId } = await createRoom(embedUrl);
+      const { roomId } = await createRoom(embedUrl, session);
       router.push(
         `/room/${roomId}?url=${encodeURIComponent(embedUrl)}&tmdb=${id}&type=${type}`,
       );
@@ -170,9 +226,9 @@ export default function InfoView({ initialData, type, id }) {
           <Share2 className="w-8 h-8 opacity-40 rotate-180" />
         </div>
         <div className="text-center">
-          <h2 className="text-xl font-bold font-display text-bright">
+          <h1 className="text-xl font-bold font-display text-bright">
             Details Unavailable
-          </h2>
+          </h1>
           <p className="text-sm text-muted mt-1 font-mono">
             This item could not be loaded or reached TMDB.
           </p>
@@ -204,6 +260,7 @@ export default function InfoView({ initialData, type, id }) {
     >
       <button
         onClick={() => router.back()}
+        aria-label="Go back to previous page"
         className="absolute top-6 left-6 lg:top-8 lg:left-10 z-[100] w-11 h-11 rounded-full glass-card flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all active:scale-90 shadow-2xl"
       >
         <ChevronLeft className="w-6 h-6 pr-0.5" />
@@ -216,7 +273,7 @@ export default function InfoView({ initialData, type, id }) {
             {data.backdrop ? (
               <Image
                 src={data.backdrop}
-                alt=""
+                alt={`${data.title} backdrop`}
                 fill
                 priority
                 className="w-full h-full object-cover object-[center_20%] opacity-80"
@@ -236,7 +293,7 @@ export default function InfoView({ initialData, type, id }) {
                 {data.poster ? (
                   <Image
                     src={data.poster}
-                    alt={data.title}
+                    alt={`${data.title} poster`}
                     width={240}
                     height={360}
                     className="w-full h-full object-cover"
@@ -262,30 +319,24 @@ export default function InfoView({ initialData, type, id }) {
                 </h1>
               </div>
 
-              <div className="flex flex-wrap items-center justify-center gap-1 lg:gap-[0.5rem] w-full relative p-0.5 lg:p-1 lg:pr-[1rem]">
+              <div className="flex flex-wrap items-center justify-center gap-2 w-full relative p-1.5 lg:p-2 lg:pr-[1rem]">
                 <button
                   onClick={handleWatch}
-                  className="bg-amber text-void flex-1 min-w-[70px] sm:flex-none h-10 px-4 rounded-[var(--radius-pill)] text-[13px] font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-[0_4px_12px_rgba(var(--color-amber-rgb),0.3)] hover:brightness-110 active:scale-95"
+                  className="bg-amber text-void flex-1 min-w-[70px] sm:flex-none h-9 px-4 rounded-[var(--radius-pill)] text-[12px] font-black flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-[0_4px_12px_rgba(var(--color-amber-rgb),0.3)] hover:brightness-110 active:scale-95"
                 >
-                  <Play
-                    size={14}
-                    fill="currentColor"
-                  />
+                  <Play size={13} fill="currentColor" />
                   Watch
                 </button>
 
                 <button
                   disabled={creating}
                   onClick={handleWatchTogether}
-                  className="bg-jade text-void flex-1 min-w-[85px] sm:flex-none h-10 px-4 rounded-[var(--radius-pill)] text-[13px] font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-[0_4px_12px_rgba(var(--color-jade-rgb),0.3)] hover:brightness-110 active:scale-95 disabled:opacity-50"
+                  className="bg-jade text-void flex-1 min-w-[90px] sm:flex-none h-9 px-4 rounded-[var(--radius-pill)] text-[12px] font-black flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-[0_4px_12px_rgba(var(--color-jade-rgb),0.3)] hover:brightness-110 active:scale-95 disabled:opacity-50"
                 >
                   {creating ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
-                    <Users
-                      size={14}
-                      fill="currentColor"
-                    />
+                    <Users size={13} fill="currentColor" />
                   )}
                   Together
                 </button>
@@ -298,13 +349,24 @@ export default function InfoView({ initialData, type, id }) {
                       "_blank",
                     )
                   }
-                  className={`bg-amber text-void flex-1 min-w-[75px] sm:flex-none h-10 px-4 rounded-[var(--radius-pill)] text-[13px] font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-[0_4px_12px_rgba(var(--color-amber-rgb),0.3)] hover:brightness-110 active:scale-95 ${!data.trailer ? "opacity-30 pointer-events-none" : ""}`}
+                  className={`bg-white/5 text-white/80 border border-white/10 flex-1 min-w-[80px] sm:flex-none h-9 px-4 rounded-[var(--radius-pill)] text-[12px] font-black flex items-center justify-center gap-1.5 cursor-pointer transition-all hover:bg-white/10 hover:text-white active:scale-95 ${!data.trailer ? "opacity-30 pointer-events-none" : ""}`}
                 >
-                  <Youtube
-                    size={14}
-                    fill="currentColor"
-                  />
+                  <YoutubeIcon size={16} />
                   Trailers
+                </button>
+
+                <button
+                  onClick={toggleFavorite}
+                  className={`flex-1 min-w-[50px] sm:flex-none h-9 px-4 rounded-[var(--radius-pill)] text-[12px] font-black flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95 border ${isFavorite ? "bg-amber text-void border-amber shadow-[0_4px_12px_rgba(var(--color-amber-rgb),0.3)] hover:brightness-110" : "bg-white/5 border-white/10 text-white hover:bg-white/10"}`}
+                >
+                  <Heart
+                    size={13}
+                    fill={isFavorite ? "currentColor" : "none"}
+                    className={isFavorite ? "" : "opacity-60"}
+                  />
+                  <span className="hidden sm:inline">
+                    {isFavorite ? "Saved" : "My List"}
+                  </span>
                 </button>
               </div>
             </div>
@@ -349,7 +411,7 @@ export default function InfoView({ initialData, type, id }) {
                       >
                         <Image
                           src={p.logo}
-                          alt={p.name}
+                          alt={`${p.name} logo`}
                           width={40}
                           height={40}
                           className="w-10 h-10 rounded-[var(--radius-pill)] border border-white/10 shadow-lg hover:scale-110 transition-transform"

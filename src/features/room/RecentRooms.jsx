@@ -50,18 +50,18 @@ export default function RecentRooms() {
     <div className="relative recent-rooms-container">
       <button
         onClick={() => setShowRecent(!showRecent)}
-        className={`w-11 h-11 flex items-center justify-center rounded-full transition-all border backdrop-blur-xl
+        className={`w-9 h-9 flex items-center justify-center rounded-full transition-all border backdrop-blur-xl
           ${
             showRecent
-              ? "bg-amber text-void border-amber shadow-[0_0_20px_rgba(var(--color-amber-rgb), 0.3)]"
+              ? "bg-[var(--color-amber)] text-void border-[var(--color-amber)] shadow-[0_0_20px_rgba(var(--color-amber-rgb),_0.3)]"
               : "text-white/40 hover:text-white bg-white/5 border-white/10 hover:bg-white/10"
           }`}
       >
-        <History className="w-5 h-5" />
+        <History className="w-4 h-4" />
       </button>
 
       {showRecent && (
-        <div className="absolute top-full right-0 mt-3 w-72 glass-card overflow-hidden shadow-2xl animate-in slide-in-from-top-2 fade-in duration-300 z-50">
+        <div className="absolute top-full right-0 mt-3 w-72 glass-card rounded-2xl overflow-hidden shadow-2xl animate-in slide-in-from-top-2 fade-in duration-300 z-50">
           <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
             <div className="flex flex-col">
               <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/60">
@@ -90,7 +90,7 @@ export default function RecentRooms() {
               >
                 <button
                   onClick={() => router.push(`/room/${r.roomId}`)}
-                  className="w-full flex items-center gap-3 p-3 hover:bg-white/10 transition-colors text-left"
+                  className="w-full flex items-center gap-3 p-3 hover:bg-white/10 transition-all text-left group-hover:pl-4 duration-300"
                 >
                   {r.thumbnail ? (
                     <Image
