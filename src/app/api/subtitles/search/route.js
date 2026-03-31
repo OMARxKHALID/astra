@@ -28,7 +28,7 @@ export async function GET(request) {
     // Common headers for OpenSubtitles API v1
     const headers = {
         "Api-Key": API_KEY,
-        "User-Agent": "WatchTogether v1",
+        "User-Agent": "Astra v1",
         "Content-Type": "application/json"
     };
 

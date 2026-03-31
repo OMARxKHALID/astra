@@ -1,15 +1,34 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import {
+  Suspense,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { ArrowLeft, Star, Users, Loader2, Cloud, Check } from "lucide-react";
+import {
+  ArrowLeft,
+  Star,
+  Users,
+  Loader2,
+  Cloud,
+  List as ListIcon,
+} from "lucide-react";
 import Loading from "@/components/Loading";
 import Image from "next/image";
-import { serverOptions, buildEmbedUrl } from "@/lib/videoResolver";
+import {
+  serverOptions,
+  buildEmbedUrl,
+  detectServer,
+} from "@/lib/videoResolver";
 import { createRoom } from "@/utils/createRoom";
+import { ls } from "@/utils/localStorage";
 
 import VideoPlayer from "@/features/video";
-import { useRef } from "react";
+import EpisodeSelector from "@/features/content/EpisodeSelector";
 
 function WatchContent() {
   const params = useSearchParams();
@@ -26,18 +45,45 @@ function WatchContent() {
   const [showBar, setShowBar] = useState(true);
   const [creating, setCreating] = useState(false);
   const [cloudOpen, setCloudOpen] = useState(false);
+  const [episodesOpen, setEpisodesOpen] = useState(false);
+  const [seasonCache, setSeasonCache] = useState({});
+
+  const derivedMeta = useMemo(() => {
+    if (!url) return { id: tmdbId, s, e, type };
+    const vidlinkMatch = url.match(/\/tv\/(\d+)\/(\d+)\/(\d+)/);
+    if (vidlinkMatch) {
+      return {
+        id: vidlinkMatch[1],
+        s: vidlinkMatch[2],
+        e: vidlinkMatch[3],
+        type: "tv",
+      };
+    }
+    const tmdbMatch = url.match(/[?&]tmdb=(\d+)/) || url.match(/\/tv\/(\d+)/);
+    if (tmdbMatch) return { id: tmdbMatch[1], s, e, type: "tv" };
+    return { id: tmdbId, s, e, type };
+  }, [url, tmdbId, s, e, type]);
+
+  const {
+    id: activeTmdbId,
+    s: activeS,
+    e: activeE,
+    type: metaType,
+  } = derivedMeta;
+  const isActiveTv = metaType === "tv";
+
+  // ── Side-effects ─────────────────────────────────────────────────────────────
+
   const cloudRef = useRef(null);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (cloudRef.current && !cloudRef.current.contains(event.target)) {
+    const onClickOutside = (ev) => {
+      if (cloudRef.current && !cloudRef.current.contains(ev.target))
         setCloudOpen(false);
-      }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
-
 
   useEffect(() => {
     let timer;
@@ -55,14 +101,50 @@ function WatchContent() {
   }, []);
 
   useEffect(() => {
-    if (!tmdbId) return;
-    fetch(`/api/tmdb/${type}/${encodeURIComponent(tmdbId)}`)
+    if (!activeTmdbId) return;
+    fetch(
+      `/api/tmdb/${derivedMeta.type || type}/${encodeURIComponent(activeTmdbId)}`,
+    )
       .then((r) => r.json())
       .then((d) => {
         if (d && !d.error) setMeta(d);
       })
       .catch(() => {});
-  }, [tmdbId, type]);
+  }, [activeTmdbId, derivedMeta.type, type]);
+
+  const navigateToEpisode = useCallback(
+    (season, episode) => {
+      if (!activeTmdbId) return;
+      const server = detectServer(url);
+      if (server) {
+        const newUrl = buildEmbedUrl(
+          server,
+          activeTmdbId,
+          "tv",
+          season,
+          episode,
+        );
+        if (newUrl) {
+          router.replace(
+            `/watch?url=${encodeURIComponent(newUrl)}&tmdb=${activeTmdbId}&type=tv&s=${season}&e=${episode}`,
+          );
+          return;
+        }
+      }
+      router.replace(
+        `/watch?url=${encodeURIComponent(url)}&tmdb=${activeTmdbId}&type=tv&s=${season}&e=${episode}`,
+      );
+    },
+    [url, activeTmdbId, router],
+  );
+
+  const handleSelectEpisode = useCallback(
+    (newSeason, newEpisode) => {
+      navigateToEpisode(newSeason, newEpisode);
+      setEpisodesOpen(false);
+    },
+    [navigateToEpisode],
+  );
 
   if (!url) {
     return (
@@ -84,15 +166,16 @@ function WatchContent() {
 
   return (
     <div className="h-dvh bg-void flex flex-col overflow-hidden relative">
-      {/* Hover Zone to trigger bar */}
-      <div 
+      <div
         onMouseEnter={() => setShowBar(true)}
         className="fixed top-0 left-0 right-0 h-16 z-[60] pointer-events-auto"
       />
 
       <div
         className={`fixed top-0 left-0 right-0 z-[70] px-3 sm:px-5 py-3 sm:py-4 bg-gradient-to-b from-black/95 via-black/50 to-transparent flex items-center gap-2 sm:gap-3 transition-all duration-500 transform ${
-          showBar ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"
+          showBar
+            ? "translate-y-0 opacity-100"
+            : "-translate-y-full opacity-0 pointer-events-none"
         }`}
       >
         <button
@@ -121,8 +204,7 @@ function WatchContent() {
               <div className="hidden sm:flex gap-2 items-center mt-0.5">
                 {meta.rating && (
                   <span className="text-[10px] text-amber font-mono flex items-center gap-1 font-black">
-                    <Star className="w-2.5 h-2.5 fill-amber" />{" "}
-                    {meta.rating}
+                    <Star className="w-2.5 h-2.5 fill-amber" /> {meta.rating}
                   </span>
                 )}
                 {meta.year && (
@@ -170,35 +252,61 @@ function WatchContent() {
             )}
             <span className="hidden sm:inline">Watch Together</span>
           </button>
-          
-          <div className="relative flex items-stretch pointer-events-auto border-l border-amber/10" ref={cloudRef}>
+
+          <div
+            className="relative flex items-stretch pointer-events-auto border-l border-amber/10"
+            ref={cloudRef}
+          >
             <button
               onClick={() => setCloudOpen(!cloudOpen)}
-              className="px-3 sm:px-3.5 h-9 text-amber cursor-pointer font-body hover:bg-amber/10 transition-all active:scale-[0.98] flex items-center justify-center rounded-r-[var(--radius-pill)]"
+              className="px-3 sm:px-3.5 h-9 text-amber cursor-pointer font-body hover:bg-white/10 transition-all active:scale-[0.98] flex items-center justify-center border-r border-amber/10"
               title="Change Server"
             >
               <Cloud className="w-4 h-4" strokeWidth={2.5} />
             </button>
+
+            {isActiveTv && (
+              <button
+                onClick={() => setEpisodesOpen(!episodesOpen)}
+                className={`px-3 sm:px-3.5 h-9 cursor-pointer font-body transition-all active:scale-[0.98] flex items-center justify-center rounded-r-[var(--radius-pill)] ${
+                  episodesOpen
+                    ? "bg-amber/20 text-amber"
+                    : "text-amber hover:bg-white/10"
+                }`}
+                title="Episodes"
+              >
+                <ListIcon className="w-4 h-4" strokeWidth={2.5} />
+              </button>
+            )}
+
             {cloudOpen && (
               <div className="absolute top-full right-0 mt-3 w-[160px] p-1.5 flex flex-col gap-0.5 rounded-xl border border-white/10 glass-card bg-void/90 backdrop-blur-xl shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
-                <div className="px-2 py-1 mb-1 text-[8px] font-black text-[var(--color-muted)] uppercase tracking-wider font-mono">Select Provider</div>
-                {serverOptions.map((opt) => {
-                  return (
-                    <button
-                      key={opt.value}
-                      onClick={() => {
-                        const newUrl = buildEmbedUrl(opt.value, tmdbId, type, s, e);
-                        setCloudOpen(false);
-                        if (newUrl) {
-                          router.replace(`/watch?url=${encodeURIComponent(newUrl)}&tmdb=${tmdbId}&type=${type}${type==='tv'?`&s=${s}&e=${e}`:''}`);
-                        }
-                      }}
-                      className={`w-full text-left px-3 py-2.5 rounded-md text-[10px] font-bold tracking-wide transition-colors flex items-center justify-between text-white/70 hover:bg-white/10 hover:text-white`}
-                    >
-                      {opt.label}
-                    </button>
-                  );
-                })}
+                <div className="px-2 py-1 mb-1 text-[8px] font-black text-[var(--color-muted)] uppercase tracking-wider font-mono">
+                  Select Provider
+                </div>
+                {serverOptions.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => {
+                      const newUrl = buildEmbedUrl(
+                        opt.value,
+                        activeTmdbId,
+                        isActiveTv ? "tv" : "movie",
+                        activeS,
+                        activeE,
+                      );
+                      setCloudOpen(false);
+                      if (newUrl) {
+                        router.replace(
+                          `/watch?url=${encodeURIComponent(newUrl)}&tmdb=${activeTmdbId}&type=${isActiveTv ? "tv" : "movie"}&s=${activeS}&e=${activeE}`,
+                        );
+                      }
+                    }}
+                    className="w-full text-left px-3 py-2.5 rounded-md text-[10px] font-bold tracking-wide transition-colors flex items-center justify-between text-white/70 hover:bg-white/10 hover:text-white"
+                  >
+                    {opt.label}
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -211,7 +319,22 @@ function WatchContent() {
           videoUrl={url}
           isHost={true}
           isPlaying={true}
+          hasEpisodes={isActiveTv}
+          onToggleEpisodes={() => setEpisodesOpen(!episodesOpen)}
         />
+
+        {episodesOpen && activeTmdbId && (
+          <EpisodeSelector
+            tmdbId={activeTmdbId}
+            currentSeason={activeS}
+            currentEpisode={activeE}
+            totalSeasons={meta?.number_of_seasons || null}
+            onSelectEpisode={handleSelectEpisode}
+            onClose={() => setEpisodesOpen(false)}
+            cache={seasonCache}
+            setCache={setSeasonCache}
+          />
+        )}
       </div>
     </div>
   );

@@ -41,6 +41,8 @@ export default function NativeVideoPlayer({
   theatreMode = false,
   onToggleTheatre,
   onToggleChat,
+  hasEpisodes = false,
+  onToggleEpisodes,
 }) {
   const [localTime, setLocalTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -92,8 +94,8 @@ export default function NativeVideoPlayer({
   );
   
   useVideoEvents({
-    videoRef, videoUrl, sourceType, setDuration, setLocalTime, 
-    setBufferedPct, setBuffering, setVideoError, setPosterVisible, 
+    videoRef, videoUrl, sourceType, setDuration, setLocalTime,
+    setBufferedPct, setBuffering, setVideoError, setPosterVisible,
     setFullscreen, onPause, onPlay, seekingRef, playbackRate
   });
 
@@ -348,6 +350,8 @@ export default function NativeVideoPlayer({
         handleMouseMove={handleMouseMove}
         handleMouseLeave={handleMouseLeave}
         ctrlVis={ctrlVis}
+        hasEpisodes={hasEpisodes}
+        onToggleEpisodes={onToggleEpisodes}
       />
     </div>
   );

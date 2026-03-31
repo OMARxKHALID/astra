@@ -26,7 +26,10 @@ const EMBED_DOMAINS = [
   "player.smashy.stream",
 ];
 
-import { KNOWN_VIDEO_EXTENSIONS, isStrictVideoUrl } from "@/utils/videoValidation";
+import {
+  KNOWN_VIDEO_EXTENSIONS,
+  isStrictVideoUrl,
+} from "@/utils/videoValidation";
 
 export { isStrictVideoUrl };
 
@@ -115,6 +118,33 @@ export function buildEmbedUrl(server, tmdbId, type, season = 1, episode = 1) {
     default:
       return null;
   }
+}
+
+// [Note] Reverse-lookup: hostname split fails for www./player./embed. prefixes; match against known server URL patterns instead
+export function detectServer(url) {
+  if (!url) return null;
+  let urlHost;
+  try {
+    urlHost = new URL(url).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+  for (const opt of serverOptions) {
+    // Build a test URL for each server and compare hostnames
+    const testUrl = buildEmbedUrl(opt.value, "1", "movie");
+    if (!testUrl) continue;
+    try {
+      const testHost = new URL(testUrl).hostname.toLowerCase();
+      if (
+        urlHost === testHost ||
+        urlHost.endsWith("." + testHost) ||
+        testHost.endsWith("." + urlHost)
+      ) {
+        return opt.value;
+      }
+    } catch {}
+  }
+  return null;
 }
 
 export const serverOptions = [

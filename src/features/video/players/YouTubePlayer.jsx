@@ -16,11 +16,14 @@ export default function YouTubePlayer({
   onSeek,
   onSpeed,
   canControl = true,
+  onTimeUpdate,
   onAmbiColors,
   ambilightEnabled = true,
   theatreMode = false,
   onToggleTheatre,
   onToggleChat,
+  hasEpisodes = false,
+  onToggleEpisodes,
 }) {
   const containerRef = useRef(null);
   const iframeContainerRef = useRef(null);
@@ -158,6 +161,13 @@ export default function YouTubePlayer({
           else pendingSeekRef.current = t;
         } catch {}
       },
+      get duration() {
+        try {
+          return playerRef.current?.getDuration?.() ?? 0;
+        } catch {
+          return 0;
+        }
+      },
       get paused() {
         try {
           return (
@@ -214,8 +224,11 @@ export default function YouTubePlayer({
     const t = setInterval(() => {
       if (!playerRef.current) return;
       try {
-        setLocalTime(playerRef.current.getCurrentTime?.() ?? 0);
-        setDuration(playerRef.current.getDuration?.() ?? 0);
+        const time = playerRef.current.getCurrentTime?.() ?? 0;
+        const dur = playerRef.current.getDuration?.() ?? 0;
+        setLocalTime(time);
+        onTimeUpdate?.({ current: time, duration: dur });
+        setDuration(dur);
         setBufferedPct(
           (playerRef.current.getVideoLoadedFraction?.() ?? 0) * 100,
         );
@@ -412,6 +425,8 @@ export default function YouTubePlayer({
         isFullscreen={isFullscreen}
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}
+        hasEpisodes={hasEpisodes}
+        onToggleEpisodes={onToggleEpisodes}
       />
     </div>
   );

@@ -2,7 +2,7 @@
 
 import { useRef, useCallback, useMemo, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Share2 as ShareIcon,
   MessageSquare as ChatIcon,
@@ -26,9 +26,11 @@ import UserList from "./UserList";
 import SyncStatusIndicator from "@/components/SyncStatusIndicator";
 import ReconnectBanner from "@/components/ReconnectBanner";
 import ToastContainer, { useToast } from "@/components/Toast";
+import { buildEmbedUrl } from "@/lib/videoResolver";
 import SettingsPanel from "./SettingsPanel";
 import ShortcutsModal from "@/components/ShortcutsModal";
 import PasswordModal from "@/components/PasswordModal";
+import EpisodeSelector from "@/features/content/EpisodeSelector";
 
 import useUser from "./hooks/useUser";
 import useSettings from "./hooks/useSettings";
@@ -39,6 +41,7 @@ import { ls } from "@/utils/localStorage";
 
 export default function RoomView({ roomId, initialMeta }) {
   const router = useRouter();
+  const params = useSearchParams();
   const { toasts, addToast } = useToast();
 
   // [Note] Hydration guard for localStorage access
@@ -85,7 +88,53 @@ export default function RoomView({ roomId, initialMeta }) {
     return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
 
-  // [Note] radial glow sampling
+  const hostToken = ls.get(`host_${roomId}`) || "";
+  const isHost =
+    room.serverState?.hostId === identity.userId ||
+    (!!hostToken && !room.serverState);
+  const videoUrl =
+    room.serverState?.videoUrl !== undefined
+      ? room.serverState.videoUrl
+      : initialMeta?.videoUrl || "";
+
+  const subtitleUrl =
+    room.serverState?.subtitleUrl ?? initialMeta?.subtitleUrl ?? "";
+  const canControl = !(room.serverState?.hostOnlyControls ?? false) || isHost;
+
+  const [episodesOpen, setEpisodesOpen] = useState(false);
+  const [seasonCache, setSeasonCache] = useState({});
+
+  const tmdbId = params.get("tmdb") || "";
+  const type = params.get("type") || "movie";
+  const s = params.get("s") || 1;
+  const e = params.get("e") || 1;
+
+  const derivedMeta = useMemo(() => {
+    if (!videoUrl) return { id: tmdbId, s, e, type };
+
+    const vidlinkMatch = videoUrl.match(/\/tv\/(\d+)\/(\d+)\/(\d+)/);
+    if (vidlinkMatch) {
+      return {
+        id: vidlinkMatch[1],
+        s: vidlinkMatch[2],
+        e: vidlinkMatch[3],
+        type: "tv",
+      };
+    }
+
+    const tmdbMatch =
+      videoUrl.match(/[?&]tmdb=(\d+)/) || videoUrl.match(/\/tv\/(\d+)/);
+    if (tmdbMatch) return { id: tmdbMatch[1], s, e, type: "tv" };
+
+    return { id: tmdbId, s, e, type };
+  }, [videoUrl, tmdbId, s, e, type]);
+
+  const { id: metaId, s: metaS, e: metaE, type: metaType } = derivedMeta;
+  const activeTmdbId = metaId;
+  const activeS = metaS;
+  const activeE = metaE;
+  const isActiveTv = metaType === "tv";
+
   const handleAmbiColors = useCallback(
     (colors) => {
       const overlay = rootAmbiRef.current;
@@ -105,23 +154,10 @@ export default function RoomView({ roomId, initialMeta }) {
             : "";
       }
     },
-    [settings.ambilightEnabled],
+    [settings.ambilightEnabled, settings],
   );
 
   const { sidebarWidth, onDragStart } = sidebar;
-
-  const hostToken = ls.get(`host_${roomId}`) || "";
-  const isHost =
-    room.serverState?.hostId === identity.userId ||
-    (!!hostToken && !room.serverState);
-  const videoUrl =
-    room.serverState?.videoUrl !== undefined
-      ? room.serverState.videoUrl
-      : initialMeta?.videoUrl || "";
-
-  const subtitleUrl =
-    room.serverState?.subtitleUrl ?? initialMeta?.subtitleUrl ?? "";
-  const canControl = !(room.serverState?.hostOnlyControls ?? false) || isHost;
   const leaderTime = useMemo(
     () => getLeaderTime(room.tsMapState),
     [room.tsMapState],
@@ -129,7 +165,6 @@ export default function RoomView({ roomId, initialMeta }) {
   const isTheatre = settings.theatreMode && !isFullscreen;
   const [fsChatOpen, setFsChatOpen] = useState(false);
 
-  // [Note] Persist watch history to LS
   const historySavedRef = useRef(false);
   useEffect(() => {
     if (!room.serverState || historySavedRef.current || !videoUrl) return;
@@ -171,6 +206,31 @@ export default function RoomView({ roomId, initialMeta }) {
       .sort((a, b) => a - b);
     if (times.length) v.currentTime = times[Math.floor(times.length / 2)];
   }, [room.tsMapState]);
+
+  const handleSelectEpisode = useCallback(
+    (newSeason, newEpisode) => {
+      const server = videoUrl.split("://")[1]?.split(".")?.[0] || "vidlink";
+      const newUrl = buildEmbedUrl(
+        server,
+        activeTmdbId,
+        "tv",
+        newSeason,
+        newEpisode,
+      );
+      if (newUrl) {
+        sendRef.current?.({
+          type: "change_video",
+          videoUrl: newUrl,
+          subtitleUrl: "",
+        });
+        router.replace(
+          `/room/${roomId}?url=${encodeURIComponent(newUrl)}&tmdb=${activeTmdbId}&type=tv&s=${newSeason}&e=${newEpisode}`,
+        );
+        setEpisodesOpen(false);
+      }
+    },
+    [videoUrl, activeTmdbId, roomId, router],
+  );
 
   if (!mounted) return null;
 
@@ -421,7 +481,21 @@ export default function RoomView({ roomId, initialMeta }) {
               settings.setTheatreMode(!settings.theatreMode)
             }
             onToggleChat={() => setFsChatOpen((o) => !o)}
+            hasEpisodes={isActiveTv}
+            onToggleEpisodes={() => setEpisodesOpen(!episodesOpen)}
           />
+
+          {episodesOpen && activeTmdbId && (
+            <EpisodeSelector
+              tmdbId={activeTmdbId}
+              currentSeason={activeS}
+              currentEpisode={activeE}
+              onSelectEpisode={handleSelectEpisode}
+              onClose={() => setEpisodesOpen(false)}
+              cache={seasonCache}
+              setCache={setSeasonCache}
+            />
+          )}
         </section>
 
         {settings.showSidebar && !isFullscreen && !isTheatre && (
@@ -528,7 +602,7 @@ export default function RoomView({ roomId, initialMeta }) {
               <span className="font-display font-semibold text-white/40">
                 {room.mobileSheet === "chat" ? "Chat" : "Participants"}
               </span>
-                <button
+              <button
                 onClick={() => room.setMobileSheet(null)}
                 className="w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] glass-card text-white/40"
               >
@@ -620,7 +694,7 @@ export default function RoomView({ roomId, initialMeta }) {
                     FS CHAT
                   </span>
                 </div>
-                  <button
+                <button
                   onClick={() => setFsChatOpen(false)}
                   className="w-6 h-6 flex items-center justify-center rounded-[var(--radius-pill)] hover:bg-white/10 text-white/40 transition-colors"
                 >

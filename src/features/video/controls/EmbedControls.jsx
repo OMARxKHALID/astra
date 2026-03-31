@@ -11,6 +11,7 @@ import {
   Captions as CcIcon,
   Maximize as ExpandIcon,
   Minimize as CompressIcon,
+  List as EpisodesIcon,
 } from "lucide-react";
 
 // [Note] Theatre icon inlined to avoid circular dependencies
@@ -56,6 +57,8 @@ export default function EmbedControls({
   isFullscreen = false,
   theatreMode = false,
   onToggleTheatre,
+  hasEpisodes = false,
+  onToggleEpisodes,
 }) {
   const [tmp, setTmp] = useState(0);
   const [seeking, setSeeking] = useState(false);
@@ -188,6 +191,16 @@ export default function EmbedControls({
                 }`}
             >
               <TheatreIconInline className="w-4 h-4" />
+            </button>
+          )}
+
+          {hasEpisodes && onToggleEpisodes && (
+            <button
+              onClick={onToggleEpisodes}
+              title="Episodes"
+              className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white transition-all active:scale-90 backdrop-blur-sm"
+            >
+              <EpisodesIcon className="w-4 h-4" />
             </button>
           )}
 

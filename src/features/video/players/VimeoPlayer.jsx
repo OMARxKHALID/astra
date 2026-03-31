@@ -20,6 +20,8 @@ export default function VimeoPlayer({
   theatreMode = false,
   onToggleTheatre,
   onToggleChat,
+  hasEpisodes = false,
+  onToggleEpisodes,
 }) {
   const containerRef = useRef(null);
   const iframeRef = useRef(null);
@@ -91,6 +93,7 @@ export default function VimeoPlayer({
     let _t = 0,
       _p = true,
       _r = 1,
+      _dur = 0,
       _ended = false;
     videoRef.current = {
       get currentTime() {
@@ -100,6 +103,9 @@ export default function VimeoPlayer({
         _t = t;
         _ended = false;
         playerRef.current?.setCurrentTime(t).catch(() => {});
+      },
+      get duration() {
+        return _dur;
       },
       get paused() {
         return _p;
@@ -147,8 +153,14 @@ export default function VimeoPlayer({
       player
         .ready()
         .then(() => {
-          player.getDuration().then((d) => setDuration(d));
-          player.on("timeupdate", ({ seconds }) => setLocalTime(seconds));
+          player.getDuration().then((d) => {
+            setDuration(d);
+            _dur = d;
+          });
+          player.on("timeupdate", ({ seconds, duration }) => {
+            setLocalTime(seconds);
+            onTimeUpdate?.({ current: seconds, duration });
+          });
           player.on("progress", ({ percent }) => setBufferedPct(percent * 100));
           player.on("bufferstart", () => {
             isBufferingRef.current = true;
@@ -160,10 +172,9 @@ export default function VimeoPlayer({
             isBufferingRef.current = false;
           });
           player.on("ended", () => {
-            player
-              .getDuration()
-              .then((d) => onPause?.(d))
-              .catch(() => {});
+            player.getDuration().then((d) => {
+              onPause?.(d);
+            }).catch(() => {});
           });
           setReady(true);
         })
@@ -289,6 +300,8 @@ export default function VimeoPlayer({
         isFullscreen={isFullscreen}
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}
+        hasEpisodes={hasEpisodes}
+        onToggleEpisodes={onToggleEpisodes}
       />
     </div>
   );

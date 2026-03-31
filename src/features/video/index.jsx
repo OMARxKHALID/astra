@@ -30,13 +30,18 @@ function VideoPlayer({
   theatreMode = false,
   onToggleTheatre,
   onToggleChat,
+  hasEpisodes = false,
+  onToggleEpisodes,
 }) {
   const source = classifyUrl(videoUrl);
 
-  // [Note] Ref Cleanup: Ensure stale video references from previous players are 
+  // [Note] Ref Cleanup: Ensure stale video references from previous players are
   // cleared when switching to an 'embed' or 'unsupported' mode to avoid ghosts.
   useEffect(() => {
-    if ((source.type === "embed" || source.type === "unsupported") && videoRef?.current) {
+    if (
+      (source.type === "embed" || source.type === "unsupported") &&
+      videoRef?.current
+    ) {
       videoRef.current = null;
     }
   }, [source.type, videoRef]);
@@ -67,6 +72,8 @@ function VideoPlayer({
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}
         onToggleChat={onToggleChat}
+        hasEpisodes={hasEpisodes}
+        onToggleEpisodes={onToggleEpisodes}
       />
     );
 
@@ -88,6 +95,8 @@ function VideoPlayer({
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}
         onToggleChat={onToggleChat}
+        hasEpisodes={hasEpisodes}
+        onToggleEpisodes={onToggleEpisodes}
       />
     );
 
@@ -109,6 +118,8 @@ function VideoPlayer({
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}
         onToggleChat={onToggleChat}
+        hasEpisodes={hasEpisodes}
+        onToggleEpisodes={onToggleEpisodes}
       />
     );
 
@@ -120,6 +131,8 @@ function VideoPlayer({
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}
         onToggleChat={onToggleChat}
+        hasEpisodes={hasEpisodes}
+        onToggleEpisodes={onToggleEpisodes}
       />
     );
 

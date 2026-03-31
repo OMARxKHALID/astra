@@ -12,6 +12,7 @@ import {
   Camera as CameraIcon,
   PictureInPicture2 as PipIcon,
   Monitor as TheatreIconSvg,
+  List as EpisodesIcon,
 } from "lucide-react";
 import { SpeedPicker, formatTime } from "../../../utils";
 import SeekBar from "./SeekBar";
@@ -55,6 +56,8 @@ export default function ControlBar({
   handleMouseMove,
   handleMouseLeave,
   ctrlVis,
+  hasEpisodes,
+  onToggleEpisodes,
 }) {
   return (
     <div
@@ -216,7 +219,6 @@ export default function ControlBar({
                 <CameraIcon className="w-3.5 h-3.5" />
               </button>
             )}
-
             {onToggleTheatre && (
               <button
                 onClick={onToggleTheatre}
@@ -228,6 +230,16 @@ export default function ControlBar({
               </button>
             )}
           </div>
+
+          {hasEpisodes && onToggleEpisodes && (
+            <button
+              onClick={onToggleEpisodes}
+              title="Episodes"
+              className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white/40 hover:text-white transition-all active:scale-90"
+            >
+              <EpisodesIcon className="w-4 h-4" />
+            </button>
+          )}
 
           <button
             onClick={onFullscreenToggle}

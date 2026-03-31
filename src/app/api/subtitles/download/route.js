@@ -26,7 +26,7 @@ export async function GET(request) {
         method: "POST",
         headers: {
           "Api-Key": API_KEY,
-          "User-Agent": "WatchTogether v1",
+          "User-Agent": "Astra v1",
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ file_id: parseInt(subUrlOrId, 10) }),

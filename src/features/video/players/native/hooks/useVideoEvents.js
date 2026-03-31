@@ -25,7 +25,9 @@ export default function useVideoEvents({
     }
 
     const onTime = () => {
-      if (!seekingRef.current) setLocalTime(v.currentTime);
+      if (!seekingRef.current) {
+        setLocalTime(v.currentTime);
+      }
     };
 
     const onMeta = () => {
@@ -36,7 +38,10 @@ export default function useVideoEvents({
 
     const onWait = () => setBuffering(true);
     const onCan = () => setBuffering(false);
-    const onEnded = () => onPause?.(v.duration);
+    
+    const onNativeEnded = () => {
+      onPause?.(v.duration);
+    };
 
     const onProg = () => {
       if (v.buffered?.length > 0) {
@@ -97,7 +102,7 @@ export default function useVideoEvents({
     v.addEventListener("canplaythrough", onCan);
     v.addEventListener("error", onErr);
     v.addEventListener("progress", onProg);
-    v.addEventListener("ended", onEnded);
+    v.addEventListener("ended", onNativeEnded);
     v.addEventListener("play", onNativePlay);
     v.addEventListener("pause", onNativePause);
     document.addEventListener("fullscreenchange", onFS);
@@ -110,7 +115,7 @@ export default function useVideoEvents({
       v.removeEventListener("canplaythrough", onCan);
       v.removeEventListener("error", onErr);
       v.removeEventListener("progress", onProg);
-      v.removeEventListener("ended", onEnded);
+      v.removeEventListener("ended", onNativeEnded);
       v.removeEventListener("play", onNativePlay);
       v.removeEventListener("pause", onNativePause);
       document.removeEventListener("fullscreenchange", onFS);
