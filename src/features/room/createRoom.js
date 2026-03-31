@@ -11,7 +11,11 @@ export async function createRoom(videoUrl, session = null) {
     userId = session.user.id;
   } else {
     const storedId = ls.get(LS_KEYS.userId);
-    userId = storedId || crypto.randomUUID();
+    userId =
+      storedId ||
+      (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `guest-${Math.random().toString(36).slice(2, 11)}-${Date.now().toString(36)}`);
     if (!storedId) ls.set(LS_KEYS.userId, userId);
   }
 

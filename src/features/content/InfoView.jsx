@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { buildEmbedUrl, serverOptions } from "@/lib/videoResolver";
 import Loading from "@/components/Loading";
-import { createRoom } from "@/utils/createRoom";
+import { createRoom } from "@/features/room/createRoom";
 import { LS_KEYS } from "@/constants/config";
 import { ls } from "@/utils/localStorage";
 import YoutubeIcon from "@/components/icons/YoutubeIcon";
@@ -267,7 +267,7 @@ export default function InfoView({ initialData, type, id }) {
       </button>
 
       {/* Left: backdrop image panel */}
-      <div className="flex-[3] relative flex flex-col h-[40vh] lg:h-screen transition-all duration-1000 ease lg:pl-4">
+      <div className="flex-[3] relative z-[80] flex flex-col h-[40vh] lg:h-screen transition-all duration-1000 ease lg:pl-4">
         <div className="flex-1 relative w-full h-full lg:h-[95vh] lg:my-[2.5vh] lg:rounded-[var(--radius-panel)] bg-void">
           <div className="absolute inset-0 rounded-b-[var(--radius-panel)] lg:rounded-[var(--radius-panel)] overflow-hidden pointer-events-none">
             {data.backdrop ? (
@@ -374,9 +374,9 @@ export default function InfoView({ initialData, type, id }) {
         </div>
       </div>
 
-      <div className="flex-[1] hover:lg:flex-[2] transition-all duration-1000 ease flex flex-col min-h-[70vh] lg:h-screen lg:min-h-0 lg:overflow-y-auto no-scrollbar bg-void py-4 lg:py-0 overflow-visible">
-        <div className="flex-1 lg:h-full p-4 lg:p-6 lg:mt-[2.5vh] lg:mx-4 lg:rounded-[var(--radius-panel)]">
-          <div className="flex border-b border-white/10 mb-6">
+      <div className="flex-[1] hover:lg:flex-[2] transition-all duration-1000 ease flex flex-col min-h-[70vh] lg:h-screen lg:min-h-0 lg:overflow-y-auto no-scrollbar bg-void py-0 pb-10 lg:py-0 overflow-visible">
+        <div className="flex-1 lg:h-full p-4 lg:p-6 lg:mt-[2.5vh] lg:mx-4 lg:rounded-[var(--radius-panel)] lg:pt-6 pt-[1.5rem]">
+          <div className="sticky top-0 z-[60] bg-void/80 flex border-b border-white/10 mb-6 pt-4 lg:pt-6 -mt-0 lg:-mt-6 px-4 lg:px-6 -mx-4 lg:-mx-6 backdrop-blur-2xl">
             {(type === "tv"
               ? ["Episodes", "Overview", "Casts", "Reviews", "Related"]
               : ["Overview", "Casts", "Reviews", "Related"]

@@ -45,15 +45,18 @@ export default function URLBar({
 
   function handleSubmit(e) {
     e?.preventDefault();
-    if (!input.trim() || !isHost) return;
+    if (!input.trim() || !isHost || loading) return;
     if (strictVideoUrlMode && !isStrictVideoUrl(input.trim())) {
       setStrictError("Only direct video file links are allowed in this room.");
       return;
     }
     setStrictError("");
+    setLoading(true);
     addToast("Synchronizing video...", "success");
     onLoad(input.trim(), "");
     setInput("");
+    // [Note] Visual feedback: 2s spinner lock prevents accidental double-submit
+    setTimeout(() => setLoading(false), 2000);
   }
 
   if (!isHost) {
@@ -169,10 +172,6 @@ export default function URLBar({
               disabled={!input.trim() || Boolean(strictError) || loading}
               title="Load video for all participants"
               className="shrink-0 h-10 px-6 rounded-[var(--radius-pill)] bg-amber text-void text-[11px] font-black uppercase tracking-widest hover:bg-amber active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all duration-200 shadow-lg shadow-amber/10 border border-amber/50 relative overflow-hidden"
-              onClick={() => {
-                setLoading(true);
-                setTimeout(() => setLoading(false), 2000); // [Note] simple visual feedback lock
-              }}
             >
               {loading ? (
                 <div className="w-3.5 h-3.5 border-2 border-void/30 border-t-void rounded-full animate-spin mx-auto" />

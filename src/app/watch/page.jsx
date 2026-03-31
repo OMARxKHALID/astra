@@ -24,7 +24,7 @@ import {
   buildEmbedUrl,
   detectServer,
 } from "@/lib/videoResolver";
-import { createRoom } from "@/utils/createRoom";
+import { createRoom } from "@/features/room/createRoom";
 import { ls } from "@/utils/localStorage";
 
 import VideoPlayer from "@/features/video";

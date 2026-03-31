@@ -14,7 +14,8 @@ import {
   Monitor as TheatreIconSvg,
   List as EpisodesIcon,
 } from "lucide-react";
-import { SpeedPicker, formatTime } from "../../../utils";
+import { formatTime } from "../../../utils";
+import SpeedPicker from "../../../controls/SpeedPicker";
 import SeekBar from "./SeekBar";
 import VolumeControl from "./VolumeControl";
 

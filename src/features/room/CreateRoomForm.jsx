@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import YoutubeIcon from "@/components/icons/YoutubeIcon";
 import { useSession } from "next-auth/react";
-import { createRoom } from "@/utils/createRoom";
+import { createRoom } from "@/features/room/createRoom";
 import { ls } from "@/utils/localStorage";
 
 export default function CreateRoomForm({ onResultsChange }) {

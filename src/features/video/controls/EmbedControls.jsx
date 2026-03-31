@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { formatTime, SpeedPicker } from "../utils";
+import { formatTime } from "../utils";
+import SpeedPicker from "./SpeedPicker";
 import {
   Play as PlayIcon,
   Pause as PauseIcon,
@@ -102,12 +103,12 @@ export default function EmbedControls({
           />
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-1.5 sm:gap-2.5">
           <button
             onClick={onPlayPause}
             aria-label={isPlaying ? "Pause" : "Play"}
             disabled={!canControl}
-            className={`w-11 h-11 flex items-center justify-center rounded-[var(--radius-pill)] border border-white/10 transition-all active:scale-90 backdrop-blur-sm
+            className={`w-9 h-9 sm:w-11 sm:h-11 shrink-0 flex items-center justify-center rounded-[var(--radius-pill)] border border-white/10 transition-all active:scale-90 backdrop-blur-sm
               ${canControl ? "bg-white/10 hover:bg-white/10 text-white" : "bg-white/10 text-white/40 cursor-not-allowed"}`}
           >
             {isPlaying ? (
@@ -122,7 +123,7 @@ export default function EmbedControls({
               <button
                 onClick={onMuteToggle}
                 aria-label={muted ? "Unmute" : "Mute"}
-                className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] text-white/40 hover:text-white transition-colors"
+                className="w-9 h-9 shrink-0 flex items-center justify-center rounded-[var(--radius-pill)] text-white/40 hover:text-white transition-colors"
               >
                 {muted || volume === 0 ? (
                   <MuteIcon className="w-4 h-4" />
@@ -151,7 +152,7 @@ export default function EmbedControls({
             </div>
           )}
 
-          <span className="text-[11px] font-mono text-white/40 tabular-nums bg-white/10 px-2.5 py-1 rounded-[var(--radius-pill)] border border-white/10">
+          <span className="text-[11px] font-mono shrink-0 text-white/40 tabular-nums bg-white/10 px-2.5 py-1 rounded-[var(--radius-pill)] border border-white/10">
             {formatTime(localTime)} / {formatTime(duration)}
           </span>
 
@@ -167,7 +168,7 @@ export default function EmbedControls({
             <button
               onClick={onCcToggle}
               aria-label="Toggle subtitles"
-              className={`w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] border transition-all active:scale-90 backdrop-blur-sm
+              className={`w-9 h-9 shrink-0 flex items-center justify-center rounded-[var(--radius-pill)] border transition-all active:scale-90 backdrop-blur-sm
                 ${ccEnabled ? "bg-amber/20 text-amber border-amber/30" : "bg-white/10 hover:bg-white/10 text-white border-white/10"}`}
             >
               <CcIcon className="w-5 h-5" />
@@ -183,7 +184,7 @@ export default function EmbedControls({
               onClick={onToggleTheatre}
               aria-label={theatreMode ? "Exit theatre mode" : "Theatre mode"}
               title={theatreMode ? "Exit theatre mode (T)" : "Theatre mode (T)"}
-              className={`w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] border transition-all active:scale-90 backdrop-blur-sm
+              className={`hidden sm:flex w-9 h-9 shrink-0 items-center justify-center rounded-[var(--radius-pill)] border transition-all active:scale-90 backdrop-blur-sm
                 ${
                   theatreMode
                     ? "bg-amber/20 text-amber border-amber/30"
@@ -198,7 +199,7 @@ export default function EmbedControls({
             <button
               onClick={onToggleEpisodes}
               title="Episodes"
-              className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white transition-all active:scale-90 backdrop-blur-sm"
+              className="w-9 h-9 shrink-0 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white transition-all active:scale-90 backdrop-blur-sm"
             >
               <EpisodesIcon className="w-4 h-4" />
             </button>
@@ -208,7 +209,7 @@ export default function EmbedControls({
             <button
               onClick={onFullscreen}
               aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-              className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white transition-all active:scale-90 backdrop-blur-sm"
+              className="w-9 h-9 shrink-0 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white transition-all active:scale-90 backdrop-blur-sm"
             >
               {isFullscreen ? (
                 <CompressIcon className="w-4 h-4" />

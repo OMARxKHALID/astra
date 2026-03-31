@@ -33,9 +33,17 @@ export default function MediaCard({ item, onPick }) {
             {item.rating}
           </div>
         )}
-        {item.type === "tv" && (
-          <div className="absolute top-2 left-2 bg-jade/20 border border-jade/30 px-2 py-0.5 rounded-full text-[9px] font-bold text-jade font-mono uppercase tracking-wider">
-            Series
+        {item.type && (
+          <div
+            className={`absolute top-2 left-2 px-2 py-0.5 border rounded-full text-[9px] font-bold font-mono uppercase tracking-wider shadow-md backdrop-blur-sm ${
+              item.isAnime
+                ? "bg-danger/20 border-danger/30 text-danger"
+                : item.type === "tv"
+                  ? "bg-jade/20 border-jade/30 text-jade"
+                  : "bg-amber/20 border-amber/30 text-amber"
+            }`}
+          >
+            {item.isAnime ? "Anime" : item.type === "tv" ? "Series" : "Movie"}
           </div>
         )}
       </div>

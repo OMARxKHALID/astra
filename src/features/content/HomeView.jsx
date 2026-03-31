@@ -7,7 +7,7 @@ import { Users, Search, Loader2 } from "lucide-react";
 import { buildEmbedUrl } from "@/lib/videoResolver";
 import Loading from "@/components/Loading";
 import RecentRooms from "@/features/room/RecentRooms";
-import { createRoom } from "@/utils/createRoom";
+import { createRoom } from "@/features/room/createRoom";
 import { LS_KEYS } from "@/constants/config";
 import { ls } from "@/utils/localStorage";
 

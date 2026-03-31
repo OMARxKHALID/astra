@@ -4,13 +4,12 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import {
   MessageCircle as ChatBubbleIcon,
   Send as SendIcon,
-  Crown as CrownIcon,
-  Film as FilmIcon,
-  Lock as LockIcon,
-  Unlock as UnlockIcon,
-  Captions as CcIcon,
+  Mic as MicIcon,
+  Square as SquareIcon,
+  Trash2,
 } from "lucide-react";
-import { SYSTEM_ICONS } from "./roomMaps";
+import { ChatMessage } from "./components/ChatMessage";
+import { useRecord } from "./hooks/useRecord";
 
 export default function ChatSidebar({
   messages = [],
@@ -21,6 +20,15 @@ export default function ChatSidebar({
   onTyping,
 }) {
   const [input, setInput] = useState("");
+  const {
+    isRecording,
+    recordingTime,
+    audioLevel,
+    startRecording,
+    stopRecording,
+    cancelRecording,
+  } = useRecord(onSend);
+
   const bottomRef = useRef(null);
   const atBottomRef = useRef(true);
   const scrollRef = useRef(null);
@@ -29,7 +37,6 @@ export default function ChatSidebar({
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
-    // Track whether the user has scrolled up so we don't auto-scroll over their reading
     atBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 50;
   }, []);
 
@@ -74,13 +81,8 @@ export default function ChatSidebar({
       >
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-3 opacity-30">
-            <ChatBubbleIcon
-              className="w-10 h-10 text-muted"
-              strokeWidth={1}
-            />
-            <p
-              className="text-[11px] font-mono text-center max-w-[160px] leading-relaxed uppercase tracking-wider text-muted"
-            >
+            <ChatBubbleIcon className="w-10 h-10 text-muted" strokeWidth={1} />
+            <p className="text-[11px] font-mono text-center max-w-[160px] leading-relaxed uppercase tracking-wider text-muted">
               The thread is quiet.
             </p>
           </div>
@@ -105,9 +107,7 @@ export default function ChatSidebar({
                 />
               ))}
             </div>
-            <span
-              className="text-[10px] font-mono italic text-muted"
-            >
+            <span className="text-[10px] font-mono italic text-muted">
               {activeTypers.length === 1
                 ? `${activeTypers[0]} is typing…`
                 : `${activeTypers.slice(0, -1).join(", ")} & ${activeTypers.at(-1)} are typing…`}
@@ -117,152 +117,106 @@ export default function ChatSidebar({
         <div ref={bottomRef} className="h-1" />
       </div>
 
-      <div
-        className="px-4 py-2.5 border-t border-border shrink-0"
-      >
+      <div className="px-4 py-2.5 border-t border-border shrink-0">
         <div className="relative">
-          <label htmlFor="chat-input" className="sr-only">
-            Message
-          </label>
-          <input
-            id="chat-input"
-            type="text"
-            value={input}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            placeholder="Write a message…"
-            maxLength={500}
-            autoComplete="off"
-            style={{
-              borderColor: "var(--color-border)",
-            }}
-            className="w-full border bg-surface text-text rounded-[var(--radius-pill)] pl-4 pr-11 py-2 text-sm font-body outline-none transition-all focus:ring-2 focus:ring-amber/25 placeholder:opacity-40"
-          />
-          <button
-            onClick={handleSubmit}
-            disabled={!input.trim()}
-            aria-label="Send message"
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-[var(--radius-pill)] bg-amber text-void transition-all hover:bg-amber active:scale-90 disabled:opacity-0 disabled:scale-75"
-          >
-            <SendIcon className="w-3 h-3" strokeWidth={2.5} />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+          {isRecording ? (
+            <div className="flex items-center justify-between w-full border bg-danger/10 border-danger/20 rounded-[var(--radius-pill)] px-2 pr-11 py-2 h-[38px] overflow-hidden">
+              <div className="flex items-center gap-2.5">
+                <button
+                  onClick={cancelRecording}
+                  aria-label="Cancel recording"
+                  className="w-6 h-6 rounded-full bg-danger/10 hover:bg-danger/20 text-danger flex items-center justify-center transition-colors shadow-sm ml-1"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+                <div className="flex items-center gap-1.5 ml-1">
+                  <span className="relative w-2 h-2 rounded-full bg-danger animate-pulse shrink-0" />
+                  <span className="text-[13px] font-mono text-danger font-bold tracking-widest mt-px">
+                    {Math.floor(recordingTime / 60)
+                      .toString()
+                      .padStart(2, "0")}
+                    :{(recordingTime % 60).toString().padStart(2, "0")}
+                  </span>
+                </div>
+              </div>
 
-function ChatMessage({ msg, isOwn, displayNames = {} }) {
-  const time = msg.ts
-    ? new Date(msg.ts).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : "--:--";
-  const name =
-    msg.senderName ||
-    displayNames[msg.senderId] ||
-    (msg.senderId ? msg.senderId.slice(0, 6) : "Guest");
-
-  if (msg.senderId === "system") {
-    let icon = null, text = msg.text || "";
-    for (const [tag, { Icon, color }] of Object.entries(SYSTEM_ICONS)) {
-      if (text.includes(tag)) {
-        icon = <Icon className={`w-3 h-3 ${color} shrink-0`} strokeWidth={2.5} />;
-        text = text.replace(tag, "").trim();
-        break;
-      }
-    }
-    return (
-      <div className="flex justify-center">
-        <div
-          className="px-3.5 py-1 rounded-[var(--radius-pill)] border text-[10px] font-mono uppercase tracking-wide flex items-center gap-1.5"
-          style={{
-            backgroundColor: "var(--color-surface)",
-            borderColor: "var(--color-border)",
-            color: "var(--color-muted)",
-          }}
-        >
-          {icon}
-          {text}
-        </div>
-      </div>
-    );
-  }
-
-  if (msg.dataUrl) {
-    return (
-      <div
-        className={`flex ${isOwn ? "flex-row-reverse" : "flex-row"} gap-2 items-end`}
-      >
-        {!isOwn && (
-          <img
-            src={`https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(name)}`}
-            alt={name}
-            className="w-6 h-6 shrink-0 object-contain mb-1 rounded-full bg-white/10 p-0.5"
-          />
-        )}
-        <div
-          className={`flex flex-col gap-1 ${isOwn ? "items-end" : "items-start"}`}
-        >
-          {!isOwn && (
-            <span className="text-[10px] font-semibold text-amber/70 px-1">
-              {name}
-            </span>
+              <div className="flex items-center gap-[2px] h-3 mr-4 opacity-70">
+                {[1, 2, 3, 4, 5].map((i) => {
+                  const scale = Math.max(
+                    0.1,
+                    (audioLevel / 255) * (i % 2 === 0 ? 1 : 0.6),
+                  );
+                  return (
+                    <span
+                      key={i}
+                      className="w-[2px] bg-danger rounded-full transition-all duration-75"
+                      style={{ height: `${20 + scale * 80}%` }}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <>
+              <label htmlFor="chat-input" className="sr-only">
+                Message
+              </label>
+              <input
+                id="chat-input"
+                type="text"
+                value={input}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                placeholder="Write a message…"
+                maxLength={500}
+                autoComplete="off"
+                style={{
+                  borderColor: "var(--color-border)",
+                }}
+                className="w-full border bg-surface text-text rounded-[var(--radius-pill)] pl-4 pr-11 py-2 text-sm font-body outline-none transition-all focus:ring-2 focus:ring-amber/25 placeholder:opacity-40"
+              />
+            </>
           )}
-          <img
-            src={msg.dataUrl}
-            alt="Screenshot"
-            className="max-w-[220px] rounded-xl border shadow-lg"
-            style={{ borderColor: "var(--color-border)" }}
-          />
-          <span
-            className="text-[9px] font-mono px-1"
-            style={{ color: "var(--color-muted)" }}
-          >
-            {time}
-          </span>
-        </div>
-      </div>
-    );
-  }
 
-  return (
-    <div
-      className={`flex ${isOwn ? "flex-row-reverse" : "flex-row"} gap-2 group`}
-    >
-      <div className={`shrink-0 mt-0.5 ${isOwn ? "order-2" : "order-1"}`}>
-        <img
-          src={`https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(name)}`}
-          alt={name}
-          className="w-6 h-6 object-contain rounded-full bg-white/10 p-1 border border-white/10"
-          loading="lazy"
-        />
-      </div>
-      <div
-        className={`flex flex-col gap-1 max-w-[85%] sm:max-w-[75%] ${isOwn ? "items-end order-1" : "items-start order-2"}`}
-      >
-        {!isOwn && (
-          <div className="flex items-center gap-1.5 px-0.5 mb-px opacity-60">
-            <span className="text-[10px] font-bold text-white/40">{name}</span>
-            <span className="text-[9px] font-mono text-white/40">{time}</span>
+          <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center">
+            {isRecording ? (
+              <button
+                onClick={stopRecording}
+                aria-label="Stop recording"
+                className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-pill)] bg-danger text-void transition-all hover:scale-105 active:scale-95"
+              >
+                <SquareIcon
+                  className="w-3 h-3"
+                  strokeWidth={3}
+                  fill="currentColor"
+                />
+              </button>
+            ) : (
+              <div className="relative w-7 h-7">
+                <button
+                  onClick={startRecording}
+                  disabled={Boolean(input.trim())}
+                  aria-label="Record voice message"
+                  className={`absolute inset-0 flex items-center justify-center rounded-full text-muted hover:text-amber transition-all duration-200 ${
+                    input.trim()
+                      ? "opacity-0 scale-75 pointer-events-none"
+                      : "opacity-100 scale-100 cursor-pointer"
+                  }`}
+                >
+                  <MicIcon className="w-4 h-4" strokeWidth={2} />
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={!input.trim()}
+                  aria-label="Send message"
+                  className="absolute inset-0 flex items-center justify-center rounded-[var(--radius-pill)] bg-amber text-void transition-all duration-200 hover:bg-amber active:scale-90 disabled:opacity-0 disabled:scale-75 disabled:pointer-events-none"
+                >
+                  <SendIcon className="w-3 h-3" strokeWidth={2.5} />
+                </button>
+              </div>
+            )}
           </div>
-        )}
-        <div
-          className={`px-3 py-1.5 rounded-[20px] text-[13px] leading-snug break-words shadow-sm
-            ${
-              isOwn
-                ? "bg-amber text-void rounded-tr-[4px] font-medium"
-                : "bg-white/10 text-white/40 border border-white/10 rounded-tl-[4px]"
-            }`}
-        >
-          {msg.text}
         </div>
-        {isOwn && (
-          <span className="text-[9px] font-mono text-white/40 px-0.5">
-            {time}
-          </span>
-        )}
       </div>
     </div>
   );

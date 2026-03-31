@@ -3,8 +3,12 @@ import withPWA from "@ducanh2912/next-pwa";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
+  
+  // Suppress dev cross-origin warning for network access
+  allowedDevOrigins: ["localhost", "127.0.0.1", "192.168.1.14", "192.168.1.14:3000"],
 
   images: {
+    unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "api.dicebear.com" },
       { protocol: "https", hostname: "img.youtube.com" },

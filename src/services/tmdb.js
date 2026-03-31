@@ -39,18 +39,31 @@ export async function fetchTMDB(endpoint, query = "") {
   }
 }
 export async function getBrowseData() {
-  const [trending, topMovies, topTV, anime] = await Promise.all([
+  const [trending, topMovies, topTV, animeTV, animeMovies] = await Promise.all([
     fetchTMDB("trending/all/week"),
     fetchTMDB("movie/top_rated"),
     fetchTMDB("tv/top_rated"),
     fetchTMDB("discover/tv", "&with_genres=16&with_keywords=210024&sort_by=popularity.desc"),
+    fetchTMDB("discover/movie", "&with_genres=16&with_keywords=210024&sort_by=popularity.desc"),
   ]);
+
+  // [Note] Anime merge: combines TV and movie results, deduped by ID, to include films like Spirited Away
+  const animeAll = [
+    ...(animeTV?.results || []).map((i) => ({ ...normalizeTMDB(i, "tv"), isAnime: true })),
+    ...(animeMovies?.results || []).map((i) => ({ ...normalizeTMDB(i, "movie"), isAnime: true })),
+  ];
+  const seen = new Set();
+  const animeDeduped = animeAll.filter((a) => {
+    if (seen.has(a.id)) return false;
+    seen.add(a.id);
+    return true;
+  }).slice(0, 20);
 
   return {
     hero: (trending?.results || []).slice(0, 8).map((i) => normalizeTMDB(i)),
     trending: (trending?.results || []).slice(0, 20).map((i) => normalizeTMDB(i)),
     topMovies: (topMovies?.results || []).slice(0, 20).map((i) => normalizeTMDB(i, "movie")),
     topSeries: (topTV?.results || []).slice(0, 20).map((i) => normalizeTMDB(i, "tv")),
-    anime: (anime?.results || []).slice(0, 20).map((i) => normalizeTMDB(i, "tv")),
+    anime: animeDeduped,
   };
 }

@@ -55,9 +55,15 @@ export default function MediaHero({ items, onPick, onPlay }) {
         <div className="max-w-[520px] z-10">
           <div className="flex gap-2 mb-4 items-center flex-wrap">
             <span
-              className={`text-[10px] font-bold px-2.5 py-0.5 rounded-[var(--radius-pill)] uppercase tracking-[0.12em] font-mono border ${item.type === "tv" ? "bg-jade/15 text-jade border-jade/30" : "bg-transparent text-white/40 border-white/10"}`}
+              className={`text-[10px] font-bold px-2.5 py-0.5 rounded-[var(--radius-pill)] uppercase tracking-[0.12em] font-mono border ${
+                item.isAnime
+                  ? "bg-danger/15 text-danger border-danger/30"
+                  : item.type === "tv"
+                    ? "bg-jade/15 text-jade border-jade/30"
+                    : "bg-transparent text-white/40 border-white/10"
+              }`}
             >
-              {item.type === "tv" ? "Series" : "Movie"}
+              {item.isAnime ? "Anime" : item.type === "tv" ? "Series" : "Movie"}
             </span>
             {item.rating && (
               <span className="text-[11px] px-2 py-0.5 rounded-[var(--radius-pill)] bg-void/40 text-amber font-mono flex items-center gap-[3px] font-bold">

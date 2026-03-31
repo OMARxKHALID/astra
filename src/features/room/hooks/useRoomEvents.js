@@ -1,24 +1,12 @@
 "use client";
 
-import { useCallback } from "react";
-import {
-  Crown as CrownIcon,
-  Film as FilmIcon,
-  Unlock as UnlockIcon,
-  Lock as LockIcon,
-  Captions as CcIcon,
-  Shield as ShieldIcon,
-  SkipForward as SeekIcon,
-} from "lucide-react";
-
+import { useCallback, useRef } from "react";
 import { MAX_CHAT_MESSAGES } from "@/constants/config";
 import { SYSTEM_ICONS } from "../roomMaps";
 
 export default function useRoomEvents({
   userId,
   addToast,
-  setServerState,
-  setTsMapState,
   setParticipants,
   setDisplayNames,
   displayNamesRef,
@@ -26,12 +14,16 @@ export default function useRoomEvents({
   setTypingUsers,
   typingTimers,
   setUnreadCount,
-  playerChatOpen,
+  fsChatOpen,
   mobileSheet,
   showSidebar,
   handleWrongPassword,
   router,
 }) {
+  // [Note] Ref mirror: avoids stale closures in handleChatMessage without re-creating the callback
+  const visRef = useRef({ fsChatOpen, mobileSheet, showSidebar });
+  visRef.current = { fsChatOpen, mobileSheet, showSidebar };
+
   const handleChatMessage = useCallback(
     (msg) => {
       if (msg.type === "chat_history") {
@@ -41,8 +33,12 @@ export default function useRoomEvents({
       if (!msg.text && !msg.dataUrl && msg.senderId !== "system") return;
 
       if (msg.senderId === "system") {
-        let text = msg.text || "", type = "info", icon = null;
-        for (const [tag, { color, Icon, toastType }] of Object.entries(SYSTEM_ICONS)) {
+        let text = msg.text || "",
+          type = "info",
+          icon = null;
+        for (const [tag, { color, Icon, toastType }] of Object.entries(
+          SYSTEM_ICONS,
+        )) {
           if (text.includes(tag)) {
             text = text.replace(tag, "").trim();
             type = toastType || "info";
@@ -54,17 +50,22 @@ export default function useRoomEvents({
         return;
       }
 
-      setMessages((prev) => [...prev, msg].slice(-MAX_CHAT_MESSAGES));
+      // [Note] Dedupe: prevents duplicate messages on socket reconnection replays
+      setMessages((prev) => {
+        if (msg.ts && prev.some((m) => m.ts === msg.ts && m.senderId === msg.senderId)) return prev;
+        return [...prev, msg].slice(-MAX_CHAT_MESSAGES);
+      });
+      const { fsChatOpen: fsOpen, mobileSheet: sheet, showSidebar: sidebar } = visRef.current;
       const isMobile =
         typeof window !== "undefined" && window.innerWidth < 1024;
       const isVisible = document.fullscreenElement
-        ? playerChatOpen
+        ? fsOpen
         : isMobile
-          ? mobileSheet === "chat"
-          : showSidebar;
+          ? sheet === "chat"
+          : sidebar;
       if (!isVisible) setUnreadCount((n) => n + 1);
     },
-    [mobileSheet, showSidebar, playerChatOpen, addToast, setMessages, setUnreadCount],
+    [addToast, setMessages, setUnreadCount],
   );
 
   const handleUserChange = useCallback(
@@ -126,7 +127,15 @@ export default function useRoomEvents({
           break;
       }
     },
-    [userId, addToast, setParticipants, setDisplayNames, displayNamesRef, setTypingUsers, typingTimers],
+    [
+      userId,
+      addToast,
+      setParticipants,
+      setDisplayNames,
+      displayNamesRef,
+      setTypingUsers,
+      typingTimers,
+    ],
   );
 
   const handleKicked = useCallback(

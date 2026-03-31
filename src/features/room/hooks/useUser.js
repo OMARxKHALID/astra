@@ -28,7 +28,10 @@ export default function useUser(sendRef) {
       setUserId(stored);
       return;
     }
-    const id = crypto.randomUUID();
+    const id = 
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `guest-${Math.random().toString(36).slice(2, 11)}-${Date.now().toString(36)}`;
     ls.set(key, id);
     setUserId(id);
   }, [session?.user?.id]);

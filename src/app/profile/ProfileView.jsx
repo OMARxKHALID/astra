@@ -56,7 +56,7 @@ export default function ProfileView({ user }) {
       </nav>
 
       <div className="relative z-10 max-w-[480px] mx-auto px-6 pt-8 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="glass-card rounded-2xl overflow-hidden">
+        <div className="glass-card rounded-[var(--radius-panel)] overflow-hidden">
           <div className="flex flex-col items-center pt-8 pb-6 px-6 bg-white/[0.02] border-b border-white/10">
             <div className="w-20 h-20 rounded-full overflow-hidden border-[3px] border-amber shadow-lg shadow-amber/20 mb-4 bg-void">
               {user.image ? (
@@ -128,9 +128,9 @@ export default function ProfileView({ user }) {
 
             <button
               onClick={handleClearData}
-              className="w-full flex items-center gap-4 hover:bg-white/[0.03] p-2 -mx-2 rounded-2xl transition-colors group cursor-pointer border-none bg-transparent text-left outline-none"
+              className="w-full flex items-center gap-4 hover:bg-white/[0.03] p-2 -mx-2 rounded-[var(--radius-panel)] transition-colors group cursor-pointer border-none bg-transparent text-left outline-none"
             >
-              <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center shrink-0 group-hover:bg-white/10 transition-colors">
+              <div className="w-10 h-10 rounded-[var(--radius-panel)] bg-white/5 flex items-center justify-center shrink-0 group-hover:bg-white/10 transition-colors">
                 <Database className="w-4 h-4 text-white/60 group-hover:text-bright" />
               </div>
               <div className="min-w-0 flex-1 transition-all duration-300 group-hover:pl-2">
@@ -145,9 +145,9 @@ export default function ProfileView({ user }) {
 
             <button
               onClick={handleDeleteProfile}
-              className="w-full flex items-center gap-4 hover:bg-danger/5 p-2 -mx-2 rounded-2xl transition-colors group cursor-pointer border-none bg-transparent text-left outline-none"
+              className="w-full flex items-center gap-4 hover:bg-danger/5 p-2 -mx-2 rounded-[var(--radius-panel)] transition-colors group cursor-pointer border-none bg-transparent text-left outline-none"
             >
-              <div className="w-10 h-10 rounded-2xl bg-danger/10 flex items-center justify-center shrink-0 group-hover:bg-danger/20 transition-colors">
+              <div className="w-10 h-10 rounded-[var(--radius-panel)] bg-danger/10 flex items-center justify-center shrink-0 group-hover:bg-danger/20 transition-colors">
                 <Trash2 className="w-4 h-4 text-danger/80 group-hover:text-danger" />
               </div>
               <div className="min-w-0 flex-1 transition-all duration-300 group-hover:pl-2">

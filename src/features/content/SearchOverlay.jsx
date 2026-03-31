@@ -153,9 +153,15 @@ export default function SearchOverlay({ onClose, onPick }) {
                 </p>
                 <div className="flex gap-2 items-center">
                   <span
-                    className={`text-[9px] font-bold px-[7px] py-[2px] rounded-[var(--radius-pill)] font-mono uppercase tracking-[0.1em] ${item.type === "tv" ? "bg-jade/15 text-jade" : "bg-amber/15 text-amber"}`}
+                    className={`text-[9px] font-bold px-[7px] py-[2px] rounded-[var(--radius-pill)] font-mono uppercase tracking-[0.1em] ${
+                      item.isAnime
+                        ? "bg-danger/15 text-danger"
+                        : item.type === "tv"
+                          ? "bg-jade/15 text-jade"
+                          : "bg-amber/15 text-amber"
+                    }`}
                   >
-                    {item.type === "tv" ? "Series" : "Movie"}
+                    {item.isAnime ? "Anime" : item.type === "tv" ? "Series" : "Movie"}
                   </span>
                   {item.year && (
                     <span className="text-[11px] text-muted font-mono font-medium">

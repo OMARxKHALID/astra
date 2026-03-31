@@ -128,5 +128,15 @@ export async function getTVDetails(id) {
 export async function getTVSeasonDetails(id, seasonNumber) {
   const d = await fetchTMDB(`tv/${id}/season/${seasonNumber}`);
   if (!d) return null;
-  return d.episodes || [];
+  return (d.episodes || []).map((ep) => ({
+    id: ep.id,
+    number: ep.episode_number,
+    name: ep.name,
+    overview: ep.overview,
+    airDate: ep.air_date,
+    runtime: ep.runtime || null,
+    still: ep.still_path
+      ? `https://image.tmdb.org/t/p/w300${ep.still_path}`
+      : null,
+  }));
 }

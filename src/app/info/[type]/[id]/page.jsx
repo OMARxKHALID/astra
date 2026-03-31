@@ -1,3 +1,4 @@
+import { cache } from "react";
 import InfoView from "@/features/content/InfoView";
 
 import {
@@ -6,7 +7,8 @@ import {
   getTVSeasonDetails,
 } from "@/services/tmdbDetails";
 
-async function getInfoData(type, id) {
+// [Note] React cache: deduplicates getInfoData between generateMetadata and InfoPage within a single render pass
+const getInfoData = cache(async function getInfoData(type, id) {
   try {
     const data =
       type === "tv" ? await getTVDetails(id) : await getMovieDetails(id);
@@ -22,7 +24,7 @@ async function getInfoData(type, id) {
     console.error("Failed to fetch info data:", e);
     return null;
   }
-}
+});
 
 export async function generateMetadata({ params }) {
   const { type, id } = await params;

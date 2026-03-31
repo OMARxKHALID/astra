@@ -23,12 +23,13 @@ export async function GET(req, { params }) {
       name: ep.name,
       overview: ep.overview,
       airDate: ep.air_date,
+      runtime: ep.runtime || null,
       still: ep.still_path
         ? `https://image.tmdb.org/t/p/w300${ep.still_path}`
         : null,
     }));
 
-    return NextResponse.json({ episodes });
+    return NextResponse.json({ episodes, meta: { season_number: d.season_number } });
   } catch (err) {
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }

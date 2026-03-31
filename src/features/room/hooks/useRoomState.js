@@ -16,9 +16,7 @@ export default function useRoomState(initialMeta) {
   const [needsPassword, setNeedsPassword] = useState(false);
   const [roomPassword, setRoomPassword] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
-  const [playerChatOpen, setPlayerChatOpen] = useState(false);
   const [mobileSheet, setMobileSheet] = useState(null);
-  const [tmdbMeta, setTmdbMeta] = useState(null);
 
   const displayNamesRef = useRef(displayNames);
   displayNamesRef.current = displayNames;
@@ -54,12 +52,8 @@ export default function useRoomState(initialMeta) {
     setLateJoinTime,
     unreadCount,
     setUnreadCount,
-    playerChatOpen,
-    setPlayerChatOpen,
     mobileSheet,
     setMobileSheet,
-    tmdbMeta,
-    setTmdbMeta,
     handleStateUpdate,
     handleTsMapUpdate,
   };
