@@ -133,28 +133,28 @@ export default function SettingsPanel({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-void/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-void/60 backdrop-blur-md"
         onClick={onClose}
       />
 
       <div
         ref={panelRef}
-        className="relative z-10 w-full sm:max-w-[480px] mx-4 sm:mx-auto glass-card overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 duration-300 border-none"
+        className="relative z-10 w-full sm:max-w-[480px] glass-card rounded-[var(--radius-panel)] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 border-none"
       >
-        <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-white/[0.05]">
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/10 bg-white/[0.02]">
           <div>
             <h2 className="font-display font-bold text-lg text-white/90">
               Settings
             </h2>
-            <p className="text-[9px] font-mono mt-0.5 uppercase tracking-wider text-white/50">
+            <p className="text-[10px] font-mono mt-0.5 uppercase tracking-wider text-white/50">
               {isHost ? "You are the host" : "Host controls only"}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] hover:bg-white/10 transition-colors text-white/50 hover:text-white"
+            className="w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] hover:bg-white/10 transition-colors text-white/60 hover:text-white"
           >
             <XIcon className="w-4 h-4" strokeWidth={2.5} />
           </button>

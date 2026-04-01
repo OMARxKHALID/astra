@@ -137,6 +137,7 @@ export default function useVideoEvents({
     setVideoError,
     setPosterVisible,
     setFullscreen,
+    addToast,
   ]);
 
   // Handle Playback Rate

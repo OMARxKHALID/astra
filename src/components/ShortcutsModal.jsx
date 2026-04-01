@@ -39,7 +39,7 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }) {
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] hover:bg-white/10 text-white/60 hover:text-white transition-colors"
           >
             <XIcon className="w-4 h-4" strokeWidth={2.5} />
           </button>

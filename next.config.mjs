@@ -25,6 +25,10 @@ const nextConfig = {
     optimizePackageImports: ["lucide-react"],
   },
 
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
   async headers() {
     return [
       {

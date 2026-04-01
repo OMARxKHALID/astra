@@ -67,7 +67,7 @@ export default function useAmbilight(videoRef, videoUrl, onAmbiColors, enabled =
       cancelAnimationFrame(ambiRafRef.current);
       onAmbiColors?.(null);
     };
-  }, [videoRef, videoUrl, onAmbiColors]);
+  }, [videoRef, videoUrl, onAmbiColors, enabled]);
 
   return { ambiDisabledRef };
 }

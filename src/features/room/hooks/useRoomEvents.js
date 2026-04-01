@@ -141,7 +141,11 @@ export default function useRoomEvents({
   const handleKicked = useCallback(
     (reason) => {
       if (reason === "WRONG_PASSWORD") {
-        handleWrongPassword();
+        handleWrongPassword(true);
+        return;
+      }
+      if (reason === "NEED_PASSWORD") {
+        handleWrongPassword(false);
         return;
       }
       router.push("/?kicked=1");

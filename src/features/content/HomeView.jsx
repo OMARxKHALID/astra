@@ -106,7 +106,7 @@ export default function HomeView({ initialData }) {
         <div className="flex items-center gap-5">
           <button
             onClick={() => setShowSearch(true)}
-            className="hidden lg:flex items-center gap-2.5 px-4 h-9 rounded-[var(--radius-pill)] glass-card bg-white/5 backdrop-blur-xl border border-white/10 text-white/40 hover:bg-white/10 hover:text-white cursor-text group transition-all active:scale-[0.98]"
+            className="hidden lg:flex items-center gap-2.5 px-4 h-9 glass-card text-white/40 hover:text-white cursor-text group transition-all active:scale-[0.98]"
           >
             <Search className="w-3.5 h-3.5 group-hover:text-amber transition-colors" />
             <span className="text-[12px] font-bold pr-1">Search…</span>
@@ -129,7 +129,7 @@ export default function HomeView({ initialData }) {
 
           <button
             onClick={() => router.push("/create")}
-            className="flex items-center gap-2 px-5 h-9 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[var(--radius-pill)] text-white/80 text-[12px] font-black cursor-pointer hover:bg-white/10 hover:border-white/20 transition-all active:scale-[0.98]"
+            className="flex items-center gap-2 px-5 h-9 glass-card text-white/80 text-[12px] font-bold cursor-pointer hover:text-white transition-all active:scale-[0.98]"
           >
             <Users className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Create Room</span>

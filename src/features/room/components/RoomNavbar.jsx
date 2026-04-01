@@ -125,19 +125,7 @@ export function RoomNavbar({
           <SettingsIcon className="w-4 h-4" />
         </button>
 
-        <button
-          onClick={() =>
-            window.open(
-              window.location.href,
-              "_blank",
-              "width=800,height=600",
-            )
-          }
-          className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] glass-card text-muted hover:text-white"
-          title="Popout player"
-        >
-          <PopoutIcon className="w-4 h-4" />
-        </button>
+
 
         <button
           onClick={() => {

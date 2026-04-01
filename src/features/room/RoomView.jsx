@@ -56,7 +56,7 @@ export default function RoomView({ roomId, initialMeta }) {
     setMessages: room.setMessages, setTypingUsers: room.setTypingUsers,
     typingTimers: typingTimersRef, setUnreadCount: room.setUnreadCount,
     fsChatOpen, mobileSheet: room.mobileSheet, showSidebar: settings.showSidebar,
-    handleWrongPassword: () => { setPasswordError("Wrong password"); room.setNeedsPassword(true); },
+    handleWrongPassword: (isError) => { setPasswordError(isError ? "Wrong password" : ""); room.setNeedsPassword(true); },
     router,
   });
 

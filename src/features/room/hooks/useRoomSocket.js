@@ -312,6 +312,7 @@ export function useRoomSocket(props) {
         }
         if (
           m.code === "WRONG_PASSWORD" ||
+          m.code === "NEED_PASSWORD" ||
           m.message === "You have been removed from the room."
         ) {
           if (socketRef.current) {

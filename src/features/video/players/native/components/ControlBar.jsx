@@ -199,7 +199,7 @@ export default function ControlBar({
             <SpeedPicker value={playbackRate} onChange={onSpeedChange} />
           )}
 
-          <div className="hidden sm:flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5">
             {pipSupported && (
               <button
                 onClick={onPipToggle}

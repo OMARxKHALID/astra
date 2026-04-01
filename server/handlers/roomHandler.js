@@ -48,7 +48,8 @@ export default function registerRoomHandlers(io, socket, rooms, clientMeta, elec
 
     if (isHost && !jwtPayload) return socket.emit("REC:error", { message: "Invalid host token" });
     if (room.passwordHash && !isHost) {
-      const provided = password ? hashPassword(String(password)) : "";
+      if (!password) return socket.emit("REC:error", { message: "Password required", code: "NEED_PASSWORD" });
+      const provided = hashPassword(String(password));
       if (provided !== room.passwordHash) return socket.emit("REC:error", { message: "Wrong password", code: "WRONG_PASSWORD" });
     }
 
