@@ -1,14 +1,15 @@
 import { saveRoom } from "../models/Room.js";
 import { isStrictVideoUrl } from "../utils/auth.js";
 
-export default function registerVideoHandlers(io, socket, rooms, clientMeta, getCtx) {
+export default function registerVideoHandlers(io, socket, rooms, clientMeta, getCtx, tsLastSent) {
   socket.on("CMD:ts", (_rId, payload) => {
     const meta = clientMeta.get(socket.id);
     if (!meta) return;
     const room = rooms.get(meta.roomId);
     if (!room) return;
-    // Rate-limiting check should remain in the higher socket loop or in a wrapper if needed, 
-    // but for now, we'll keep it simple or pass the tsLastSent map.
+    const now = Date.now();
+    if (now - (tsLastSent.get(socket.id) ?? 0) < 500) return;
+    tsLastSent.set(socket.id, now);
     const time = typeof payload === "object" ? payload.currentTime : payload;
     room.receiveTimestamp(meta.userId, time);
   });

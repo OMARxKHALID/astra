@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { redisCache } from "@/lib/redis";
 
 export async function GET(req, { params }) {
   const key = process.env.TMDB_API_KEY;
@@ -7,7 +8,14 @@ export async function GET(req, { params }) {
   if (!key || !id || !number)
     return NextResponse.json({ error: "Missing key, id or number" }, { status: 400 });
 
+  const cacheKey = `tmdb:season:${id}:${number}`;
+
   try {
+    if (redisCache) {
+      const cached = await redisCache.get(cacheKey);
+      if (cached) return NextResponse.json(cached);
+    }
+
     const res = await fetch(
       `https://api.themoviedb.org/3/tv/${id}/season/${number}?api_key=${key}&language=en-US`,
       { next: { revalidate: 3600 } },
@@ -29,7 +37,13 @@ export async function GET(req, { params }) {
         : null,
     }));
 
-    return NextResponse.json({ episodes, meta: { season_number: d.season_number } });
+    const result = { episodes, meta: { season_number: d.season_number } };
+    
+    if (redisCache) {
+      await redisCache.set(cacheKey, result, { ex: 3600 });
+    }
+
+    return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }

@@ -96,7 +96,7 @@ export default function NativeVideoPlayer({
   useVideoEvents({
     videoRef, videoUrl, sourceType, setDuration, setLocalTime,
     setBufferedPct, setBuffering, setVideoError, setPosterVisible,
-    setFullscreen, onPause, onPlay, seekingRef, playbackRate
+    setFullscreen, onPause, onPlay, seekingRef, playbackRate, addToast
   });
 
   useEffect(() => {
@@ -183,6 +183,36 @@ export default function NativeVideoPlayer({
     else document.exitFullscreen();
   };
 
+  const handleDoubleClick = (e) => {
+    if (!canControl || !videoRef.current) {
+      if (!document.fullscreenElement) containerRef.current?.requestFullscreen();
+      else document.exitFullscreen();
+      return;
+    }
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const width = rect.width;
+    
+    if (x < width * 0.3) {
+      // Double tap left 30% -> Rewind 10s
+      const t = Math.max(0, videoRef.current.currentTime - 10);
+      videoRef.current.currentTime = t;
+      onSeek?.(t);
+      handleVolumeOsd("rewind"); // You can show a small visual indicator
+    } else if (x > width * 0.7) {
+      // Double tap right 30% -> Skip 10s
+      const t = Math.min(duration, videoRef.current.currentTime + 10);
+      videoRef.current.currentTime = t;
+      onSeek?.(t);
+      handleVolumeOsd("forward");
+    } else {
+      // Double tap middle 40% -> Fullscreen
+      if (!document.fullscreenElement) containerRef.current?.requestFullscreen();
+      else document.exitFullscreen();
+    }
+  };
+
   const handleScreenshot = () => {
     const v = videoRef.current;
     if (!v || !onSendScreenshot) return;
@@ -256,7 +286,7 @@ export default function NativeVideoPlayer({
         preload="metadata"
         crossOrigin="anonymous"
         onClick={handlePlayPause}
-        onDoubleClick={handleFullscreen}
+        onDoubleClick={handleDoubleClick}
         style={{ cursor: ctrlVis ? "pointer" : "none" }}
       >
         {subtitleUrl && showSubtitles && (

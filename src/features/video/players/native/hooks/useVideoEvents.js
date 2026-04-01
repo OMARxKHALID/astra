@@ -15,6 +15,7 @@ export default function useVideoEvents({
   onPlay,
   seekingRef,
   playbackRate,
+  addToast,
 }) {
   useEffect(() => {
     const v = videoRef.current;
@@ -89,10 +90,12 @@ export default function useVideoEvents({
         "Unknown Error",
         `Code ${v.error.code}`,
       ];
+      const errorMsg = detail + (v.error.message ? ` (${v.error.message})` : "");
       setVideoError({
         title,
-        detail: detail + (v.error.message ? ` (${v.error.message})` : ""),
+        detail: errorMsg,
       });
+      addToast?.(`${title}: ${errorMsg}`, "error");
     };
 
     v.addEventListener("timeupdate", onTime);

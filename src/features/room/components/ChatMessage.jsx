@@ -1,7 +1,8 @@
+import { memo } from "react";
 import { SYSTEM_ICONS } from "../roomMaps";
 import { VoiceNote } from "./VoiceNote";
 
-export function ChatMessage({ msg, isOwn, displayNames = {} }) {
+function ChatMessageInner({ msg, isOwn, displayNames = {} }) {
   const time = msg.ts
     ? new Date(msg.ts).toLocaleTimeString([], {
         hour: "2-digit",
@@ -100,3 +101,5 @@ export function ChatMessage({ msg, isOwn, displayNames = {} }) {
     </div>
   );
 }
+
+export const ChatMessage = memo(ChatMessageInner);

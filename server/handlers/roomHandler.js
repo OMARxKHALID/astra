@@ -3,7 +3,7 @@ import { verifyHostToken, hashPassword } from "../utils/auth.js";
 import { EMPTY_ROOM_CLEANUP_MS, HOST_RECONNECT_GRACE_MS } from "../constants.js";
 import { redis } from "../utils/redis.js";
 
-export default function registerRoomHandlers(io, socket, rooms, clientMeta, electNewHost) {
+export default function registerRoomHandlers(io, socket, rooms, clientMeta, electNewHost, tsLastSent) {
   socket.on("JOIN_ROOM", async (msg) => {
     const { roomId, token, clientId, videoUrl, username, password } = msg || {};
     if (!roomId || !clientId) return;
@@ -76,7 +76,7 @@ export default function registerRoomHandlers(io, socket, rooms, clientMeta, elec
     if (!room.hostId) electNewHost(room);
   });
 
-  socket.on("CMD:lock", () => {
+  socket.on("CMD:lock", (_rId) => {
     const meta = clientMeta.get(socket.id);
     if (!meta?.isHost) return;
     const room = rooms.get(meta.roomId);
@@ -86,7 +86,7 @@ export default function registerRoomHandlers(io, socket, rooms, clientMeta, elec
     saveRoom(room);
   });
 
-  socket.on("CMD:strictVideoUrlMode", () => {
+  socket.on("CMD:strictVideoUrlMode", (_rId) => {
     const meta = clientMeta.get(socket.id);
     if (!meta?.isHost) return;
     const room = rooms.get(meta.roomId);
@@ -96,7 +96,7 @@ export default function registerRoomHandlers(io, socket, rooms, clientMeta, elec
     saveRoom(room);
   });
 
-  socket.on("CMD:setPassword", (msg) => {
+  socket.on("CMD:setPassword", (_rId, msg) => {
     const meta = clientMeta.get(socket.id);
     if (!meta?.isHost) return;
     const room = rooms.get(meta.roomId);
@@ -107,7 +107,7 @@ export default function registerRoomHandlers(io, socket, rooms, clientMeta, elec
     saveRoom(room);
   });
 
-  socket.on("CMD:kick", (msg) => {
+  socket.on("CMD:kick", (_rId, msg) => {
     const meta = clientMeta.get(socket.id);
     if (!meta?.isHost) return;
     const { targetUserId } = msg || {};
@@ -120,7 +120,7 @@ export default function registerRoomHandlers(io, socket, rooms, clientMeta, elec
     }
   });
 
-  socket.on("CMD:transferHost", (msg) => {
+  socket.on("CMD:transferHost", (_rId, msg) => {
     const meta = clientMeta.get(socket.id);
     if (!meta?.isHost) return;
     const room = rooms.get(meta.roomId);
@@ -141,6 +141,7 @@ export default function registerRoomHandlers(io, socket, rooms, clientMeta, elec
     const meta = clientMeta.get(socket.id);
     if (!meta) return;
     clientMeta.delete(socket.id);
+    tsLastSent.delete(socket.id);
     const room = rooms.get(meta.roomId);
     if (!room) return;
     const fullyLeft = room.removeSocket(socket.id, meta.userId);

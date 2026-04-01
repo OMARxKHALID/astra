@@ -4,12 +4,12 @@ import { useEffect } from "react";
 import { useRoomSocket } from "../../room/hooks/useRoomSocket";
 
 export default function SyncEngine(props) {
-  const { sendRef, socketRef } = props;
-  const { send, socket } = useRoomSocket(props);
+  const { sendRef, socketRef: externalSocketRef } = props;
+  const { send, socketRef } = useRoomSocket(props);
 
   useEffect(() => {
-    if (socketRef) socketRef.current = socket;
-  }, [socket, socketRef]);
+    if (externalSocketRef) externalSocketRef.current = socketRef.current;
+  }, [socketRef.current, externalSocketRef]);
 
   useEffect(() => {
     if (!sendRef) return;

@@ -11,7 +11,7 @@ import { CLOCK_RECAL_INTERVAL } from "@/constants/config";
 const WS_URL =
   process.env.NEXT_PUBLIC_WS_URL ||
   (process.env.NODE_ENV === "production"
-    ? "https://watch-together-ws.onrender.com"
+    ? "https://astra-sync-ws.onrender.com"
     : `http://${typeof window !== "undefined" ? window.location.hostname : "localhost"}:3001`);
 
 export function useRoomSocket(props) {
@@ -62,7 +62,9 @@ export function useRoomSocket(props) {
         socket.emit(type, data);
       }
 
-      if (["CMD:play", "CMD:pause", "CMD:host", "CMD:playbackRate"].includes(type))
+      if (
+        ["CMD:play", "CMD:pause", "CMD:host", "CMD:playbackRate"].includes(type)
+      )
         preventSync(1000);
       if (type === "CMD:seek") preventSync(3000);
     },
@@ -113,19 +115,41 @@ export function useRoomSocket(props) {
         initialSeekDone.current = true;
       }
 
-      const correction = computeCorrection(v.currentTime, leaderTime, s.isPlaying);
-      const commandedRate = p.current.speedSyncEnabled !== false || s?.hostId === p.current.userId ? s.playbackRate || 1 : 1;
+      const correction = computeCorrection(
+        v.currentTime,
+        leaderTime,
+        s.isPlaying,
+      );
+      const commandedRate =
+        p.current.speedSyncEnabled !== false || s?.hostId === p.current.userId
+          ? s.playbackRate || 1
+          : 1;
 
-      const correctedRate = correction.action === "soft"
-        ? parseFloat(Math.min(commandedRate + (correction.playbackRate - 1), commandedRate + 0.1).toFixed(3))
-        : commandedRate;
+      const correctedRate =
+        correction.action === "soft"
+          ? parseFloat(
+              Math.min(
+                commandedRate + (correction.playbackRate - 1),
+                commandedRate + 0.1,
+              ).toFixed(3),
+            )
+          : commandedRate;
 
-      if (Math.abs(v.playbackRate - correctedRate) > 0.005) v.playbackRate = correctedRate;
+      if (Math.abs(v.playbackRate - correctedRate) > 0.005)
+        v.playbackRate = correctedRate;
     }, SYNC_CHECK_INTERVAL);
   }, [isBufferingNow, suppressNext]);
 
   const connect = useCallback(() => {
-    const { roomId, userId, hostToken, videoUrl, displayName, roomPassword, onConnStatus } = p.current;
+    const {
+      roomId,
+      userId,
+      hostToken,
+      videoUrl,
+      displayName,
+      roomPassword,
+      onConnStatus,
+    } = p.current;
     if (socketRef.current) socketRef.current.disconnect();
 
     const socket = io(WS_URL, {
@@ -161,10 +185,17 @@ export function useRoomSocket(props) {
     });
 
     const handlers = {
-      disconnect: () => onConnStatus?.("reconnecting"),
+      disconnect: () => p.current.onConnStatus?.("reconnecting"),
+      connect_error: () => p.current.onConnStatus?.("reconnecting"),
       "REC:host": (m) => {
-        const state = { ...m, videoUrl: m.video, isPlaying: !m.paused, currentTime: m.videoTS };
+        const state = {
+          ...m,
+          videoUrl: m.video,
+          isPlaying: !m.paused,
+          currentTime: m.videoTS,
+        };
         const wasInitial = !serverLine.current;
+        const prev = serverLine.current;
         serverLine.current = state;
         p.current.onStateUpdate?.(state);
         if (wasInitial) initialSeekDone.current = false;
@@ -173,49 +204,128 @@ export function useRoomSocket(props) {
         if (wasInitial && v && state.currentTime > 0) {
           v.currentTime = state.currentTime;
           initialSeekDone.current = true;
-          if (state.isPlaying) { suppressNext(); v.play().catch(() => {}); }
+          if (state.isPlaying) {
+            suppressNext();
+            v.play().catch(() => {});
+          }
           if (m.reconnected) p.current.onReconnected?.();
-          else if (state.currentTime > 120) p.current.onLateJoin?.(state.currentTime);
+          else if (state.currentTime > 120)
+            p.current.onLateJoin?.(state.currentTime);
+        }
+
+        if (!wasInitial && prev) {
+          const ocm = p.current.onChatMessage;
+          if (prev.strictVideoUrlMode !== m.strictVideoUrlMode)
+            ocm?.({
+              senderId: "system",
+              ts: Date.now(),
+              text: m.strictVideoUrlMode
+                ? "[STRICT_ON] Strict URL mode ON — direct files only."
+                : "[STRICT_OFF] Strict URL mode OFF — all URLs allowed.",
+            });
+          if (prev.hostOnlyControls !== m.hostOnlyControls)
+            ocm?.({
+              senderId: "system",
+              ts: Date.now(),
+              text: m.hostOnlyControls
+                ? "[LOCK] Playback locked to host only."
+                : "[UNLOCK] Playback unlocked for everyone.",
+            });
+          if (Boolean(prev.hasPassword) !== Boolean(m.hasPassword))
+            ocm?.({
+              senderId: "system",
+              ts: Date.now(),
+              text: m.hasPassword
+                ? "[LOCK] Room password set."
+                : "[UNLOCK] Room password removed.",
+            });
         }
       },
       "REC:play": (m) => {
         const v = p.current.videoRef?.current;
         if (v) {
-          if (m?.videoTS != null && Math.abs(v.currentTime - m.videoTS) > 0.5) v.currentTime = m.videoTS;
+          if (m?.videoTS != null && Math.abs(v.currentTime - m.videoTS) > 0.5)
+            v.currentTime = m.videoTS;
           suppressNext();
           v.play().catch(() => {});
         }
       },
       "REC:pause": () => {
         const v = p.current.videoRef?.current;
-        if (v && !v.paused) { suppressNext(); v.pause(); }
+        if (v && !v.paused) {
+          suppressNext();
+          v.pause();
+        }
       },
       "REC:seek": (time) => {
         const v = p.current.videoRef?.current;
         if (v && Math.abs(v.currentTime - time) > 0.5) v.currentTime = time;
+        if (Date.now() < preventUpdateEnd.current) return;
+        const mins = Math.floor(time / 60);
+        const secs = String(Math.floor(time % 60)).padStart(2, "0");
+        p.current.onChatMessage?.({
+          senderId: "system",
+          ts: Date.now(),
+          text: `[SEEK] Host jumped to ${mins}:${secs}`,
+        });
       },
       "REC:tsMap": (data) => {
         tsMap.current = data;
         p.current.onTsMapUpdate?.(data);
       },
-      "REC:roster": (users) => p.current.onUserChange?.({ type: "participants", users }),
-      user_joined: (m) => p.current.onUserChange?.({ type: "user_joined", ...m }),
+      "REC:roster": (users) =>
+        p.current.onUserChange?.({ type: "participants", users }),
+      user_joined: (m) =>
+        p.current.onUserChange?.({ type: "user_joined", ...m }),
       user_left: (m) => p.current.onUserChange?.({ type: "user_left", ...m }),
-      name_changed: (m) => p.current.onUserChange?.({ type: "name_changed", ...m }),
-      user_typing: (m) => p.current.onUserChange?.({ type: "user_typing", ...m }),
+      name_changed: (m) =>
+        p.current.onUserChange?.({ type: "name_changed", ...m }),
+      user_typing: (m) =>
+        p.current.onUserChange?.({ type: "user_typing", ...m }),
       host_changed: (m) => {
         p.current.onUserChange?.({ type: "host_changed", ...m });
-        p.current.onStateUpdate?.((prev) => prev ? { ...prev, hostId: m.newHostId } : prev);
+        p.current.onStateUpdate?.((prev) =>
+          prev ? { ...prev, hostId: m.newHostId } : prev,
+        );
+        if (m.transferredFrom)
+          p.current.onChatMessage?.({
+            senderId: "system",
+            ts: Date.now(),
+            text: "[HOST] Host role transferred.",
+          });
       },
-      "REC:subtitle": (url) => p.current.onStateUpdate?.((prev) => prev ? { ...prev, subtitleUrl: url } : prev),
+      "REC:subtitle": (url) =>
+        p.current.onStateUpdate?.((prev) =>
+          prev ? { ...prev, subtitleUrl: url } : prev,
+        ),
       chat: (m) => p.current.onChatMessage?.(m),
-      chat_history: (m) => p.current.onChatMessage?.({ type: "chat_history", ...m }),
+      chat_history: (m) =>
+        p.current.onChatMessage?.({ type: "chat_history", ...m }),
       "REC:error": (m) => {
-        if (m.code === "WRONG_PASSWORD" || m.message === "You have been removed from the room.") {
-          if (socketRef.current) { socketRef.current.io.opts.reconnection = false; socketRef.current.disconnect(); }
-          p.current.onKicked?.(m.code || m.message);
+        if (m.code === "STRICT_VIDEO_MODE") {
+          p.current.onChatMessage?.({
+            senderId: "system",
+            ts: Date.now(),
+            text: `[STRICT] ${m.message}`,
+          });
+          return;
         }
-      }
+        if (
+          m.code === "WRONG_PASSWORD" ||
+          m.message === "You have been removed from the room."
+        ) {
+          if (socketRef.current) {
+            socketRef.current.io.opts.reconnection = false;
+            socketRef.current.disconnect();
+          }
+          p.current.onKicked?.(m.code || m.message);
+          return;
+        }
+        if (m.message === "Invalid host token") {
+          if (socketRef.current) socketRef.current.disconnect();
+          p.current.onKicked?.(m.message);
+        }
+      },
     };
 
     Object.entries(handlers).forEach(([ev, fn]) => socket.on(ev, fn));
@@ -244,5 +354,5 @@ export function useRoomSocket(props) {
     return () => clearInterval(int);
   }, [isBufferingNow]);
 
-  return { send, socket: socketRef.current };
+  return { send, socketRef };
 }

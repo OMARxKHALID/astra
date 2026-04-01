@@ -29,10 +29,10 @@ export function RoomNavbar({
           className="flex items-center gap-2 px-3 py-2 rounded-[var(--radius-pill)] glass-card hover:border-white/10 transition-all active:scale-95 shrink-0"
         >
           <div className="w-7 h-7 rounded-[var(--radius-pill)] bg-amber flex items-center justify-center font-display font-black text-void text-[10px]">
-            WT
+            AS
           </div>
           <span className="font-display font-bold text-base tracking-tight text-white/40 hidden md:block">
-            WatchTogether
+            Astra Sync
           </span>
         </button>
 

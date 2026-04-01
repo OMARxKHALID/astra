@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useCallback, useMemo, useEffect, useState } from "react";
+import { useRef, useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { MessageSquare as ChatIcon, Users as UsersIcon } from "lucide-react";
 
 import SyncEngine from "@/features/sync/components/SyncEngine";
@@ -30,9 +30,11 @@ import useSidebar from "./hooks/useSidebar";
 import { useAmbilight } from "./hooks/useAmbilight";
 import { useMediaHistory } from "./hooks/useMediaHistory";
 import { useVideoState } from "./hooks/useVideoState";
+import { ls } from "@/utils/localStorage";
 
 export default function RoomView({ roomId, initialMeta }) {
   const router = useRouter();
+  const params = useSearchParams();
   const { toasts, addToast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [fsChatOpen, setFsChatOpen] = useState(false);
@@ -59,9 +61,10 @@ export default function RoomView({ roomId, initialMeta }) {
   });
 
   const { rootAmbiRef, bentoVideoRef, handleAmbiColors } = useAmbilight(settings);
-  const videoState = useVideoState({ videoUrl: room.serverState?.videoUrl || initialMeta?.videoUrl || "", params: new URLSearchParams(typeof window !== "undefined" ? window.location.search : ""), roomId, router, sendRef });
+  const videoState = useVideoState({ videoUrl: room.serverState?.videoUrl || initialMeta?.videoUrl || "", params, roomId, router, sendRef });
   
-  const isHost = room.serverState?.hostId === identity.userId || (!room.serverState && typeof window !== "undefined" && !!localStorage.getItem(`host_${roomId}`));
+  const hostToken = ls.get(`host_${roomId}`) || "";
+  const isHost = room.serverState?.hostId === identity.userId || (!room.serverState && !!hostToken);
   useMediaHistory({ roomId, videoUrl: videoState.videoUrl, serverState: room.serverState, isHost });
 
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -87,7 +90,7 @@ export default function RoomView({ roomId, initialMeta }) {
     <div className={`h-dvh flex flex-col overflow-hidden font-body antialiased bg-void ${settings.theatreMode ? "theatre-mode" : ""}`}>
       <div ref={rootAmbiRef} aria-hidden className="fixed inset-0 z-5 pointer-events-none opacity-0 transition-opacity duration-600" />
       {identity.userId && identity.nameReady && room.syncEnabled && (
-        <SyncEngine roomId={roomId} userId={identity.userId} hostToken={typeof window !== "undefined" ? localStorage.getItem(`host_${roomId}`) : ""}
+        <SyncEngine roomId={roomId} userId={identity.userId} hostToken={hostToken}
           videoUrl={videoState.videoUrl} displayName={identity.displayName} videoRef={videoRef}
           onStateUpdate={room.handleStateUpdate} onChatMessage={handleChatMessage} onUserChange={handleUserChange}
           participants={room.participants} onDriftStatus={room.setSyncStatus} onConnStatus={room.setConnStatus}

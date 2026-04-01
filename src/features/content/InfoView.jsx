@@ -204,7 +204,7 @@ export default function InfoView({ initialData, type, id }) {
     );
   };
 
-  const handleWatchTogether = async () => {
+  const handleAstraSync = async () => {
     setCreating(true);
     markAsWatched();
     try {
@@ -330,7 +330,7 @@ export default function InfoView({ initialData, type, id }) {
 
                 <button
                   disabled={creating}
-                  onClick={handleWatchTogether}
+                  onClick={handleAstraSync}
                   className="bg-jade text-void flex-1 min-w-[90px] sm:flex-none h-9 px-4 rounded-[var(--radius-pill)] text-[12px] font-black flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-[0_4px_12px_rgba(var(--color-jade-rgb),0.3)] hover:brightness-110 active:scale-95 disabled:opacity-50"
                 >
                   {creating ? (

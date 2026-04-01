@@ -250,7 +250,7 @@ function WatchContent() {
             ) : (
               <Users className="w-4 h-4" />
             )}
-            <span className="hidden sm:inline">Watch Together</span>
+            <span className="hidden sm:inline">Astra Sync</span>
           </button>
 
           <div
