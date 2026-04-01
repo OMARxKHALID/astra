@@ -6,4 +6,4 @@ export const REDIS_TTL_S = 86_400;
 export const SOCKET_PING_INTERVAL = 20_000;
 export const SOCKET_PING_TIMEOUT = 30_000;
 export const MAX_CHAT_MESSAGES = 200;
-export const MAX_DATAURL_BYTES = 300_000;
+export const MAX_DATAURL_BYTES = 500_000;

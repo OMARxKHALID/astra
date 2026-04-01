@@ -17,6 +17,8 @@ export default function useVideoEvents({
   playbackRate,
   addToast,
 }) {
+
+
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
@@ -69,6 +71,8 @@ export default function useVideoEvents({
     };
 
     const onErr = () => {
+
+
       if (!v.error) {
         setVideoError({
           title: "Playback Error",

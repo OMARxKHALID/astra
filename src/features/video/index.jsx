@@ -1,11 +1,13 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { memo, useEffect } from "react";
 import { classifyUrl } from "@/lib/videoResolver";
-import NativeVideoPlayer from "./players/NativeVideoPlayer";
-import YouTubePlayer from "./players/YouTubePlayer";
-import VimeoPlayer from "./players/VimeoPlayer";
-import EmbedPlayer from "./players/EmbedPlayer";
+
+const NativeVideoPlayer = dynamic(() => import("./players/NativeVideoPlayer"), { ssr: false });
+const YouTubePlayer = dynamic(() => import("./players/YouTubePlayer"), { ssr: false });
+const VimeoPlayer = dynamic(() => import("./players/VimeoPlayer"), { ssr: false });
+const EmbedPlayer = dynamic(() => import("./players/EmbedPlayer"), { ssr: false });
 
 function VideoPlayer({
   videoRef,
@@ -30,6 +32,7 @@ function VideoPlayer({
   theatreMode = false,
   onToggleTheatre,
   onToggleChat,
+  unreadCount = 0,
   hasEpisodes = false,
   onToggleEpisodes,
 }) {
@@ -45,6 +48,16 @@ function VideoPlayer({
       videoRef.current = null;
     }
   }, [source.type, videoRef]);
+
+  const playerProps = {
+    addToast,
+    theatreMode,
+    onToggleTheatre,
+    onToggleChat,
+    unreadCount,
+    hasEpisodes,
+    onToggleEpisodes,
+  };
 
   if (source.type === "mp4" || source.type === "hls")
     return (
@@ -72,6 +85,7 @@ function VideoPlayer({
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}
         onToggleChat={onToggleChat}
+        unreadCount={unreadCount}
         hasEpisodes={hasEpisodes}
         onToggleEpisodes={onToggleEpisodes}
       />
@@ -95,6 +109,7 @@ function VideoPlayer({
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}
         onToggleChat={onToggleChat}
+        unreadCount={unreadCount}
         hasEpisodes={hasEpisodes}
         onToggleEpisodes={onToggleEpisodes}
       />
@@ -118,6 +133,7 @@ function VideoPlayer({
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}
         onToggleChat={onToggleChat}
+        unreadCount={unreadCount}
         hasEpisodes={hasEpisodes}
         onToggleEpisodes={onToggleEpisodes}
       />
@@ -131,6 +147,7 @@ function VideoPlayer({
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}
         onToggleChat={onToggleChat}
+        unreadCount={unreadCount}
         hasEpisodes={hasEpisodes}
         onToggleEpisodes={onToggleEpisodes}
       />

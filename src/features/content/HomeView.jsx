@@ -2,14 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { Users, Search, Loader2 } from "lucide-react";
+import { Users, Search } from "lucide-react";
 import { buildEmbedUrl } from "@/lib/videoResolver";
 import Loading from "@/components/Loading";
 import RecentRooms from "@/features/room/RecentRooms";
-import { createRoom } from "@/features/room/createRoom";
-import { LS_KEYS } from "@/constants/config";
-import { ls } from "@/utils/localStorage";
+import { persistence } from "@/utils/persistence";
 
 import Hero from "@/features/content/MediaHero";
 import Row from "@/features/content/MediaRow";
@@ -18,11 +15,9 @@ import UserMenu from "@/components/UserMenu";
 
 export default function HomeView({ initialData }) {
   const router = useRouter();
-  const { data: session } = useSession();
   const [data, setData] = useState(initialData);
   const [loading, setLoading] = useState(!initialData);
   const [showSearch, setShowSearch] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [favorites, setFavorites] = useState([]);
   const [watched, setWatched] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
@@ -34,6 +29,7 @@ export default function HomeView({ initialData }) {
 
   const handlePlay = (item) => {
     if (!item) return;
+    persistence.markAsWatched(item);
     const url = buildEmbedUrl("vidlink", item.id, item.type || "movie", 1, 1);
     router.push(
       `/watch?url=${encodeURIComponent(url)}&tmdb=${item.id}&type=${item.type || "movie"}`,
@@ -41,7 +37,10 @@ export default function HomeView({ initialData }) {
   };
 
   useEffect(() => {
-    const isDataEmpty = !initialData || !initialData.hero?.length || !initialData.trending?.length;
+    const isDataEmpty =
+      !initialData ||
+      !initialData.hero?.length ||
+      !initialData.trending?.length;
     if (isDataEmpty) {
       setLoading(true);
       fetch("/api/tmdb/browse")
@@ -66,21 +65,18 @@ export default function HomeView({ initialData }) {
   }, []);
 
   useEffect(() => {
-    try {
-      setFavorites(JSON.parse(ls.get(LS_KEYS.favorites) || "[]"));
-      
-      const wList = JSON.parse(ls.get(LS_KEYS.watched) || "[]");
-      setWatched(wList);
+    setFavorites(persistence.getFavorites());
+    const wList = persistence.getWatched();
+    setWatched(wList);
 
-      if (wList.length > 0) {
-        const last = wList[0];
-        setLastWatchedTitle(last.title);
-        fetch(`/api/tmdb/recommendations?id=${last.id}&type=${last.type}`)
-          .then((r) => r.json())
-          .then((d) => setRecommendations((d.items || []).slice(0, 20)))
-          .catch(console.error);
-      }
-    } catch {}
+    if (wList.length > 0) {
+      const last = wList[0];
+      setLastWatchedTitle(last.title);
+      fetch(`/api/tmdb/recommendations?id=${last.id}&type=${last.type}`)
+        .then((r) => r.json())
+        .then((d) => setRecommendations((d.items || []).slice(0, 20)))
+        .catch(console.error);
+    }
   }, []);
 
   if (loading && !data) return <Loading />;
@@ -114,7 +110,6 @@ export default function HomeView({ initialData }) {
               ⌘K
             </kbd>
           </button>
-
 
           <button
             onClick={() => setShowSearch(true)}

@@ -87,7 +87,7 @@ export class Room {
     this.video = video;
     this.videoTS = videoTS;
     this.paused = paused;
-    this.subtitleUrl = subtitleUrl;
+    this.subtitleUrl = subtitleUrl || "";
     this.tmdbMeta = null;
     this.tsMap = {};
     this.lockTs(1500);
@@ -184,7 +184,9 @@ export function saveRoom(room) {
               // Only store text messages and audio dataUrls — drop image dataUrls
               messages: (r.messages || []).map((m) => ({
                 ...m,
-                dataUrl: m.dataUrl?.startsWith("data:audio/") ? m.dataUrl : undefined,
+                dataUrl: m.dataUrl?.startsWith("data:audio/")
+                  ? m.dataUrl
+                  : undefined,
               })),
             },
             { ex: REDIS_TTL_S },

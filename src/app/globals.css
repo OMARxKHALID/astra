@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 @theme {
-  --font-display: "Playfair Display", serif;
-  --font-body: "DM Sans", sans-serif;
-  --font-mono: "DM Mono", monospace;
+  --font-display: var(--font-body);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
 
   --color-void: #07090d;
   --color-surface: #0d1018;
@@ -14,10 +14,10 @@
   --color-amber: #f59e0b;
   --color-jade: #10b981;
   --color-danger: #ef4444;
-  --color-muted: #4b5563;
-  --color-subtle: #6b7280;
-  --color-dim: #94a3b8;
-  --color-text: #dde4f0;
+  --color-muted: #64748b;
+  --color-subtle: #94a3b8;
+  --color-dim: #cbd5e1;
+  --color-text: #e2e8f0;
   --color-bright: #f8fafc;
   --color-bright-rgb: 248, 250, 252;
   --color-amber-rgb: 245, 158, 11;

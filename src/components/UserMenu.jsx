@@ -86,10 +86,10 @@ export default function UserMenu() {
                 </div>
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-bold text-bright truncate font-display">
+                <p className="text-[14.5px] font-bold text-bright truncate font-display">
                   {user.name || "Astra User"}
                 </p>
-                <p className="text-[10px] text-white/30 font-mono truncate">
+                <p className="text-[11px] text-white/30 font-mono truncate">
                   {(user.email || "").toLowerCase()}
                 </p>
               </div>
@@ -99,14 +99,14 @@ export default function UserMenu() {
           <div className="p-1.5 flex flex-col gap-0.5">
             <button
               onClick={() => { setOpen(false); router.push("/profile"); }}
-              className="w-full flex items-center gap-3 px-3 h-10 rounded-xl text-[12px] font-bold text-white/60 hover:bg-white/10 hover:text-bright hover:pl-4 transition-all duration-300 cursor-pointer group"
+              className="w-full flex items-center gap-3 px-3 h-10 rounded-xl text-[13px] font-bold text-white/60 hover:bg-white/10 hover:text-bright hover:pl-4 transition-all duration-300 cursor-pointer group"
             >
               <User className="w-4 h-4 group-hover:text-amber transition-colors" />
               Profile Settings
             </button>
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
-              className="w-full flex items-center gap-3 px-3 h-10 rounded-xl text-[12px] font-bold text-danger/60 hover:bg-danger/10 hover:text-danger hover:pl-4 transition-all duration-300 cursor-pointer group"
+              className="w-full flex items-center gap-3 px-3 h-10 rounded-xl text-[13px] font-bold text-danger/60 hover:bg-danger/10 hover:text-danger hover:pl-4 transition-all duration-300 cursor-pointer group"
             >
               <LogOut className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
               Sign Out

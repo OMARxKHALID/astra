@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import {
   Suspense,
   useState,
@@ -8,6 +9,14 @@ import {
   useCallback,
   useRef,
 } from "react";
+
+// [Note] Optimization: Lazy load heavy interactive components
+const VideoPlayer = dynamic(() => import("@/features/video"), { ssr: false });
+const EpisodeSelector = dynamic(
+  () => import("@/features/content/EpisodeSelector"),
+  { ssr: false },
+);
+
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -25,10 +34,6 @@ import {
   detectServer,
 } from "@/lib/videoResolver";
 import { createRoom } from "@/features/room/createRoom";
-import { ls } from "@/utils/localStorage";
-
-import VideoPlayer from "@/features/video";
-import EpisodeSelector from "@/features/content/EpisodeSelector";
 
 function WatchContent() {
   const params = useSearchParams();
@@ -71,8 +76,6 @@ function WatchContent() {
     type: metaType,
   } = derivedMeta;
   const isActiveTv = metaType === "tv";
-
-  // ── Side-effects ─────────────────────────────────────────────────────────────
 
   const cloudRef = useRef(null);
 

@@ -2,6 +2,7 @@
 
 import { useCallback, useRef } from "react";
 import { MAX_CHAT_MESSAGES } from "@/constants/config";
+import { useSounds } from "@/hooks/useSounds";
 import { SYSTEM_ICONS } from "../roomMaps";
 
 export default function useRoomEvents({
@@ -20,9 +21,11 @@ export default function useRoomEvents({
   handleWrongPassword,
   router,
 }) {
-  // [Note] Ref mirror: avoids stale closures in handleChatMessage without re-creating the callback
+  // [Note] Visibility guard: prevents stale closures in async handlers without re-mounting
   const visRef = useRef({ fsChatOpen, mobileSheet, showSidebar });
   visRef.current = { fsChatOpen, mobileSheet, showSidebar };
+
+  const { playPing } = useSounds();
 
   const handleChatMessage = useCallback(
     (msg) => {
@@ -55,6 +58,18 @@ export default function useRoomEvents({
         if (msg.ts && prev.some((m) => m.ts === msg.ts && m.senderId === msg.senderId)) return prev;
         return [...prev, msg].slice(-MAX_CHAT_MESSAGES);
       });
+
+      // [Note] Mentions: trigger synthetic notification sound if user is targeted by name or @everyone
+      if (msg.senderId !== userId && msg.text) {
+        const text = msg.text.toLowerCase();
+        const myName = displayNamesRef.current[userId];
+        const isMentioned = (myName && text.includes(`@${myName.toLowerCase()}`)) || text.includes("@everyone");
+        
+        if (isMentioned) {
+          playPing();
+        }
+      }
+
       const { fsChatOpen: fsOpen, mobileSheet: sheet, showSidebar: sidebar } = visRef.current;
       const isMobile =
         typeof window !== "undefined" && window.innerWidth < 1024;
@@ -65,9 +80,19 @@ export default function useRoomEvents({
           : sidebar;
       if (!isVisible) setUnreadCount((n) => n + 1);
     },
-    [addToast, setMessages, setUnreadCount],
+    [addToast, setMessages, setUnreadCount, userId, displayNamesRef, playPing],
   );
 
+  const handleChatUpdate = useCallback(
+    (update) => {
+      const { ts, reactions } = update || {};
+      if (!ts) return;
+      setMessages((prev) =>
+        prev.map((m) => (m.ts === ts ? { ...m, reactions } : m)),
+      );
+    },
+    [setMessages],
+  );
   const handleUserChange = useCallback(
     (event) => {
       if (!event) return;
@@ -155,6 +180,7 @@ export default function useRoomEvents({
 
   return {
     handleChatMessage,
+    handleChatUpdate,
     handleUserChange,
     handleKicked,
   };

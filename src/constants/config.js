@@ -8,6 +8,7 @@ export const SAVE_DEBOUNCE_MS = 2_000;
 export const REDIS_TTL_S = 86_400;
 export const JWT_EXPIRY_S = 86_400;
 
+export const MAX_DATAURL_BYTES = 500_000;
 export const MAX_CHAT_MESSAGES = 200;
 export const MAX_HISTORY_ENTRIES = 12;
 export const MAX_RECENT_ROOMS = 3;

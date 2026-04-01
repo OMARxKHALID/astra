@@ -1,20 +1,17 @@
 import "./globals.css";
-import { DM_Sans, DM_Mono } from "next/font/google";
+import { Outfit, Geist_Mono } from "next/font/google";
 import PwaUpdateToast from "@/components/PwaUpdateToast";
+import PwaOnboarding from "@/components/PwaOnboarding";
 import SessionProvider from "@/providers/SessionProvider";
 
-const dmSans = DM_Sans({
+const outfit = Outfit({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
   variable: "--font-body",
-  display: "swap",
 });
 
-const dmMono = DM_Mono({
+const geistMono = Geist_Mono({
   subsets: ["latin"],
-  weight: ["400", "500"],
   variable: "--font-mono",
-  display: "swap",
 });
 
 export const metadata = {
@@ -85,28 +82,20 @@ export const viewport = { themeColor: "#f59e0b" };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${dmSans.variable} ${dmMono.variable}`}>
+    <html lang="en" className={`${outfit.variable} ${geistMono.variable}`}>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="preconnect" href="https://img.youtube.com" />
         <link rel="preconnect" href="https://www.youtube.com" />
         <link rel="preconnect" href="https://player.vimeo.com" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap"
-          rel="stylesheet"
-        />
+
       </head>
       <body>
         <SessionProvider>
           {children}
           <PwaUpdateToast />
+          <PwaOnboarding />
         </SessionProvider>
       </body>
     </html>

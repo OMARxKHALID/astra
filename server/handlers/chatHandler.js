@@ -1,5 +1,5 @@
 import { saveRoom } from "../models/Room.js";
-import { MAX_DATAURL_BYTES } from "../constants.js";
+import { MAX_DATAURL_BYTES, MAX_CHAT_MESSAGES } from "../constants.js";
 
 export default function registerChatHandlers(io, socket, rooms, clientMeta) {
   socket.on("CMD:setName", (_rId, msg) => {
@@ -54,13 +54,46 @@ export default function registerChatHandlers(io, socket, rooms, clientMeta) {
 
     const isAudio = dataUrl?.startsWith("data:audio/");
     if (text || isAudio) {
-      const storedMsg = { ...chatMsg };
+      const storedMsg = { ...chatMsg, reactions: {} };
       if (dataUrl && !isAudio) {
         storedMsg.dataUrl = undefined;
       }
       room.messages.push(storedMsg);
-      if (room.messages.length > 200) room.messages = room.messages.slice(-200);
+      if (room.messages.length > MAX_CHAT_MESSAGES) {
+        room.messages = room.messages.slice(-MAX_CHAT_MESSAGES);
+      }
       saveRoom(room);
     }
+  });
+
+  socket.on("CMD:reaction", (_rId, msg) => {
+    const meta = clientMeta.get(socket.id);
+    if (!meta) return;
+    const room = rooms.get(meta.roomId);
+    if (!room) return;
+
+    const { ts, emoji } = msg || {};
+    if (!ts || !emoji) return;
+
+    const chatMsg = room.messages.find((m) => m.ts === ts);
+    if (!chatMsg) return;
+
+    if (!chatMsg.reactions) chatMsg.reactions = {};
+    if (!chatMsg.reactions[emoji]) chatMsg.reactions[emoji] = [];
+
+    const users = chatMsg.reactions[emoji];
+    const idx = users.indexOf(meta.userId);
+    if (idx > -1) {
+      users.splice(idx, 1);
+      if (users.length === 0) delete chatMsg.reactions[emoji];
+    } else {
+      users.push(meta.userId);
+    }
+
+    io.to(meta.roomId).emit("chat_update", {
+      ts: chatMsg.ts,
+      reactions: chatMsg.reactions,
+    });
+    saveRoom(room);
   });
 }

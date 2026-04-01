@@ -14,7 +14,7 @@ export default function SyncStatusIndicator({ syncStatus, connStatus }) {
           className={`w-1.5 h-1.5 rounded-full shrink-0 transition-all duration-500 ${c.dot}`}
         />
         <span
-          className={`text-[9px] font-black uppercase tracking-[0.2em] hidden sm:inline ${c.color}`}
+          className={`text-[10.5px] font-black uppercase tracking-[0.2em] hidden sm:inline ${c.color}`}
         >
           {c.label}
         </span>
@@ -24,7 +24,7 @@ export default function SyncStatusIndicator({ syncStatus, connStatus }) {
         <>
           <div className="w-px h-3 bg-white/10 hidden md:block" />
           <span
-            className={`text-[9px] font-mono uppercase tracking-[0.15em] font-medium hidden md:inline ${s.color}`}
+            className={`text-[10.5px] font-mono uppercase tracking-[0.15em] font-medium hidden md:inline ${s.color}`}
           >
             {s.label}
           </span>

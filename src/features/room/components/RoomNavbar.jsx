@@ -28,7 +28,7 @@ export function RoomNavbar({
           onClick={() => router.push("/")}
           className="flex items-center gap-2 px-3 py-2 rounded-[var(--radius-pill)] glass-card hover:border-white/10 transition-all active:scale-95 shrink-0"
         >
-          <div className="w-7 h-7 rounded-[var(--radius-pill)] bg-amber flex items-center justify-center font-display font-black text-void text-[10px]">
+          <div className="w-7 h-7 rounded-[var(--radius-pill)] bg-amber flex items-center justify-center font-display font-black text-void text-[11.5px]">
             AS
           </div>
           <span className="font-display font-bold text-base tracking-tight text-white/40 hidden md:block">
@@ -36,13 +36,13 @@ export function RoomNavbar({
           </span>
         </button>
 
-        <div className="flex items-center gap-2 px-2.5 py-2 rounded-[var(--radius-pill)] glass-card text-[10px] font-mono uppercase tracking-[0.2em] shrink-0">
-          <span className="w-1.5 h-1.5 rounded-full bg-jade/70 animate-pulse" />
+        <div className="flex items-center gap-2 px-2.5 py-2 rounded-[var(--radius-pill)] glass-card text-[11px] font-mono uppercase tracking-[0.2em] shrink-0">
+          <span className={`w-1.5 h-1.5 rounded-full transition-colors duration-500 ${room.connStatus === "connected" ? "bg-jade animate-pulse" : room.connStatus === "reconnecting" ? "bg-danger" : "bg-amber"}`} />
           <span className="text-white/40 font-black hidden xs:inline">
-            {roomId}
+            {roomId?.slice?.(0, 6)}
           </span>
           <span className="text-white/40 font-black xs:hidden">
-            {roomId?.slice?.(0, 4)}
+            {roomId?.slice?.(0, 6)}
           </span>
         </div>
 
@@ -65,7 +65,7 @@ export function RoomNavbar({
                   )
                 }
                 maxLength={24}
-                className="w-28 bg-transparent text-xs font-mono text-white/40 outline-none"
+                className="w-28 bg-transparent text-[13px] font-mono text-white/40 outline-none"
               />
             </form>
           ) : (
@@ -74,7 +74,7 @@ export function RoomNavbar({
                 identity.setNameInput(identity.displayName);
                 identity.setEditingName(true);
               }}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-[var(--radius-pill)] glass-card hover:border-white/10 transition-all text-[10px] font-mono text-white/40 hover:text-white/40 max-w-[140px] min-w-0"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-[var(--radius-pill)] glass-card hover:border-white/10 transition-all text-[11px] font-mono text-white/40 hover:text-white/40 max-w-[140px] min-w-0"
             >
               <PencilIcon className="w-3.5 h-3.5 shrink-0" />
               <span className="truncate">{identity.displayName}</span>
@@ -147,7 +147,7 @@ export function RoomNavbar({
             navigator.clipboard.writeText(window.location.href);
             addToast("Room link copied!", "success");
           }}
-          className="h-9 sm:h-10 px-3 sm:px-4 rounded-[var(--radius-pill)] bg-amber text-void font-black text-[10px] sm:text-[11px] uppercase tracking-widest hover:bg-amber active:scale-95 transition-all shadow-lg flex items-center gap-1.5 ring-1 ring-amber/60"
+          className="h-9 sm:h-10 px-3 sm:px-4 rounded-[var(--radius-pill)] bg-amber text-void font-black text-[11.5px] sm:text-[12.5px] uppercase tracking-widest hover:bg-amber active:scale-95 transition-all shadow-lg flex items-center gap-1.5 ring-1 ring-amber/60"
         >
           <ShareIcon className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Invite</span>

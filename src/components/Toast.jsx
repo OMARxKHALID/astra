@@ -100,7 +100,7 @@ export default function ToastContainer({ toasts }) {
             style={{
               animation: "toastIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards",
             }}
-            className="toast-pill px-5 py-2.5 rounded-full backdrop-blur-2xl border text-[13px] font-semibold flex items-center gap-3 max-w-sm"
+            className="toast-pill px-5 py-2.5 rounded-full backdrop-blur-2xl border text-[14px] font-semibold flex items-center gap-3 max-w-sm"
           >
             <div
               className={`w-5 h-5 rounded-full border ${theme.bg} ${theme.border} flex items-center justify-center shrink-0`}

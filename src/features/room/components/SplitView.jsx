@@ -11,6 +11,7 @@ export function SplitView({
   chatContent,
   usersContent,
   bentoVideoRef,
+  isResizing,
 }) {
   return (
     <main
@@ -20,18 +21,21 @@ export function SplitView({
           isFullscreen || isTheatre
             ? "!p-0 !gap-0"
             : "px-2 sm:px-4 pb-2 sm:pb-4"
-        }`}
+        }
+        ${isResizing ? "resizing" : ""}`}
       style={{ "--sidebar-width": `${sidebarWidth}px` }}
     >
       {!isFullscreen && !isTheatre && (
-        <section className="bento-url glass-card">{urlBarContent}</section>
+        <section className={`bento-url glass-card relative z-20 ${isResizing ? "pointer-events-none" : ""}`}>
+          {urlBarContent}
+        </section>
       )}
 
       <section
         ref={bentoVideoRef}
         className={`bento-video glass-card overflow-hidden ${
           isFullscreen || isTheatre ? "!rounded-none" : ""
-        }`}
+        } ${isResizing ? "pointer-events-none" : ""}`}
       >
         {videoContent}
       </section>

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useCallback } from "react";
-import io from "socket.io-client";
 import {
   computeCorrection,
   expectedTime,
@@ -13,6 +12,8 @@ const WS_URL =
   (process.env.NODE_ENV === "production"
     ? "https://astra-ws.onrender.com"
     : `http://${typeof window !== "undefined" ? window.location.hostname : "localhost"}:3001`);
+
+const ioRef = { current: null };
 
 export function useRoomSocket(props) {
   const p = useRef();
@@ -140,7 +141,7 @@ export function useRoomSocket(props) {
     }, SYNC_CHECK_INTERVAL);
   }, [isBufferingNow, suppressNext]);
 
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     const {
       roomId,
       userId,
@@ -150,9 +151,20 @@ export function useRoomSocket(props) {
       roomPassword,
       onConnStatus,
     } = p.current;
+    
     if (socketRef.current) socketRef.current.disconnect();
 
-    const socket = io(WS_URL, {
+    if (!ioRef.current) {
+      try {
+        const { default: io } = await import("socket.io-client");
+        ioRef.current = io;
+      } catch (err) {
+        console.error("[useRoomSocket] Error loading socket.io:", err);
+        return;
+      }
+    }
+
+    const socket = ioRef.current(WS_URL, {
       transports: ["websocket", "polling"],
       reconnectionAttempts: Infinity,
     });
@@ -301,6 +313,7 @@ export function useRoomSocket(props) {
       chat: (m) => p.current.onChatMessage?.(m),
       chat_history: (m) =>
         p.current.onChatMessage?.({ type: "chat_history", ...m }),
+      chat_update: (m) => p.current.onChatUpdate?.(m),
       "REC:error": (m) => {
         if (m.code === "STRICT_VIDEO_MODE") {
           p.current.onChatMessage?.({

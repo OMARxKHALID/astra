@@ -41,6 +41,7 @@ export default function NativeVideoPlayer({
   theatreMode = false,
   onToggleTheatre,
   onToggleChat,
+  unreadCount = 0,
   hasEpisodes = false,
   onToggleEpisodes,
 }) {
@@ -96,7 +97,7 @@ export default function NativeVideoPlayer({
   useVideoEvents({
     videoRef, videoUrl, sourceType, setDuration, setLocalTime,
     setBufferedPct, setBuffering, setVideoError, setPosterVisible,
-    setFullscreen, onPause, onPlay, seekingRef, playbackRate, addToast
+    setFullscreen, onPause, onPlay, seekingRef, playbackRate, addToast,
   });
 
   useEffect(() => {
@@ -301,9 +302,26 @@ export default function NativeVideoPlayer({
         )}
       </video>
 
-      {buffering && !videoError && (
+      {buffering && !videoError && !posterVisible && (
         <div className="absolute inset-0 flex items-center justify-center bg-void/30 pointer-events-none z-30 transition-opacity">
-          <div className="w-14 h-14 rounded-[var(--radius-pill)] border-2 border-amber/20 border-t-amber animate-spin shadow-[0_0_30px_rgba(var(--color-amber-rgb), 0.2)]" />
+          <div className="w-14 h-14 rounded-[var(--radius-pill)] border-2 border-amber/20 border-t-amber animate-spin shadow-[0_0_30px_rgba(245,158,11,0.2)]" />
+        </div>
+      )}
+
+      {posterVisible && !videoError && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center z-20 transition-all duration-700 bg-void">
+          <div className="absolute inset-0 opacity-20 filter blur-[80px] pointer-events-none">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[40%] bg-amber rounded-full animate-pulse-slow" />
+          </div>
+          <div className="relative flex flex-col items-center gap-4 animate-in fade-in zoom-in-95 duration-1000">
+            <div className="w-16 h-16 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center backdrop-blur-md shadow-2xl">
+              <div className="w-8 h-8 rounded-full border-2 border-amber/30 border-t-amber animate-spin" />
+            </div>
+            <div className="flex flex-col items-center gap-1.5">
+              <span className="text-[10px] font-mono font-black text-amber uppercase tracking-[0.3em]">Astra Sync</span>
+              <span className="text-[11px] font-mono text-white/30 uppercase tracking-widest">Waiting for source...</span>
+            </div>
+          </div>
         </div>
       )}
 
@@ -380,6 +398,8 @@ export default function NativeVideoPlayer({
         handleMouseMove={handleMouseMove}
         handleMouseLeave={handleMouseLeave}
         ctrlVis={ctrlVis}
+        onToggleChat={onToggleChat}
+        unreadCount={unreadCount}
         hasEpisodes={hasEpisodes}
         onToggleEpisodes={onToggleEpisodes}
       />

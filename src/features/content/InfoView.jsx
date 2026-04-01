@@ -17,8 +17,7 @@ import {
 import { buildEmbedUrl, serverOptions } from "@/lib/videoResolver";
 import Loading from "@/components/Loading";
 import { createRoom } from "@/features/room/createRoom";
-import { LS_KEYS } from "@/constants/config";
-import { ls } from "@/utils/localStorage";
+import { persistence } from "@/utils/persistence";
 import YoutubeIcon from "@/components/icons/YoutubeIcon";
 
 // [Note] Custom Select: Logic to override native <select> UI which breaks premium dark mode immersion
@@ -149,50 +148,17 @@ export default function InfoView({ initialData, type, id }) {
   const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
-    try {
-      if (!data?.id) return;
-      const favs = JSON.parse(ls.get(LS_KEYS.favorites) || "[]");
-      setIsFavorite(favs.some((f) => f.id === data.id && f.type === type));
-    } catch {}
+    if (!data?.id) return;
+    setIsFavorite(persistence.isFavorite(data.id, type));
   }, [data?.id, type]);
 
   const toggleFavorite = () => {
-    if (!data?.id) return;
-    try {
-      let favs = JSON.parse(ls.get(LS_KEYS.favorites) || "[]");
-      if (isFavorite) {
-        favs = favs.filter((f) => !(f.id === data.id && f.type === type));
-      } else {
-        favs.unshift({
-          id: data.id,
-          type,
-          title: data.title,
-          poster: data.poster,
-          rating: data.rating,
-          year: data.year,
-        });
-      }
-      ls.set(LS_KEYS.favorites, JSON.stringify(favs));
-      setIsFavorite(!isFavorite);
-    } catch {}
+    const nextFavorite = persistence.toggleFavorite(data, type);
+    setIsFavorite(nextFavorite);
   };
 
   const markAsWatched = () => {
-    if (!data?.id) return;
-    try {
-      let watched = JSON.parse(ls.get(LS_KEYS.watched) || "[]");
-      watched = watched.filter((w) => !(w.id === data.id && w.type === type));
-      watched.unshift({
-        id: data.id,
-        type,
-        title: data.title,
-        poster: data.poster,
-        rating: data.rating,
-        year: data.year,
-      });
-      if (watched.length > 30) watched.pop();
-      ls.set(LS_KEYS.watched, JSON.stringify(watched));
-    } catch {}
+    persistence.markAsWatched(data, type);
   };
 
   const handleWatch = () => {
@@ -283,12 +249,7 @@ export default function InfoView({ initialData, type, id }) {
             )}
           </div>
           <div className="absolute bottom-0 left-0 w-full p-2 lg:p-[0.5rem] flex items-end justify-start z-10">
-            <div className="hidden lg:block absolute z-20 pointer-events-none left-0 bottom-[15.8rem] w-[2.2rem] h-[2.2rem] rounded-bl-[2.2rem] shadow-[-10.5px_10.5px_0.5px_10px_#050505] transform-gpu" />
-            <div className="hidden lg:block absolute z-20 pointer-events-none left-[11rem] bottom-[7.3rem] w-[2.2rem] h-[2.2rem] rounded-bl-[2.2rem] shadow-[-10.5px_10.5px_0.5px_10px_#050505] transform-gpu" />
-            <div className="hidden lg:block absolute z-20 pointer-events-none left-0 bottom-[6.8rem] w-[2.2rem] h-[2.2rem] rounded-bl-[2.2rem] shadow-[-10.5px_10.5px_0.5px_10px_#050505] transform-gpu" />
             <div className="relative w-[7rem] lg:w-[10rem] shrink-0 outline-[0.9rem] lg:outline-[1rem] outline-void rounded-[1rem] bg-void bottom-[-0.5rem] lg:bottom-[-1rem] left-[0.2rem] lg:left-[-0.5rem] z-30 overflow-visible">
-              <div className="hidden lg:block absolute z-20 top-0 left-[4.9rem] w-[2.1rem] h-[2.1rem] rounded-tr-[2.1rem] shadow-[7.5px_-7.5px_0.5px_7px_#050505] transform-gpu" />
-              <div className="hidden lg:block absolute z-20 top-[3.1rem] left-[8rem] w-[2.1rem] h-[2.1rem] rounded-tr-[2.1rem] shadow-[7.5px_-7.5px_0.5px_7px_#050505] transform-gpu" />
               <div className="w-full aspect-[2/3] rounded-[1rem] overflow-hidden relative bg-[var(--color-panel)] flex items-center justify-center border border-white/10">
                 {data.poster ? (
                   <Image
@@ -374,25 +335,27 @@ export default function InfoView({ initialData, type, id }) {
         </div>
       </div>
 
-      <div className="flex-[1] hover:lg:flex-[2] transition-all duration-1000 ease flex flex-col min-h-[70vh] lg:h-screen lg:min-h-0 lg:overflow-y-auto no-scrollbar bg-void py-0 pb-10 lg:py-0 overflow-visible">
+      <div className="group/info flex-[1] hover:lg:flex-[2.5] transition-all duration-1000 ease flex flex-col min-h-[70vh] lg:h-screen lg:min-h-0 lg:overflow-y-auto no-scrollbar bg-void py-0 pb-10 lg:py-0 overflow-visible">
         <div className="flex-1 lg:h-full p-4 lg:p-6 lg:mt-[2.5vh] lg:mx-4 lg:rounded-[var(--radius-panel)] lg:pt-6 pt-[1.5rem]">
-          <div className="sticky top-0 z-[60] bg-void/80 flex border-b border-white/10 mb-6 pt-4 lg:pt-6 -mt-0 lg:-mt-6 px-4 lg:px-6 -mx-4 lg:-mx-6 backdrop-blur-2xl">
-            {(type === "tv"
-              ? ["Episodes", "Overview", "Casts", "Reviews", "Related"]
-              : ["Overview", "Casts", "Reviews", "Related"]
-            ).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab.toLowerCase())}
-                className={`flex-1 bg-none border-none pb-3 cursor-pointer text-[13px] font-semibold transition-colors duration-200 border-b-[2px] outline-none -mb-[1px] ${
-                  activeTab === tab.toLowerCase()
-                    ? "text-amber border-amber"
-                    : "text-muted border-transparent hover:text-dim"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
+          <div className="sticky top-0 z-[60] bg-void/80 flex items-center border-b border-white/10 mb-6 pt-4 lg:pt-6 -mt-0 lg:-mt-6 px-4 lg:px-6 -mx-4 lg:-mx-6 backdrop-blur-2xl overflow-x-auto no-scrollbar scroll-smooth snap-x">
+            <div className="flex items-center w-full transition-all duration-1000">
+              {(type === "tv"
+                ? ["Episodes", "Overview", "Casts", "Reviews", "Related"]
+                : ["Overview", "Casts", "Reviews", "Related"]
+              ).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab.toLowerCase())}
+                  className={`flex-none shrink-0 bg-none border-none pb-3 cursor-pointer text-[13px] font-semibold transition-all duration-1000 border-b-[2px] outline-none -mb-[1px] snap-start whitespace-nowrap px-1 mr-8 group-hover/info:lg:mr-24 ${
+                    activeTab === tab.toLowerCase()
+                      ? "text-amber border-amber"
+                      : "text-muted border-transparent hover:text-dim"
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
           </div>
 
           {activeTab === "overview" && (

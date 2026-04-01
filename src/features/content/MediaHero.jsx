@@ -86,7 +86,7 @@ export default function MediaHero({ items, onPick, onPlay }) {
             ))}
           </div>
 
-          <h1 className="font-display text-[54px] font-bold text-bright leading-none mb-4 tracking-tight">
+          <h1 className="font-display text-[2.5rem] md:text-[3.4rem] lg:text-[54px] font-bold text-bright leading-none mb-4 tracking-tight">
             {item.title}
           </h1>
 
@@ -98,7 +98,7 @@ export default function MediaHero({ items, onPick, onPlay }) {
             <button
               onClick={() => onPlay && onPlay(item)}
               aria-label={`Watch ${item.title}`}
-              className="flex items-center gap-2 px-7 py-3 rounded-[var(--radius-pill)] bg-amber text-void font-bold text-sm border-none cursor-pointer hover:bg-amber transition-all font-body shadow-[0_4px_16px_rgba(var(--color-amber-rgb), 0.2)] active:scale-95"
+              className="flex items-center gap-2 px-7 py-3 rounded-[var(--radius-pill)] bg-amber text-void font-bold text-sm border-none cursor-pointer hover:bg-amber transition-all font-body shadow-[0_4px_16px_rgba(var(--color-amber-rgb),0.2)] active:scale-95"
             >
               <Play className="w-4 h-4 fill-current" />
               Play

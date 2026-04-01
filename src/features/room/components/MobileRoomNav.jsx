@@ -9,10 +9,18 @@ export function MobileRoomNav({ room, isTheatre, isFullscreen }) {
       <MobileTabBtn
         label="Chat"
         active={room.mobileSheet === "chat"}
-        icon={<ChatIcon className="w-5 h-5" />}
-        onClick={() =>
-          room.setMobileSheet(room.mobileSheet === "chat" ? null : "chat")
+        icon={
+          <div className="relative">
+            <ChatIcon className="w-5 h-5" />
+            {room.unreadCount > 0 && room.mobileSheet !== "chat" && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber rounded-full border-2 border-void shadow-[0_0_8px_rgba(var(--color-amber-rgb),0.5)]" />
+            )}
+          </div>
         }
+        onClick={() => {
+          room.setMobileSheet(room.mobileSheet === "chat" ? null : "chat");
+          room.setUnreadCount(0);
+        }}
       />
       <MobileTabBtn
         label={`People (${room.participants.length})`}

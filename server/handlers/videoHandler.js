@@ -1,7 +1,14 @@
 import { saveRoom } from "../models/Room.js";
 import { isStrictVideoUrl } from "../utils/auth.js";
 
-export default function registerVideoHandlers(io, socket, rooms, clientMeta, getCtx, tsLastSent) {
+export default function registerVideoHandlers(
+  io,
+  socket,
+  rooms,
+  clientMeta,
+  getCtx,
+  tsLastSent,
+) {
   socket.on("CMD:ts", (_rId, payload) => {
     const meta = clientMeta.get(socket.id);
     if (!meta) return;
@@ -67,9 +74,14 @@ export default function registerVideoHandlers(io, socket, rooms, clientMeta, get
     if (!meta?.isHost) return;
     const room = rooms.get(meta.roomId);
     if (!room) return;
-    if (room.strictVideoUrlMode && data?.video && !isStrictVideoUrl(data.video)) {
+    if (
+      room.strictVideoUrlMode &&
+      data?.video &&
+      !isStrictVideoUrl(data.video)
+    ) {
       socket.emit("REC:error", {
-        message: "Unsupported URL: Only direct video file links are allowed in this room.",
+        message:
+          "Unsupported URL: Only direct video file links are allowed in this room.",
         code: "STRICT_VIDEO_MODE",
       });
       return;

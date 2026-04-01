@@ -35,6 +35,7 @@ export default function SyncEngine(props) {
         set_name: () => send("CMD:setName", { username: msg.username }),
         set_password: () => send("CMD:setPassword", { password: msg.password }),
         typing: () => send("CMD:typing"),
+        reaction: () => send("CMD:reaction", { ts: msg.ts, emoji: msg.emoji }),
       };
       
       const handler = typeMap[msg.type];

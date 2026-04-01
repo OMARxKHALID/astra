@@ -13,6 +13,7 @@ import {
   PictureInPicture2 as PipIcon,
   Monitor as TheatreIconSvg,
   List as EpisodesIcon,
+  MessageSquare as ChatIcon,
 } from "lucide-react";
 import { formatTime } from "../../../utils";
 import SpeedPicker from "../../../controls/SpeedPicker";
@@ -57,6 +58,8 @@ export default function ControlBar({
   handleMouseMove,
   handleMouseLeave,
   ctrlVis,
+  onToggleChat,
+  unreadCount,
   hasEpisodes,
   onToggleEpisodes,
 }) {
@@ -228,6 +231,18 @@ export default function ControlBar({
                   ${theatreMode ? "bg-amber/20 text-amber border-amber/30" : "bg-white/10 hover:bg-white/10 border-white/10 text-white/40 hover:text-white"}`}
               >
                 <TheatreIconSvg className="w-3.5 h-3.5" />
+              </button>
+            )}
+            {onToggleChat && (
+              <button
+                onClick={onToggleChat}
+                title="Toggle chat (C)"
+                className="relative w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white/40 hover:text-white transition-all active:scale-90"
+              >
+                <ChatIcon className="w-3.5 h-3.5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber rounded-full border-2 border-void shadow-[0_0_8px_rgba(var(--color-amber-rgb), 0.5)]" />
+                )}
               </button>
             )}
           </div>

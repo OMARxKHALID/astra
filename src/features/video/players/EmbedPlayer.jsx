@@ -85,14 +85,19 @@ export default function EmbedPlayer({
         <div className="absolute top-4 right-4 flex gap-2 transition-opacity z-50 pointer-events-none">
           <button
             onClick={onToggleTheatre}
-            className={`pointer-events-auto p-2.5 rounded-[var(--radius-pill)] glass-card transition-all border-none cursor-pointer ${theatreMode ? "text-amber bg-amber/10" : "text-white/10 hover:text-white hover:bg-white/10"}`}
+            title={theatreMode ? "Exit theatre mode" : "Theatre mode"}
+            className={`pointer-events-auto p-2.5 rounded-[var(--radius-pill)] border transition-all cursor-pointer backdrop-blur-md shadow-2xl
+              ${theatreMode 
+                ? "bg-amber text-void border-amber shadow-[0_0_15px_rgba(245,158,11,0.3)]" 
+                : "bg-void/80 text-white/80 hover:text-white hover:bg-void border-white/10"}`}
           >
             <TheatreIcon className="w-4 h-4" />
           </button>
           {hasEpisodes && onToggleEpisodes && (
             <button
               onClick={onToggleEpisodes}
-              className="pointer-events-auto p-2.5 rounded-[var(--radius-pill)] glass-card transition-all border-none cursor-pointer text-white/10 hover:text-white hover:bg-white/10"
+              title="Browse Episodes"
+              className="pointer-events-auto p-2.5 rounded-[var(--radius-pill)] bg-void/80 text-white/80 hover:text-white hover:bg-void border border-white/10 transition-all cursor-pointer backdrop-blur-md shadow-2xl"
             >
               <EpisodesIcon className="w-4 h-4" />
             </button>
