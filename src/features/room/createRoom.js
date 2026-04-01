@@ -19,6 +19,7 @@ export async function createRoom(videoUrl, session = null) {
     if (!storedId) ls.set(LS_KEYS.userId, userId);
   }
 
+  console.log(`[createRoom] Requesting room for userId: ${userId}`);
   const res = await fetch("/api/rooms", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -26,6 +27,7 @@ export async function createRoom(videoUrl, session = null) {
   });
 
   const data = await res.json();
+  console.log(`[createRoom] Room created: ${data.roomId} (hostToken: ${data.hostToken ? "present" : "MISSING"})`);
   if (!data.roomId || !data.hostToken) throw new Error("Room creation failed");
 
   ls.set(`host_${data.roomId}`, data.hostToken);

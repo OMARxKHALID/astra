@@ -172,6 +172,7 @@ export function useRoomSocket(props) {
     socketRef.current = socket;
 
     socket.on("connect", () => {
+      console.log(`[socket] Connected! Joining room:${roomId} as ${userId}`);
       onConnStatus?.("connected");
       socket.emit("JOIN_ROOM", {
         roomId,
@@ -197,8 +198,14 @@ export function useRoomSocket(props) {
     });
 
     const handlers = {
-      disconnect: () => p.current.onConnStatus?.("reconnecting"),
-      connect_error: () => p.current.onConnStatus?.("reconnecting"),
+      disconnect: (reason) => {
+        console.warn(`[socket] Disconnected: ${reason}`);
+        p.current.onConnStatus?.("reconnecting");
+      },
+      connect_error: (err) => {
+        console.error(`[socket] Connection error:`, err);
+        p.current.onConnStatus?.("reconnecting");
+      },
       "REC:host": (m) => {
         const state = {
           ...m,
@@ -315,6 +322,7 @@ export function useRoomSocket(props) {
         p.current.onChatMessage?.({ type: "chat_history", ...m }),
       chat_update: (m) => p.current.onChatUpdate?.(m),
       "REC:error": (m) => {
+        console.error(`[socket] REC:error:`, m);
         if (m.code === "STRICT_VIDEO_MODE") {
           p.current.onChatMessage?.({
             senderId: "system",
@@ -351,7 +359,7 @@ export function useRoomSocket(props) {
       if (socketRef.current) socketRef.current.disconnect();
       clearInterval(timer.current);
     };
-  }, [connect]);
+  }, [connect, props.userId, props.roomId]);
 
   // [Note] Periodic pos report
   useEffect(() => {

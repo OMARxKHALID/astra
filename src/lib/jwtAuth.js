@@ -31,7 +31,9 @@ export function signJwt(payload, expiry = JWT_EXPIRY_S) {
   const signature = createHmac("sha256", secret())
     .update(`${header}.${claims}`)
     .digest("base64url");
-  return `${header}.${claims}.${signature}`;
+  const token = `${header}.${claims}.${signature}`;
+  console.log(`[jwt] Signed token for room:${payload.roomId} sub:${payload.sub}`);
+  return token;
 }
 
 export function verifyJwt(token) {

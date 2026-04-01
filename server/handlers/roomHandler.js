@@ -16,7 +16,12 @@ export default function registerRoomHandlers(
 ) {
   socket.on("JOIN_ROOM", async (msg) => {
     const { roomId, token, clientId, videoUrl, username, password } = msg || {};
-    if (!roomId || !clientId) return;
+    console.log(`[socket] JOIN_ROOM: room=${roomId} user=${clientId} hasToken=${!!token}`);
+
+    if (!roomId || !clientId) {
+      console.warn(`[socket] JOIN_ROOM aborted: missing roomId or clientId`);
+      return;
+    }
 
     let room = rooms.get(roomId);
 
@@ -24,6 +29,7 @@ export default function registerRoomHandlers(
       try {
         const stored = await redis.get(`room:${roomId}`);
         if (stored) {
+          console.log(`[redis] Restoring room:${roomId} from storage`);
           room = new Room(
             roomId,
             stored.video,
@@ -46,14 +52,23 @@ export default function registerRoomHandlers(
           room.startBroadcast(io);
         }
       } catch (err) {
-        console.error(`[redis] read error: ${err.message}`);
+        console.error(`[redis] Read error for room:${roomId}: ${err.message}`);
       }
     }
 
     const isHost = Boolean(token);
     const jwtPayload = isHost ? verifyHostToken(token, roomId) : false;
 
+    if (isHost) {
+      if (jwtPayload) {
+        console.log(`[auth] Valid host token for room:${roomId} user:${jwtPayload.hostId}`);
+      } else {
+        console.error(`[auth] INVALID host token for room:${roomId} user:${clientId}`);
+      }
+    }
+
     if (!room) {
+      console.log(`[socket] Creating new room:${roomId} with host:${jwtPayload?.hostId || clientId}`);
       room = new Room(
         roomId,
         videoUrl || "",
@@ -63,6 +78,7 @@ export default function registerRoomHandlers(
       rooms.set(roomId, room);
       room.startBroadcast(io);
     } else if (isHost && !room.hostToken && token && jwtPayload) {
+      console.log(`[socket] Setting initial host for existing room:${roomId}`);
       room.hostId = jwtPayload.hostId || clientId;
       room.hostToken = token;
       if (videoUrl) room.video = videoUrl;
@@ -70,22 +86,28 @@ export default function registerRoomHandlers(
 
     if (isHost && !jwtPayload)
       return socket.emit("REC:error", { message: "Invalid host token" });
+
     if (room.passwordHash && !isHost) {
-      if (!password)
+      if (!password) {
+        console.log(`[auth] Password required for room:${roomId} user:${clientId}`);
         return socket.emit("REC:error", {
           message: "Password required",
           code: "NEED_PASSWORD",
         });
+      }
       const provided = hashPassword(String(password));
-      if (provided !== room.passwordHash)
+      if (provided !== room.passwordHash) {
+        console.warn(`[auth] Wrong password attempt for room:${roomId} user:${clientId}`);
         return socket.emit("REC:error", {
           message: "Wrong password",
           code: "WRONG_PASSWORD",
         });
+      }
     }
 
     const effectiveHostId = jwtPayload?.hostId || clientId;
     if (isHost && jwtPayload && room.hostId !== effectiveHostId) {
+      console.log(`[socket] Updating hostId for room:${roomId} from ${room.hostId} to ${effectiveHostId}`);
       const prev = room.hostId;
       room.hostId = effectiveHostId;
       for (const meta of clientMeta.values())
@@ -108,6 +130,8 @@ export default function registerRoomHandlers(
       username: displayName,
     });
 
+    console.log(`[socket] User joined room:${roomId} as ${displayName} (${clientId})`);
+    
     socket.emit("REC:host", { ...room.publicState(), reconnected: !wasNew });
     socket.emit("REC:tsMap", { ...room.tsMap });
     if (room.messages.length > 0) {

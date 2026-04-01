@@ -1,7 +1,16 @@
 import { createHash, createHmac, timingSafeEqual } from "crypto";
 
 function jwtSecret() {
-  return process.env.JWT_SECRET || "dev-fallback-not-secure";
+  const s = process.env.JWT_SECRET;
+  if (!s) {
+    if (process.env.NODE_ENV === "production") {
+      console.error(
+        "[jwt] JWT_SECRET is not set in production! Verification will use fallback and likely FAIL.",
+      );
+    }
+    return "dev-fallback-not-secure";
+  }
+  return s;
 }
 
 export function verifyHostToken(token, expectedRoomId) {

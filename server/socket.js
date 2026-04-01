@@ -24,12 +24,16 @@ const tsLastSent = new Map();
 
 const httpServer = http.createServer((req, res) => {
   const origin = req.headers.origin || "";
-  if (ALLOWED_ORIGINS.includes(origin))
+  const isAllowed = ALLOWED_ORIGINS.includes(origin.replace(/\/$/, ""));
+  
+  if (isAllowed) {
     res.setHeader("Access-Control-Allow-Origin", origin);
-  res.setHeader("Content-Type", "application/json");
+  }
 
+  // Only handle our specific health/info routes. 
+  // DO NOT res.end() for any other path so Socket.io can handle its own traffic.
   if (req.url === "/" || req.url === "/health") {
-    res.writeHead(200);
+    res.writeHead(200, { "Content-Type": "application/json" });
     return res.end(
       JSON.stringify({ ok: true, rooms: rooms.size, clients: clientMeta.size }),
     );
@@ -39,15 +43,12 @@ const httpServer = http.createServer((req, res) => {
   if (m) {
     const room = rooms.get(m[1]);
     if (!room) {
-      res.writeHead(404);
+      res.writeHead(404, { "Content-Type": "application/json" });
       return res.end("{}");
     }
-    res.writeHead(200);
+    res.writeHead(200, { "Content-Type": "application/json" });
     return res.end(JSON.stringify(room.publicState()));
   }
-
-  res.writeHead(404);
-  res.end("{}");
 });
 
 const io = new Server(httpServer, {
