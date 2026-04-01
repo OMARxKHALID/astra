@@ -11,7 +11,7 @@ import { CLOCK_RECAL_INTERVAL } from "@/constants/config";
 const WS_URL =
   process.env.NEXT_PUBLIC_WS_URL ||
   (process.env.NODE_ENV === "production"
-    ? "https://astra-sync-ws.onrender.com"
+    ? "https://astra-ws.onrender.com"
     : `http://${typeof window !== "undefined" ? window.location.hostname : "localhost"}:3001`);
 
 export function useRoomSocket(props) {
