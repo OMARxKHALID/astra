@@ -3,134 +3,72 @@ import {
   Share2 as ShareIcon,
   Settings as SettingsIcon,
   Keyboard as KeyboardIcon,
-  Pencil as PencilIcon,
-  PanelRight as SidebarIcon,
-  Monitor as TheatreIcon,
   Link as LinkIcon,
+  Video as VideoIcon,
 } from "lucide-react";
-import SyncStatusIndicator from "@/components/SyncStatusIndicator";
 
 export function RoomNavbar({
   roomId,
-  identity,
   room,
   settings,
   router,
   videoUrl,
   addToast,
-  isTheatre,
+  isCallJoined,
+  isCalling,
+  onToggleCall,
 }) {
   return (
-    <nav className="room-navbar relative z-30 shrink-0 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2">
-      <div className="flex items-center gap-1.5 min-w-0">
+    <nav className="room-navbar relative z-30 shrink-0 px-2 sm:px-4 py-2 flex items-center justify-between gap-1 sm:gap-2">
+      <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
         <button
           onClick={() => router.push("/")}
-          className="flex items-center gap-2 px-3 py-2 rounded-[var(--radius-pill)] glass-card hover:border-white/10 transition-all active:scale-95 shrink-0"
+          className="flex items-center gap-1.5 px-2 py-1.5 sm:px-3 sm:py-2 rounded-full glass-card hover:border-white/10 transition-all active:scale-95 shrink-0"
         >
-          <div className="w-7 h-7 rounded-[var(--radius-pill)] bg-amber flex items-center justify-center font-display font-black text-void text-[11.5px]">
+          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-amber flex items-center justify-center font-display font-black text-void text-[10px] sm:text-[11.5px] leading-none">
             AS
           </div>
-          <span className="font-display font-bold text-base tracking-tight text-white/70 hidden md:block">
+          <span className="font-display font-bold text-sm sm:text-base tracking-tight text-white/70 hidden md:block">
             Astra Sync
           </span>
         </button>
 
-        <div className="flex items-center gap-2 px-2.5 py-2 rounded-[var(--radius-pill)] glass-card text-[11px] font-mono uppercase tracking-[0.2em] shrink-0">
+        <div className="flex items-center gap-1.5 px-2 py-1.5 sm:px-2.5 sm:py-2 rounded-full glass-card text-[9px] sm:text-[11px] font-mono uppercase tracking-[0.1em] sm:tracking-[0.2em] shrink-0">
           <span
-            className={`w-1.5 h-1.5 rounded-full transition-colors duration-500 ${room.connStatus === "connected" ? "bg-jade animate-pulse" : room.connStatus === "reconnecting" ? "bg-danger" : "bg-amber"}`}
+            className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full transition-colors duration-500 ${room.connStatus === "connected" ? "bg-jade animate-pulse" : room.connStatus === "reconnecting" ? "bg-danger" : "bg-amber"}`}
           />
-          <span className="text-white/70 font-black hidden xs:inline">
-            {roomId?.slice?.(0, 6)}
-          </span>
-          <span className="text-white/70 font-black xs:hidden">
-            {roomId?.slice?.(0, 6)}
+          <span className="text-white/70 font-black truncate max-w-[45px] sm:max-w-none">
+            {roomId?.slice?.(0, 6) || "ROOM"}
           </span>
         </div>
-
-        {identity.nameReady ? (
-          identity.editingName ? (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                identity.commitName(identity.nameInput);
-              }}
-              className="flex items-center gap-2 px-3 py-2 rounded-[var(--radius-pill)] glass-card min-w-0"
-            >
-              <input
-                autoFocus
-                value={identity.nameInput}
-                onChange={(e) => identity.setNameInput(e.target.value)}
-                onBlur={() =>
-                  identity.commitName(
-                    identity.nameInput || identity.displayName,
-                  )
-                }
-                maxLength={24}
-                className="w-28 bg-transparent text-[13px] font-mono text-white/40 outline-none"
-              />
-            </form>
-          ) : (
-            <button
-              onClick={() => {
-                identity.setNameInput(identity.displayName);
-                identity.setEditingName(true);
-              }}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-[var(--radius-pill)] glass-card hover:border-white/10 transition-all text-[11px] font-mono text-white/40 hover:text-white/40 max-w-[140px] min-w-0"
-            >
-              <PencilIcon className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">{identity.displayName}</span>
-            </button>
-          )
-        ) : (
-          /* [Note] Navbar skeleton: ensures space is reserved for user identity */
-          <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-[var(--radius-pill)] glass-card opacity-20 animate-pulse w-24">
-            <div className="w-3.5 h-3.5 bg-white/20 rounded-full" />
-            <div className="h-2 w-12 bg-white/20 rounded-full" />
-          </div>
-        )}
       </div>
 
       <div className="flex items-center gap-1.5 shrink-0">
         <button
-          onClick={() => {
-            const next = !settings.showSidebar;
-            settings.setShowSidebar(next);
-            if (next) room.setUnreadCount(0);
-          }}
-          className={`relative w-9 h-9 items-center justify-center rounded-[var(--radius-pill)] glass-card transition-all hidden lg:flex ${settings.showSidebar ? "text-amber bg-amber/5" : "text-muted hover:text-white"}`}
-        >
-          <SidebarIcon className="w-4 h-4" />
-          {!settings.showSidebar && room.unreadCount > 0 && (
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber rounded-full shadow-[0_0_8px_rgba(var(--color-amber-rgb), 0.5)]" />
-          )}
-        </button>
-
-        <div className="px-3 py-2 rounded-[var(--radius-pill)] glass-card">
-          <SyncStatusIndicator
-            syncStatus={room.syncStatus}
-            connStatus={room.connStatus}
-          />
-        </div>
-
-        <button
-          onClick={() => settings.setTheatreMode(!settings.theatreMode)}
-          className={`w-9 h-9 items-center justify-center rounded-[var(--radius-pill)] glass-card transition-all hidden lg:flex ${isTheatre ? "text-amber bg-amber/5" : "text-muted hover:text-white"}`}
-        >
-          <TheatreIcon className="w-4 h-4" />
-        </button>
-
-        <button
           onClick={() => settings.setShowShortcuts(true)}
-          className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] glass-card text-muted hover:text-white transition-all"
+          className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full glass-card text-muted hover:text-white transition-all shrink-0"
         >
           <KeyboardIcon className="w-4 h-4" />
         </button>
 
         <button
           onClick={() => settings.setShowSettings(true)}
-          className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] glass-card text-muted hover:text-white"
+          className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full glass-card text-muted hover:text-white shrink-0"
         >
-          <SettingsIcon className="w-4 h-4" />
+          <SettingsIcon className="w-3.5 h-3.5 sm:w-4 h-4" />
+        </button>
+
+        <button
+          onClick={onToggleCall}
+          className={`relative w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full glass-card transition-all shrink-0
+            ${isCallJoined ? "text-amber border-amber/30 bg-amber/10 shadow-[0_0_15px_rgba(var(--color-amber-rgb),0.2)]" : isCalling ? "text-amber/70 border-amber/20" : "text-muted hover:text-white"}`}
+        >
+          <VideoIcon className="w-3.5 h-3.5 sm:w-4 h-4" />
+          {isCallJoined ? (
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber rounded-full border border-void shadow-[0_0_8px_rgba(var(--color-amber-rgb),0.5)] animate-pulse" />
+          ) : isCalling ? (
+            <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-amber/60 rounded-full animate-pulse" />
+          ) : null}
         </button>
 
         <button
@@ -139,23 +77,27 @@ export function RoomNavbar({
               addToast("No video currently playing", "warning");
               return;
             }
-            navigator.clipboard.writeText(videoUrl);
-            addToast("Video URL copied!", "success");
+            if (navigator?.clipboard?.writeText) {
+              navigator.clipboard.writeText(videoUrl);
+              addToast("Video URL copied!", "success");
+            }
           }}
-          className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] glass-card text-muted hover:text-white transition-all active:scale-95"
-          title="Copy current video URL"
+          className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full glass-card text-muted hover:text-white transition-all shrink-0"
         >
-          <LinkIcon className="w-4 h-4" />
+          <LinkIcon className="w-3.5 h-3.5 sm:w-4 h-4" />
         </button>
 
         <button
           onClick={() => {
-            navigator.clipboard.writeText(window.location.href);
-            addToast("Room link copied!", "success");
+            const url = window.location.href;
+            if (navigator?.clipboard?.writeText) {
+              navigator.clipboard.writeText(url);
+              addToast("Room link copied!", "success");
+            }
           }}
-          className="h-9 sm:h-10 px-3 sm:px-4 rounded-[var(--radius-pill)] bg-amber text-void font-black text-[11.5px] sm:text-[12.5px] uppercase tracking-widest hover:bg-amber active:scale-95 transition-all shadow-lg flex items-center gap-1.5 ring-1 ring-amber/60"
+          className="h-8 sm:h-9 pl-2 pr-2 sm:pl-3 sm:pr-4 rounded-full bg-amber text-void font-black text-[10px] sm:text-[11.5px] uppercase tracking-widest hover:bg-amber transition-all shadow-lg flex items-center gap-1.5 ring-1 ring-amber/40 shrink-0"
         >
-          <ShareIcon className="w-3.5 h-3.5" />
+          <ShareIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
           <span className="hidden sm:inline">Invite</span>
         </button>
       </div>

@@ -317,6 +317,12 @@ export function useRoomSocket(props) {
       chat_history: (m) =>
         p.current.onChatMessage?.({ type: "chat_history", ...m }),
       chat_update: (m) => p.current.onChatUpdate?.(m),
+      "CALL:user_joined": (m) => p.current.onCallEvent?.({ type: "call_user_joined", ...m }),
+      "CALL:user_left": (m) => p.current.onCallEvent?.({ type: "call_user_left", ...m }),
+      "CALL:offer": (m) => p.current.onCallEvent?.({ type: "offer", ...m }),
+      "CALL:answer": (m) => p.current.onCallEvent?.({ type: "answer", ...m }),
+      "CALL:ice": (m) => p.current.onCallEvent?.({ type: "ice", ...m }),
+      "CALL:status": (m) => p.current.onCallEvent?.({ type: "status", ...m }),
       "REC:error": (m) => {
         if (m.code === "STRICT_VIDEO_MODE") {
           p.current.onChatMessage?.({

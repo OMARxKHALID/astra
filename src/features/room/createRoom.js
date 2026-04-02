@@ -1,7 +1,7 @@
 import { LS_KEYS } from "@/constants/config";
 import { ls } from "@/utils/localStorage";
 
-export async function createRoom(videoUrl, session = null) {
+export function createRoom(videoUrl, session = null) {
   let userId;
   if (session?.user?.id) {
     userId = session.user.id;

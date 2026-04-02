@@ -38,8 +38,7 @@ function VideoPlayer({
 }) {
   const source = classifyUrl(videoUrl);
 
-  // [Note] Ref Cleanup: Ensure stale video references from previous players are
-  // cleared when switching to an 'embed' or 'unsupported' mode to avoid ghosts.
+  // [Note] stale ref guard: clearing videoRef prevents ghosting on provider switch
   useEffect(() => {
     if (
       (source.type === "embed" || source.type === "unsupported") &&
@@ -157,7 +156,7 @@ function VideoPlayer({
     <div className="relative w-full h-full bg-void flex flex-col items-center justify-center gap-4">
       <div className="absolute inset-0 bg-gradient-to-br from-void via-surface/60 to-void" />
       <div className="relative z-10 flex flex-col items-center gap-3 text-center px-8">
-        <div className="w-14 h-14 rounded-[var(--radius-pill)] bg-white/10 border border-white/10 flex items-center justify-center mb-1">
+        <div className="w-14 h-14 rounded-full bg-white/10 border border-white/10 flex items-center justify-center mb-1">
           <svg
             className="w-7 h-7 text-white/10"
             viewBox="0 0 24 24"
@@ -177,10 +176,10 @@ function VideoPlayer({
             <line x1="17" y1="7" x2="22" y2="7" />
           </svg>
         </div>
-        <p className="text-sm text-dim/50 max-w-xs leading-relaxed">
+        <p className="text-[12px] font-mono uppercase tracking-[0.2em] text-white/20 max-w-xs leading-relaxed">
           {videoUrl
-            ? "Unsupported URL. Paste a direct MP4, HLS, YouTube, Vimeo, or embed link."
-            : "No video loaded. Select a title from the home page or paste a URL."}
+            ? "URL not recognized or private"
+            : "Room is ready. Paste a video link to begin."}
         </p>
       </div>
     </div>

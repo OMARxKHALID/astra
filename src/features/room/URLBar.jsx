@@ -66,21 +66,23 @@ export default function URLBar({
           <LinkIcon className="w-4 h-4 text-jade/70" />
         </div>
         <div className="flex-1 min-w-0 px-1 overflow-hidden">
-          <div className="flex items-center gap-3 mb-0.5">
-            <span className="text-[11px] font-mono font-bold text-jade uppercase tracking-wider">
-              Now Playing
-            </span>
-            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-[var(--radius-pill)] uppercase tracking-tight flex items-center gap-1.5 border border-jade/20 bg-jade/10 text-jade">
-              <span className="w-1 h-1 rounded-full bg-jade animate-pulse" />
-              {SOURCE_LABELS[source.type]}
-            </span>
-            {strictVideoUrlMode && (
-              <span className="flex items-center gap-1 text-[10px] font-black text-jade/70 uppercase tracking-tight">
-                <ShieldIcon className="w-3 h-3" />
-                <span className="hidden sm:inline">Strict</span>
+          {currentUrl && (
+            <div className="flex items-center gap-3 mb-0.5 animate-in fade-in slide-in-from-left-2 duration-500">
+              <span className="text-[11px] font-mono font-bold text-jade uppercase tracking-wider">
+                Now Playing
               </span>
-            )}
-          </div>
+              <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full uppercase tracking-tight flex items-center gap-1.5 border border-jade/20 bg-jade/10 text-jade">
+                <span className="w-1 h-1 rounded-full bg-jade animate-pulse" />
+                {SOURCE_LABELS[source.type] || "Video"}
+              </span>
+              {strictVideoUrlMode && (
+                <span className="flex items-center gap-1 text-[10px] font-black text-jade/70 uppercase tracking-tight">
+                  <ShieldIcon className="w-3 h-3" />
+                  <span className="hidden sm:inline">Strict</span>
+                </span>
+              )}
+            </div>
+          )}
           <div
             className="text-[13.5px] font-mono truncate max-w-full text-muted"
           >

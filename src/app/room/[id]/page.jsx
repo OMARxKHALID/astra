@@ -66,7 +66,7 @@ export default async function RoomPage({ params, searchParams }) {
   // [Note] Absolute Fast-Path: If the client already provides a video URL via searchParams,
   // we bypass all server-side awaits (Redis & Fetch) to ensure an instant render.
   // The RoomView client component will then reconcile real-time state via Socket.io.
-  if (urlParam) {
+  if (urlParam !== null) {
     const room = {
       roomId: id,
       videoUrl: urlParam,

@@ -1,11 +1,26 @@
 import React from "react";
-import { MessageSquare as ChatIcon, Users as UsersIcon } from "lucide-react";
+import { MessageSquare as ChatIcon, Users as UsersIcon, Video as VideoIcon } from "lucide-react";
 
-export function MobileRoomNav({ room, isTheatre, isFullscreen }) {
+export function MobileRoomNav({ room, isTheatre, isFullscreen, isCallJoined, isCalling, onToggleCall }) {
   if (isFullscreen || isTheatre) return null;
 
   return (
     <div className="lg:hidden shrink-0 relative z-20 flex items-center justify-around px-6 py-3 pb-safe backdrop-blur-xl border-t border-white/10 bg-void">
+      <MobileTabBtn
+        label={isCallJoined ? "Active" : "Join Call"}
+        active={isCallJoined}
+        icon={
+          <div className="relative">
+             <VideoIcon className={`w-5 h-5 ${isCallJoined || isCalling ? "text-amber" : ""}`} />
+             {isCallJoined ? (
+               <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber rounded-full animate-pulse border border-void" />
+             ) : isCalling ? (
+               <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-amber/60 rounded-full animate-pulse" />
+             ) : null}
+          </div>
+        }
+        onClick={onToggleCall}
+      />
       <MobileTabBtn
         label="Chat"
         active={room.mobileSheet === "chat"}

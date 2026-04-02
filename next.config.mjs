@@ -3,9 +3,17 @@ import withPWA from "@ducanh2912/next-pwa";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
-  
+
+  // Silence Turbopack migration errors and enable custom webpack support
+  turbopack: {},
+
   // Suppress dev cross-origin warning for network access
-  allowedDevOrigins: ["localhost", "127.0.0.1", "192.168.1.14", "192.168.1.14:3000"],
+  allowedDevOrigins: [
+    "localhost",
+    "127.0.0.1",
+    "192.168.1.14",
+    "192.168.1.14:3000",
+  ],
 
   images: {
     unoptimized: true,
@@ -25,10 +33,6 @@ const nextConfig = {
     optimizePackageImports: ["lucide-react"],
   },
 
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-
   async headers() {
     return [
       {
@@ -44,17 +48,15 @@ const nextConfig = {
 };
 
 export default withPWA({
-  dest: "public", // SW + workbox files go in /public
-  cacheOnFrontEndNav: true, // Cache pages visited client-side
+  dest: "public",
+  cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
-  reloadOnOnline: true, // Reload when connection comes back
-  disable: process.env.NODE_ENV === "development", // No SW in dev
+  reloadOnOnline: true,
+  disable: process.env.NODE_ENV === "development",
   workboxOptions: {
     disableDevLogs: true,
-    // Don't cache anything from the Socket.IO server or video streams
     runtimeCaching: [
       {
-        // App pages — network first, fall back to cache
         urlPattern: /^https?.*\/(room\/.*|$)/,
         handler: "NetworkFirst",
         options: {
@@ -63,7 +65,6 @@ export default withPWA({
         },
       },
       {
-        // Static assets (JS, CSS) — stale while revalidate
         urlPattern: /\/_next\/static\/.*/,
         handler: "StaleWhileRevalidate",
         options: {
@@ -72,7 +73,6 @@ export default withPWA({
         },
       },
       {
-        // Google Fonts — cache for 1 year
         urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/,
         handler: "CacheFirst",
         options: {
@@ -81,7 +81,6 @@ export default withPWA({
         },
       },
       {
-        // YouTube thumbnails
         urlPattern: /^https:\/\/(img\.youtube\.com|i\.ytimg\.com)\/.*/,
         handler: "CacheFirst",
         options: {

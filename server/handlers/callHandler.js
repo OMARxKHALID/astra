@@ -1,28 +1,47 @@
 export default function registerCallHandlers(io, socket, rooms, clientMeta) {
-  socket.on("CALL:offer", (_rId, offerData) => {
+  function getSocketByUserId(userId, roomId) {
+    for (const [sid, meta] of clientMeta.entries()) {
+      if (meta.userId === userId && meta.roomId === roomId) return sid;
+    }
+    return null;
+  }
+
+  socket.on("CALL:join", (roomId) => {
     const meta = clientMeta.get(socket.id);
-    if (!meta) return;
-    socket.to(meta.roomId).emit("CALL:offer", {
-      ...offerData,
-      from: meta.userId,
-    });
+    if (!meta || meta.roomId !== roomId) return;
+    socket.to(roomId).emit("CALL:user_joined", { userId: meta.userId });
   });
 
-  socket.on("CALL:answer", (_rId, answerData) => {
+  socket.on("CALL:leave", (roomId) => {
     const meta = clientMeta.get(socket.id);
-    if (!meta) return;
-    socket.to(meta.roomId).emit("CALL:answer", {
-      ...answerData,
-      from: meta.userId,
-    });
+    if (!meta || meta.roomId !== roomId) return;
+    socket.to(roomId).emit("CALL:user_left", { userId: meta.userId });
   });
 
-  socket.on("CALL:ice", (_rId, iceData) => {
+  socket.on("CALL:offer", (roomId, msg) => {
     const meta = clientMeta.get(socket.id);
-    if (!meta) return;
-    socket.to(meta.roomId).emit("CALL:ice", {
-      ...iceData,
-      from: meta.userId,
-    });
+    const targetSid = getSocketByUserId(msg.to, roomId);
+    if (!meta || !targetSid) return;
+    io.to(targetSid).emit("CALL:offer", { from: meta.userId, offer: msg.offer });
+  });
+
+  socket.on("CALL:answer", (roomId, msg) => {
+    const meta = clientMeta.get(socket.id);
+    const targetSid = getSocketByUserId(msg.to, roomId);
+    if (!meta || !targetSid) return;
+    io.to(targetSid).emit("CALL:answer", { from: meta.userId, answer: msg.answer });
+  });
+
+  socket.on("CALL:ice", (roomId, msg) => {
+    const meta = clientMeta.get(socket.id);
+    const targetSid = getSocketByUserId(msg.to, roomId);
+    if (!meta || !targetSid) return;
+    io.to(targetSid).emit("CALL:ice", { from: meta.userId, candidate: msg.candidate });
+  });
+
+  socket.on("CALL:status", (roomId, msg) => {
+    const meta = clientMeta.get(socket.id);
+    if (!meta || meta.roomId !== roomId) return;
+    socket.to(roomId).emit("CALL:status", { from: meta.userId, ...msg });
   });
 }
