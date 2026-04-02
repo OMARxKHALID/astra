@@ -82,26 +82,50 @@ export default function NativeVideoPlayer({
   const hideTimer = useRef(null);
   const volumeOsdTimer = useRef(null);
   const seekingRef = useRef(false);
+  // [Note] lastTapRef + singleTapTimer: manual double-tap detector for mobile.
+  // onDoubleClick doesn't fire reliably on iOS/Android Chrome so we track two
+  // taps within 300ms via onTouchEnd timestamps instead.
+  const lastTapRef = useRef(0);
+  const singleTapTimerRef = useRef(null);
 
-  // [Note] Specialized Hooks: Modular logic for player features
   const { hlsQuality } = useHLS(videoRef, videoUrl, sourceType, setVideoError);
   useAmbilight(videoRef, videoUrl, onAmbiColors, ambilightEnabled);
-  useSubtitleStyle(videoRef, subtitleUrl, showSubtitles, subtitleOffset, subStyle);
+  useSubtitleStyle(
+    videoRef,
+    subtitleUrl,
+    showSubtitles,
+    subtitleOffset,
+    subStyle,
+  );
   const { preview, handleMouseMove, handleMouseLeave } = useScrubPreview(
     videoUrl,
     sourceType,
     duration,
-    scrubPreviewEnabled
+    scrubPreviewEnabled,
   );
-  
+
   useVideoEvents({
-    videoRef, videoUrl, sourceType, setDuration, setLocalTime,
-    setBufferedPct, setBuffering, setVideoError, setPosterVisible,
-    setFullscreen, onPause, onPlay, seekingRef, playbackRate, addToast,
+    videoRef,
+    videoUrl,
+    sourceType,
+    setDuration,
+    setLocalTime,
+    setBufferedPct,
+    setBuffering,
+    setVideoError,
+    setPosterVisible,
+    setFullscreen,
+    onPause,
+    onPlay,
+    seekingRef,
+    playbackRate,
+    addToast,
   });
 
   useEffect(() => {
-    setPipSupported(typeof document !== "undefined" && !!document.pictureInPictureEnabled);
+    setPipSupported(
+      typeof document !== "undefined" && !!document.pictureInPictureEnabled,
+    );
   }, []);
 
   // [Note] Idle timer: hide controls after 3s mouse inactivity
@@ -184,41 +208,75 @@ export default function NativeVideoPlayer({
     else document.exitFullscreen();
   };
 
-  const handleDoubleClick = (e) => {
-    if (!canControl || !videoRef.current) {
-      if (!document.fullscreenElement) containerRef.current?.requestFullscreen();
-      else document.exitFullscreen();
-      return;
-    }
-    
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const width = rect.width;
-    
-    if (x < width * 0.3) {
-      // Double tap left 30% -> Rewind 10s
-      const t = Math.max(0, videoRef.current.currentTime - 10);
-      videoRef.current.currentTime = t;
-      onSeek?.(t);
-      handleVolumeOsd("rewind"); // You can show a small visual indicator
-    } else if (x > width * 0.7) {
-      // Double tap right 30% -> Skip 10s
-      const t = Math.min(duration, videoRef.current.currentTime + 10);
-      videoRef.current.currentTime = t;
-      onSeek?.(t);
-      handleVolumeOsd("forward");
-    } else {
-      // Double tap middle 40% -> Fullscreen
-      if (!document.fullscreenElement) containerRef.current?.requestFullscreen();
-      else document.exitFullscreen();
-    }
-  };
+  const executeDoubleTapAction = useCallback(
+    (clientX, rect) => {
+      if (!canControl || !videoRef.current) {
+        if (!document.fullscreenElement)
+          containerRef.current?.requestFullscreen();
+        else document.exitFullscreen();
+        return;
+      }
+      const x = clientX - rect.left;
+      const width = rect.width;
+      if (x < width * 0.3) {
+        const t = Math.max(0, videoRef.current.currentTime - 10);
+        videoRef.current.currentTime = t;
+        onSeek?.(t);
+        handleVolumeOsd("rewind");
+      } else if (x > width * 0.7) {
+        const t = Math.min(duration, videoRef.current.currentTime + 10);
+        videoRef.current.currentTime = t;
+        onSeek?.(t);
+        handleVolumeOsd("forward");
+      } else {
+        if (!document.fullscreenElement)
+          containerRef.current?.requestFullscreen();
+        else document.exitFullscreen();
+      }
+    },
+    [canControl, videoRef, duration, onSeek],
+  );
+
+  const handleDoubleClick = useCallback(
+    (e) => {
+      executeDoubleTapAction(
+        e.clientX,
+        e.currentTarget.getBoundingClientRect(),
+      );
+    },
+    [executeDoubleTapAction],
+  );
+
+  // [Note] Mobile double-tap: onDoubleClick is unreliable on iOS/Android Chrome.
+  // We detect two taps within 300ms via onTouchEnd timestamps. Single-tap play/pause
+  // is deferred 250ms so it can be cancelled when a double-tap arrives.
+  const handleTouchEnd = useCallback(
+    (e) => {
+      showCtrl();
+      const now = Date.now();
+      const since = now - lastTapRef.current;
+      if (since < 300 && since > 0) {
+        clearTimeout(singleTapTimerRef.current);
+        lastTapRef.current = 0;
+        const touch = e.changedTouches[0];
+        executeDoubleTapAction(
+          touch.clientX,
+          e.currentTarget.getBoundingClientRect(),
+        );
+      } else {
+        lastTapRef.current = now;
+        singleTapTimerRef.current = setTimeout(handlePlayPause, 250);
+      }
+    },
+    [showCtrl, executeDoubleTapAction, handlePlayPause],
+  );
 
   const handleScreenshot = () => {
     const v = videoRef.current;
     if (!v || !onSendScreenshot) return;
     try {
-      const w = v.videoWidth || 1280, h = v.videoHeight || 720;
+      const w = v.videoWidth || 1280,
+        h = v.videoHeight || 720;
       const canvas = document.createElement("canvas");
       canvas.width = Math.min(w, 1920);
       canvas.height = Math.round(h * (canvas.width / w));
@@ -234,9 +292,11 @@ export default function NativeVideoPlayer({
     const v = videoRef.current;
     if (!v) return;
     try {
-      if (document.pictureInPictureElement === v) await document.exitPictureInPicture();
+      if (document.pictureInPictureElement === v)
+        await document.exitPictureInPicture();
       else if (document.pictureInPictureEnabled && v.readyState >= 1) {
-        if (document.pictureInPictureElement) await document.exitPictureInPicture();
+        if (document.pictureInPictureElement)
+          await document.exitPictureInPicture();
         await v.requestPictureInPicture();
       }
     } catch (err) {
@@ -248,8 +308,15 @@ export default function NativeVideoPlayer({
   useEffect(() => {
     const h = () => {
       const v = videoRef.current;
-      if (!v || document.visibilityState !== "hidden" || v.paused || window.innerWidth >= 1024) return;
-      if (document.pictureInPictureEnabled && !document.pictureInPictureElement) v.requestPictureInPicture().catch(() => {});
+      if (
+        !v ||
+        document.visibilityState !== "hidden" ||
+        v.paused ||
+        window.innerWidth >= 1024
+      )
+        return;
+      if (document.pictureInPictureEnabled && !document.pictureInPictureElement)
+        v.requestPictureInPicture().catch(() => {});
     };
     document.addEventListener("visibilitychange", h);
     return () => document.removeEventListener("visibilitychange", h);
@@ -258,8 +325,11 @@ export default function NativeVideoPlayer({
   // [Note] Debug Stats: triggered by 'D' hotkey
   useEffect(() => {
     const h = (e) => {
-      if (!["INPUT", "TEXTAREA"].includes(e.target.tagName) && e.key.toLowerCase() === "d") {
-        setShowStats(s => !s);
+      if (
+        !["INPUT", "TEXTAREA"].includes(e.target.tagName) &&
+        e.key.toLowerCase() === "d"
+      ) {
+        setShowStats((s) => !s);
       }
     };
     window.addEventListener("keydown", h);
@@ -267,8 +337,12 @@ export default function NativeVideoPlayer({
   }, []);
 
   useVideoHotkeys({
-    videoRef, handlePlayPause, handleFullscreen, 
-    onSeek, setMuted, onToggleChat
+    videoRef,
+    handlePlayPause,
+    handleFullscreen,
+    onSeek,
+    setMuted,
+    onToggleChat,
   });
 
   return (
@@ -288,6 +362,7 @@ export default function NativeVideoPlayer({
         crossOrigin="anonymous"
         onClick={handlePlayPause}
         onDoubleClick={handleDoubleClick}
+        onTouchEnd={handleTouchEnd}
         style={{ cursor: ctrlVis ? "pointer" : "none" }}
       >
         {subtitleUrl && showSubtitles && (
@@ -318,14 +393,18 @@ export default function NativeVideoPlayer({
               <div className="w-8 h-8 rounded-full border-2 border-amber/30 border-t-amber animate-spin" />
             </div>
             <div className="flex flex-col items-center gap-1.5">
-              <span className="text-[10px] font-mono font-black text-amber uppercase tracking-[0.3em]">Astra Sync</span>
-              <span className="text-[11px] font-mono text-white/30 uppercase tracking-widest">Waiting for source...</span>
+              <span className="text-[10px] font-mono font-black text-amber uppercase tracking-[0.3em]">
+                Astra Sync
+              </span>
+              <span className="text-[11px] font-mono text-white/30 uppercase tracking-widest">
+                Waiting for source...
+              </span>
             </div>
           </div>
         </div>
       )}
 
-      <SubtitlePanel 
+      <SubtitlePanel
         activePanel={activePanel}
         setActivePanel={setActivePanel}
         subtitleUrl={subtitleUrl}
@@ -342,7 +421,7 @@ export default function NativeVideoPlayer({
         setSubtitleOffset={setSubtitleOffset}
       />
 
-      <TechnicalStats 
+      <TechnicalStats
         visible={showStats}
         hlsQuality={hlsQuality}
         videoUrl={videoUrl}
@@ -354,13 +433,16 @@ export default function NativeVideoPlayer({
 
       <VolumeOsd value={volumeOsd} />
 
-      <ErrorOverlay 
+      <ErrorOverlay
         error={videoError}
-        onRetry={() => { setVideoError(false); videoRef.current?.load(); }}
+        onRetry={() => {
+          setVideoError(false);
+          videoRef.current?.load();
+        }}
         onDismiss={() => setVideoError(false)}
       />
 
-      <ControlBar 
+      <ControlBar
         isPlaying={isPlaying}
         localTime={localTime}
         duration={duration}
@@ -371,12 +453,12 @@ export default function NativeVideoPlayer({
         volume={volume}
         muted={muted}
         onVolumeChange={handleVolumeChange}
-        onMuteToggle={() => setMuted(m => !m)}
+        onMuteToggle={() => setMuted((m) => !m)}
         fullscreen={fullscreen}
         onFullscreenToggle={handleFullscreen}
         canControl={canControl}
         playbackRate={playbackRate}
-        onSpeedChange={rate => canControl && onSpeed?.(rate)}
+        onSpeedChange={(rate) => canControl && onSpeed?.(rate)}
         hlsQuality={hlsQuality}
         sourceType={sourceType}
         hlsQualityEnabled={hlsQualityEnabled}

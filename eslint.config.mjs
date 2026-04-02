@@ -20,8 +20,8 @@ const eslintConfig = [
     // [Note] Circular Ref Fix: Explicit rule-only block separate from plugin loading logic
     rules: {
       "react/react-in-jsx-scope": "off",
-    }
-  }
+    },
+  },
 ];
 
 export default eslintConfig;

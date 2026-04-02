@@ -212,7 +212,7 @@ export default function ChatSidebar({
                     key={user.id}
                     onClick={() => selectMention(user)}
                     onMouseEnter={() => setMentionIndex(i)}
-                    className={`w-full text-left px-2 py-1.5 rounded-xl text-[11px] transition-all flex items-center justify-between group ${
+                    className={`w-full text-left px-2 py-1.5 rounded-xl text-[11px] transition-all flex items-center justify-between group touch-manipulation ${
                       i === mentionIndex
                         ? "bg-amber text-void font-bold shadow-lg shadow-amber/10 scale-[1.01]"
                         : "text-white/60 hover:bg-white/5"
@@ -236,7 +236,7 @@ export default function ChatSidebar({
                 <button
                   onClick={cancelRecording}
                   aria-label="Cancel recording"
-                  className="w-6 h-6 rounded-lg bg-danger/10 hover:bg-danger/20 text-danger flex items-center justify-center transition-all shadow-sm ml-1"
+                  className="w-6 h-6 rounded-lg bg-danger/10 hover:bg-danger/20 text-danger flex items-center justify-center transition-all shadow-sm ml-1 touch-manipulation"
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
@@ -292,7 +292,7 @@ export default function ChatSidebar({
               <button
                 onClick={stopRecording}
                 aria-label="Stop recording"
-                className="w-7 h-7 flex items-center justify-center rounded-lg bg-danger text-void transition-all hover:scale-105 active:scale-95"
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-danger text-void transition-all hover:scale-105 active:scale-95 touch-manipulation"
               >
                 <SquareIcon
                   className="w-2.5 h-2.5"
@@ -306,7 +306,7 @@ export default function ChatSidebar({
                   onClick={startRecording}
                   disabled={Boolean(input.trim())}
                   aria-label="Record voice message"
-                  className={`absolute inset-0 flex items-center justify-center rounded-lg text-white/20 hover:text-amber transition-all duration-200 ${
+                  className={`absolute inset-0 flex items-center justify-center rounded-lg text-white/20 hover:text-amber transition-all duration-200 touch-manipulation ${
                     input.trim()
                       ? "opacity-0 scale-75 pointer-events-none"
                       : "opacity-100 scale-100 cursor-pointer"
@@ -318,7 +318,7 @@ export default function ChatSidebar({
                   onClick={handleSubmit}
                   disabled={!input.trim()}
                   aria-label="Send message"
-                  className="absolute inset-0 flex items-center justify-center rounded-lg bg-amber text-void transition-all duration-200 hover:bg-amber active:scale-90 disabled:opacity-0 disabled:scale-75 disabled:pointer-events-none"
+                  className="absolute inset-0 flex items-center justify-center rounded-lg bg-amber text-void transition-all duration-200 hover:bg-amber active:scale-90 disabled:opacity-0 disabled:scale-75 disabled:pointer-events-none touch-manipulation"
                 >
                   <SendIcon className="w-3 h-3" strokeWidth={2.5} />
                 </button>

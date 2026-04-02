@@ -30,14 +30,24 @@ export function VoiceNote({ src, isOwn }) {
     }
   };
 
-  const handleSeek = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const pos = (e.clientX - rect.left) / rect.width;
+  const seekFromClientX = (clientX, rect) => {
+    const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     const aud = audioRef.current;
     if (aud && aud.duration && aud.duration !== Infinity) {
       aud.currentTime = pos * aud.duration;
       setProgress(pos);
     }
+  };
+
+  const handleSeekClick = (e) => {
+    seekFromClientX(e.clientX, e.currentTarget.getBoundingClientRect());
+  };
+
+  // [Note] Touch seek: clientX doesn't exist on touch events — read from changedTouches instead
+  const handleSeekTouch = (e) => {
+    e.preventDefault();
+    const touch = e.changedTouches[0];
+    seekFromClientX(touch.clientX, e.currentTarget.getBoundingClientRect());
   };
 
   const formatTime = (t) => {
@@ -60,7 +70,7 @@ export function VoiceNote({ src, isOwn }) {
     >
       <button
         onClick={togglePlay}
-        className={`shrink-0 flex items-center justify-center w-5 h-5 rounded-full transition-transform active:scale-90 ${
+        className={`shrink-0 flex items-center justify-center w-5 h-5 rounded-full transition-transform active:scale-90 touch-manipulation ${
           isOwn ? "bg-void/10 text-void" : "bg-white/10 text-white"
         }`}
       >
@@ -72,10 +82,12 @@ export function VoiceNote({ src, isOwn }) {
       </button>
 
       <div
-        className={`flex-1 h-1.5 rounded-full overflow-hidden relative cursor-pointer ${
+        className={`flex-1 h-1.5 rounded-full overflow-hidden relative cursor-pointer touch-manipulation ${
           isOwn ? "bg-void/20" : "bg-white/10"
         }`}
-        onClick={handleSeek}
+        onClick={handleSeekClick}
+        onTouchEnd={handleSeekTouch}
+        style={{ touchAction: "none" }}
       >
         <div
           className={`absolute top-0 left-0 h-full rounded-full transition-all duration-75 ease-linear ${

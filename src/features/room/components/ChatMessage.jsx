@@ -14,6 +14,9 @@ function ChatMessageInner({
   const msgRef = useRef(null);
   const [isHovered, setIsHovered] = useState(false);
   const [rect, setRect] = useState(null);
+  // [Note] longPressTimer: mobile long-press (500ms) to show the reaction picker,
+  // since onMouseEnter never fires on touch-only devices.
+  const longPressTimerRef = useRef(null);
 
   // [Note] Coordinate Sync: Ensure the portal-based picker hides or repositions
   // during scroll to maintain the 'stuck-to-bubble' illusion.
@@ -24,14 +27,20 @@ function ChatMessageInner({
     return () => window.removeEventListener("scroll", hideOnScroll, true);
   }, [isHovered]);
 
-  const handleMouseEnter = () => {
+  const showPicker = () => {
     if (!msgRef.current) return;
     setRect(msgRef.current.getBoundingClientRect());
     setIsHovered(true);
   };
 
-  const handleMouseLeave = () => {
-    setIsHovered(false);
+  const handleMouseEnter = () => showPicker();
+  const handleMouseLeave = () => setIsHovered(false);
+
+  const handleTouchStart = () => {
+    longPressTimerRef.current = setTimeout(showPicker, 500);
+  };
+  const handleTouchEnd = () => {
+    clearTimeout(longPressTimerRef.current);
   };
 
   const renderTextWithMentions = (text) => {
@@ -77,7 +86,6 @@ function ChatMessageInner({
     }
     return (
       <div className="flex justify-center">
-        {/* [Note] Use Tailwind classes for color — inline style color expects a CSS value, not a class string */}
         <div className="px-3.5 py-1 rounded-xl border border-white/10 text-[11px] font-mono uppercase tracking-wide flex items-center gap-1.5 bg-surface text-white/60">
           {icon}
           {text}
@@ -93,6 +101,9 @@ function ChatMessageInner({
       ref={msgRef}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
       className={`flex ${isOwn ? "flex-row-reverse" : "flex-row"} gap-2 group relative animate-[messageIn_0.35s_cubic-bezier(0.23,1,0.32,1)]`}
     >
       {/* [Note] Border-Proof Portal: Bypasses header/overflow boundaries. Uses fixed
@@ -118,7 +129,7 @@ function ChatMessageInner({
                   onReaction?.(emoji);
                   setIsHovered(false);
                 }}
-                className="w-5 h-5 flex items-center justify-center text-[13px] hover:scale-125 transition-transform active:scale-90"
+                className="w-5 h-5 flex items-center justify-center text-[13px] hover:scale-125 transition-transform active:scale-90 touch-manipulation"
               >
                 {emoji}
               </button>
@@ -188,7 +199,7 @@ function ChatMessageInner({
                   key={emoji}
                   type="button"
                   onClick={() => onReaction?.(emoji)}
-                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded-[var(--radius-pill)] border transition-all duration-300 hover:scale-105 active:scale-95
+                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded-[var(--radius-pill)] border transition-all duration-300 hover:scale-105 active:scale-95 touch-manipulation
                     ${
                       hasReacted
                         ? "bg-amber/15 border-amber/40 text-amber shadow-[0_0_12px_rgba(var(--color-amber-rgb),0.1)] font-bold"

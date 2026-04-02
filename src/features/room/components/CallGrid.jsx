@@ -106,7 +106,7 @@ export function CallGrid({
         <div
           onMouseDown={handleStart}
           onTouchStart={handleStart}
-          className="w-7 h-8 sm:w-8 sm:h-9 flex items-center justify-center text-white/10 hover:text-white/30 cursor-grab active:cursor-grabbing transition-colors"
+          className="w-7 h-8 sm:w-8 sm:h-9 flex items-center justify-center text-white/10 hover:text-white/30 cursor-grab active:cursor-grabbing transition-colors touch-manipulation"
         >
           <div className="flex flex-col gap-0.5">
             {[0, 1, 2].map((i) => (
@@ -141,7 +141,7 @@ export function CallGrid({
             />
             <button
               onClick={onLeave}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-danger/20 hover:bg-danger/30 flex items-center justify-center text-danger transition-all shadow-lg active:scale-90"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-danger/20 hover:bg-danger/30 flex items-center justify-center text-danger transition-all shadow-lg active:scale-90 touch-manipulation"
             >
               <PhoneOff className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
@@ -154,6 +154,8 @@ export function CallGrid({
 
 function VideoCircle({ stream, name, isLocal, micActive, camActive }) {
   const videoRef = useRef(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const holdTimerRef = useRef(null);
 
   useEffect(() => {
     if (videoRef.current && stream) {
@@ -164,10 +166,29 @@ function VideoCircle({ stream, name, isLocal, micActive, camActive }) {
     }
   }, [stream]);
 
+  // [Note] Mobile hold-to-expand: 400ms touchstart timer mirrors desktop hover intent on touch devices
+  const handleTouchStart = () => {
+    holdTimerRef.current = setTimeout(() => setIsExpanded((v) => !v), 400);
+  };
+  const handleTouchEnd = () => {
+    clearTimeout(holdTimerRef.current);
+  };
+
   const showFallback = camActive === false;
 
   return (
-    <div className="glass-card relative w-20 h-20 sm:w-36 sm:h-36 overflow-hidden group shadow-2xl rounded-2xl sm:rounded-[var(--radius-panel)] border border-white/5 bg-void/60 transition-all hover:border-white/20 active:scale-[0.98]">
+    <div
+      className={`glass-card relative overflow-hidden group shadow-2xl rounded-2xl sm:rounded-[var(--radius-panel)] border border-white/5 bg-void/60 transition-all duration-300 cursor-pointer touch-manipulation
+        ${
+          isExpanded
+            ? "w-36 h-36 sm:w-56 sm:h-56 border-amber/30 shadow-[0_0_30px_rgba(245,158,11,0.15)]"
+            : "w-20 h-20 sm:w-36 sm:h-36 hover:w-28 hover:h-28 sm:hover:w-48 sm:hover:h-48 hover:border-white/20"
+        }`}
+      onClick={() => setIsExpanded((v) => !v)}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
+    >
       <video
         ref={videoRef}
         autoPlay
@@ -206,7 +227,7 @@ function ControlButton({ onClick, active, Icon, color }) {
   return (
     <button
       onClick={onClick}
-      className={`relative w-8 h-8 sm:w-9 sm:h-9 rounded-full ${active ? "bg-white/5" : "bg-danger/10"} hover:bg-white/20 flex items-center justify-center transition-all active:scale-90 shadow-lg group shrink-0`}
+      className={`relative w-8 h-8 sm:w-9 sm:h-9 rounded-full ${active ? "bg-white/5" : "bg-danger/10"} hover:bg-white/20 flex items-center justify-center transition-all active:scale-90 shadow-lg group shrink-0 touch-manipulation`}
     >
       <Icon
         className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${color} transition-transform group-hover:scale-110`}

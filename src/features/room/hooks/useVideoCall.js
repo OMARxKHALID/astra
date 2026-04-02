@@ -101,6 +101,26 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
     delete pcRoleRef.current[targetUserId];
   }, []);
 
+  // [Note] injectTracksIntoPC matches senders by KIND, not track ID.
+  // When localStream's object reference changes (React re-render), new tracks have new IDs,
+  // so track-ID matching would always call addTrack — creating new transceivers and
+  // causing the "m-line order doesn't match" InvalidAccessError on the next createOffer().
+  // replaceTrack swaps media on the existing transceiver with zero SDP side effects.
+  const injectTracksIntoPC = useCallback((pc, stream) => {
+    const senders = pc.getSenders();
+    stream
+      .getTracks()
+      .sort((a, b) => a.kind.localeCompare(b.kind))
+      .forEach((track) => {
+        const existing = senders.find((s) => s.track?.kind === track.kind);
+        if (existing) {
+          existing.replaceTrack(track).catch(() => {});
+        } else {
+          pc.addTrack(track, stream);
+        }
+      });
+  }, []);
+
   const getOrCreatePC = useCallback(
     (targetUserId) => {
       if (pcRef.current[targetUserId]) return pcRef.current[targetUserId];
@@ -131,10 +151,12 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
         setRemoteStreams((prev) => ({ ...prev, [targetUserId]: e.streams[0] }));
       };
 
-      // [Note] Full PC cleanup on failure/disconnect so getOrCreatePC builds a fresh one on reconnect,
-      // preventing the InvalidAccessError caused by reusing a PC with locked m-line order.
+      // [Note] Only cleanup on terminal states (failed/closed).
+      // "disconnected" is transient — ICE restarts can recover it automatically.
+      // Destroying the PC on "disconnected" forces full renegotiation whose new m-line
+      // order may not match the remote's locked expectation, causing InvalidAccessError.
       pc.onconnectionstatechange = () => {
-        if (["failed", "closed", "disconnected"].includes(pc.connectionState)) {
+        if (["failed", "closed"].includes(pc.connectionState)) {
           setRemoteStreams((prev) => {
             const next = { ...prev };
             delete next[targetUserId];
@@ -290,26 +312,21 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
     }
   }, []);
 
-  // [Note] Track injection: inject local tracks into PCs created before media was acquired.
-  // Only re-negotiate for 'caller' role PCs — callee PCs must not re-offer because their
-  // m-line order is already locked by the remote peer's original offer.
+  // [Note] Track injection uses injectTracksIntoPC (replaceTrack by kind) instead of addTrack by ID.
+  // When React re-renders create a new localStream object reference, track IDs change even if the
+  // underlying device is the same. Matching by kind + replaceTrack keeps the existing transceiver
+  // structure intact — no new m-lines, no InvalidAccessError on the next createOffer().
+  // Only caller-role PCs renegotiate; callee PCs must never re-offer (their m-line order is
+  // locked by the remote peer's original offer).
   useEffect(() => {
     if (!localStream) return;
     Object.entries(pcRef.current).forEach(([uid, pc]) => {
-      const senders = pc.getSenders();
-      localStream
-        .getTracks()
-        .sort((a, b) => a.kind.localeCompare(b.kind))
-        .forEach((track) => {
-          if (!senders.find((s) => s.track?.id === track.id)) {
-            pc.addTrack(track, localStream);
-          }
-        });
+      injectTracksIntoPC(pc, localStream);
       if (pcRoleRef.current[uid] !== "callee") {
         initiateCall(uid);
       }
     });
-  }, [localStream, initiateCall]);
+  }, [localStream, injectTracksIntoPC, initiateCall]);
 
   const handleSocketEvent = useCallback(
     async (event) => {
