@@ -66,8 +66,10 @@ export default function RoomView({ roomId, initialMeta }) {
   const { rootAmbiRef, bentoVideoRef, handleAmbiColors } = useAmbilight(settings);
   const videoState = useVideoState({ videoUrl: room.serverState?.videoUrl || initialMeta?.videoUrl || "", params, roomId, router, sendRef });
   
-  const hostToken = ls.get(`host_${roomId}`) || "";
-  const isHost = room.serverState?.hostId === identity.userId || (!room.serverState && !!hostToken);
+  const hostToken = mounted ? (ls.get(`host_${roomId}`) || "") : "";
+  const isHost = room.serverState?.hostId 
+    ? (mounted ? room.serverState.hostId === identity.userId : false)
+    : (room.serverState?.isHostHint || (mounted && !!hostToken));
   useMediaHistory({ roomId, videoUrl: videoState.videoUrl, serverState: room.serverState, isHost });
 
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -85,14 +87,13 @@ export default function RoomView({ roomId, initialMeta }) {
     if (times.length) videoRef.current.currentTime = times[Math.floor(times.length/2)];
   }, [room.tsMapState]);
 
-  if (!mounted) return null;
   const isTheatre = settings.theatreMode && !isFullscreen;
   const leaderTime = getLeaderTime(room.tsMapState);
 
   return (
-    <div className={`h-dvh flex flex-col overflow-hidden font-body antialiased bg-void ${settings.theatreMode ? "theatre-mode" : ""}`}>
-      <div ref={rootAmbiRef} aria-hidden className="fixed inset-0 z-5 pointer-events-none opacity-0 transition-opacity duration-600" />
-      {identity.userId && identity.nameReady && room.syncEnabled && (
+    <div className={`h-dvh flex flex-col overflow-hidden font-body antialiased bg-void transition-opacity delay-200 duration-700 ${mounted ? "opacity-100" : "opacity-0"} ${settings.theatreMode ? "theatre-mode" : ""}`}>
+      <div ref={rootAmbiRef} aria-hidden className="fixed inset-0 pointer-events-none opacity-0 transition-opacity duration-1000" />
+      {mounted && identity.userId && identity.nameReady && room.syncEnabled && (
         <SyncEngine roomId={roomId} userId={identity.userId} hostToken={hostToken}
           videoUrl={videoState.videoUrl} displayName={identity.displayName} videoRef={videoRef}
           onStateUpdate={room.handleStateUpdate} onChatMessage={handleChatMessage} onChatUpdate={handleChatUpdate} onUserChange={handleUserChange}
@@ -108,7 +109,7 @@ export default function RoomView({ roomId, initialMeta }) {
       
       <RoomNavbar roomId={roomId} identity={identity} room={room} settings={settings} router={router} videoUrl={videoState.videoUrl} addToast={addToast} isTheatre={isTheatre} />
 
-      <SplitView showSidebar={settings.showSidebar} isFullscreen={isFullscreen} isTheatre={isTheatre} sidebarWidth={sidebar.sidebarWidth} onDragStart={sidebar.onDragStart} bentoVideoRef={bentoVideoRef} isResizing={sidebar.isResizing}
+      <SplitView showSidebar={settings.showSidebar} isFullscreen={isFullscreen} isTheatre={isTheatre} sidebarWidth={sidebar.sidebarWidth} onDragStart={sidebar.onDragStart} bentoVideoRef={bentoVideoRef} isResizing={sidebar.isResizing} containerRef={sidebar.containerRef}
         urlBarContent={<URLBar onLoad={(u, s) => sendRef.current?.({ type: "change_video", videoUrl: u, subtitleUrl: s })} currentUrl={videoState.videoUrl} currentSubtitleUrl={room.serverState?.subtitleUrl || ""} isHost={isHost} strictVideoUrlMode={room.serverState?.strictVideoUrlMode} />}
         videoContent={<><VideoPlayer videoRef={videoRef} videoUrl={videoState.videoUrl} subtitleUrl={room.serverState?.subtitleUrl || ""} isHost={isHost} isPlaying={room.serverState?.isPlaying} playbackRate={room.serverState?.playbackRate || 1} onPlay={t => sendRef.current?.({ type: "play", currentTime: t })} onPause={t => sendRef.current?.({ type: "pause", currentTime: t })} onSeek={t => sendRef.current?.({ type: "seek", currentTime: t })} onSpeed={r => sendRef.current?.({ type: "speed", rate: r, currentTime: videoRef.current?.currentTime })} canControl={!(room.serverState?.hostOnlyControls) || isHost} onAmbiColors={handleAmbiColors} theatreMode={settings.theatreMode} onToggleTheatre={() => settings.setTheatreMode(!settings.theatreMode)} onToggleChat={() => { const next = !fsChatOpen; setFsChatOpen(next); if (next) room.setUnreadCount(0); }} unreadCount={room.unreadCount} hasEpisodes={videoState.isActiveTv} onToggleEpisodes={() => videoState.setEpisodesOpen(!videoState.episodesOpen)} />
                       {videoState.episodesOpen && videoState.id && <EpisodeSelector tmdbId={videoState.id} currentSeason={videoState.s} currentEpisode={videoState.e} onSelectEpisode={videoState.handleSelectEpisode} onClose={() => videoState.setEpisodesOpen(false)} cache={videoState.seasonCache} setCache={videoState.setSeasonCache} />}</>}
@@ -145,11 +146,11 @@ export default function RoomView({ roomId, initialMeta }) {
 
       <MobileRoomNav room={room} isTheatre={isTheatre} isFullscreen={isFullscreen} />
       <MobileRoomSheets room={room} identity={identity} sendRef={sendRef} isHost={isHost} leaderTime={leaderTime} />
-      <SettingsPanel isOpen={settings.showSettings} onClose={()=>settings.setShowSettings(false)} isHost={isHost} hostOnlyControls={room.serverState?.hostOnlyControls} strictVideoUrlMode={room.serverState?.strictVideoUrlMode} onToggleHostControls={()=>sendRef.current?.({type:"toggle_host_controls"})} onToggleStrictVideoUrlMode={()=>sendRef.current?.({type:"toggle_strict_video_url_mode"})} hasPassword={!!room.serverState?.hasPassword} onSetPassword={pw=>sendRef.current?.({type:"set_password",password:pw})} {...settings} />
-      <ShortcutsModal isOpen={settings.showShortcuts} onClose={()=>settings.setShowShortcuts(false)} />
+      {mounted && <SettingsPanel isOpen={settings.showSettings} onClose={()=>settings.setShowSettings(false)} isHost={isHost} hostOnlyControls={room.serverState?.hostOnlyControls} strictVideoUrlMode={room.serverState?.strictVideoUrlMode} onToggleHostControls={()=>sendRef.current?.({type:"toggle_host_controls"})} onToggleStrictVideoUrlMode={()=>sendRef.current?.({type:"toggle_strict_video_url_mode"})} hasPassword={!!room.serverState?.hasPassword} onSetPassword={pw=>sendRef.current?.({type:"set_password",password:pw})} {...settings} />}
+      {mounted && <ShortcutsModal isOpen={settings.showShortcuts} onClose={()=>settings.setShowShortcuts(false)} />}
       {room.needsPassword && <PasswordModal roomId={roomId} error={passwordError} onSubmit={pw=>{setPasswordError(""); room.setRoomPassword(pw); room.setSyncEnabled(true); room.setNeedsPassword(false);}} />}
       
-      {isFullscreen && fsChatOpen && typeof document !== "undefined" && document.fullscreenElement && createPortal(<div className="fixed top-6 right-6 bottom-24 w-[350px] z-[100] glass-card overflow-hidden flex flex-col shadow-2xl animate-in slide-in-from-right-8 duration-300">
+      {mounted && isFullscreen && fsChatOpen && typeof document !== "undefined" && document.fullscreenElement && createPortal(<div className="fixed top-6 right-6 bottom-24 w-[350px] z-[100] glass-card overflow-hidden flex flex-col shadow-2xl animate-in slide-in-from-right-8 duration-300">
         <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between shrink-0 bg-white/5"><div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-amber/80 animate-pulse" /><span className="text-[11px] font-mono font-black text-white/40 uppercase tracking-widest">FS CHAT</span></div><button onClick={()=>setFsChatOpen(false)} className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/10 text-white/40 font-mono">✕</button></div>
         <ChatSidebar messages={room.messages} userId={identity.userId} displayNames={room.displayNames} onSend={(t,d)=>sendRef.current?.({type:"chat",text:t,dataUrl:d})} typingUsers={room.typingUsers} onTyping={()=>sendRef.current?.({type:"typing"})} /></div>, document.fullscreenElement)}
     </div>

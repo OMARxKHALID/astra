@@ -61,7 +61,7 @@ export async function GET(request) {
                 }
             }
         } catch (err) {
-            console.error("[subtitles] Hash search failed:", err.message);
+            // [Note] Hash Fail: likely due to CORS or missing Content-Length header
         }
     }
 
@@ -110,7 +110,6 @@ export async function GET(request) {
       subtitles: results,
     });
   } catch (err) {
-    console.error("[subtitles] Search error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

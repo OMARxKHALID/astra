@@ -14,6 +14,7 @@ import YoutubeIcon from "@/components/icons/YoutubeIcon";
 import { useSession } from "next-auth/react";
 import { createRoom } from "@/features/room/createRoom";
 import { ls } from "@/utils/localStorage";
+import { LS_KEYS, MAX_HISTORY_ENTRIES } from "@/constants/config";
 
 export default function CreateRoomForm({ onResultsChange }) {
   const router = useRouter();
@@ -87,8 +88,6 @@ export default function CreateRoomForm({ onResultsChange }) {
         const data = await res.json();
         setYtResults(data.items || []);
         setNextPageToken(data.nextPageToken || null);
-      } catch (err) {
-        console.error("YouTube search failed:", err);
       } finally {
         setYtLoading(false);
       }
@@ -99,30 +98,35 @@ export default function CreateRoomForm({ onResultsChange }) {
 
     setLoading(true);
     setError("");
+    // [Note] Instant Sync: Navigate immediately with a client-generated ID
+    // to eliminate the perceived delay of the API network roundtrip.
+    const { roomId } = createRoom(targetUrl.trim(), session);
+
     try {
-      // [Note] Identity unification: using shared utility to ensure host consistency
-      const { roomId } = await createRoom(targetUrl.trim(), session);
-
-      try {
-        const cur = JSON.parse(ls.get("recent_rooms") || "[]");
-        ls.set(
-          "recent_rooms",
-          JSON.stringify(
-            [
-              { id: roomId, url: targetUrl.trim(), time: Date.now() },
-              ...cur.filter((r) => r.id !== roomId),
-            ].slice(0, 5),
-          ),
-        );
-      } catch {}
-
-      router.push(
-        `/room/${roomId}?url=${encodeURIComponent(targetUrl.trim())}`,
+      const history = JSON.parse(ls.get(LS_KEYS.history) || "[]");
+      const ytMatch = targetUrl.trim().match(
+        /(?:youtube\.com\/watch\?.*v=|youtu\.be\/)([A-Za-z0-9_-]{11})/,
       );
-    } catch (err) {
-      setError(err.message);
-      setLoading(false);
-    }
+      const entry = {
+        roomId,
+        videoUrl: targetUrl.trim(),
+        thumbnail: ytMatch
+          ? `https://img.youtube.com/vi/${ytMatch[1]}/mqdefault.jpg`
+          : null,
+        title: targetUrl.trim().replace(/^https?:\/\//, "").slice(0, 60) || `Room ${roomId.slice(0, 4)}`,
+        lastVisited: Date.now(),
+      };
+      ls.set(
+        LS_KEYS.history,
+        JSON.stringify(
+          [entry, ...history.filter((h) => h.roomId !== roomId)].slice(0, MAX_HISTORY_ENTRIES),
+        ),
+      );
+    } catch {}
+
+    router.push(
+      `/room/${roomId}?url=${encodeURIComponent(targetUrl.trim())}&h=1`,
+    );
   }
 
   function switchMode(next) {
@@ -133,7 +137,7 @@ export default function CreateRoomForm({ onResultsChange }) {
   }
 
   return (
-    <div className="glass-card p-7 relative rounded-2xl shadow-2xl border-white/10 bg-white/[0.02]">
+    <div className="glass-card p-7 relative rounded-[var(--radius-panel)] shadow-2xl border-border bg-white/[0.03]">
       {/* Header + mode toggle */}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -143,7 +147,7 @@ export default function CreateRoomForm({ onResultsChange }) {
           >
             Start a new room
           </h2>
-          <p className="text-sm" style={{ color: "var(--color-muted)" }}>
+          <p className="text-sm font-mono text-muted uppercase tracking-widest mt-1">
             Pick a video and invite friends.
           </p>
         </div>

@@ -1,11 +1,7 @@
 import { LS_KEYS } from "@/constants/config";
 import { ls } from "@/utils/localStorage";
 
-// [Note] Shared room creation flow — used by HomeView, InfoView, WatchPage
-// Supports both authenticated (session-based) and anonymous (localStorage) users.
-// When a session is available, uses the authenticated user's ID for host identity.
 export async function createRoom(videoUrl, session = null) {
-  // Prefer authenticated user ID, fall back to anonymous localStorage ID
   let userId;
   if (session?.user?.id) {
     userId = session.user.id;
@@ -19,17 +15,27 @@ export async function createRoom(videoUrl, session = null) {
     if (!storedId) ls.set(LS_KEYS.userId, userId);
   }
 
-  console.log(`[createRoom] Requesting room for userId: ${userId}`);
-  const res = await fetch("/api/rooms", {
+  // [Note] Instant Identity: Generate roomId on client to allow immediate navigation
+  const roomId = randomId();
+
+  // Fire-and-forget (mostly): Background registration
+  const createPromise = fetch("/api/rooms", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ videoUrl, userId }),
+    body: JSON.stringify({ videoUrl, userId, roomId }),
+  }).then(async (res) => {
+    const data = await res.json();
+    if (data.hostToken) {
+      ls.set(`host_${roomId}`, data.hostToken);
+      return data;
+    }
   });
 
-  const data = await res.json();
-  console.log(`[createRoom] Room created: ${data.roomId} (hostToken: ${data.hostToken ? "present" : "MISSING"})`);
-  if (!data.roomId || !data.hostToken) throw new Error("Room creation failed");
+  return { roomId, createPromise };
+}
 
-  ls.set(`host_${data.roomId}`, data.hostToken);
-  return { roomId: data.roomId, hostToken: data.hostToken };
+function randomId() {
+  return typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID().slice(0, 8)
+    : Math.random().toString(36).slice(2, 10);
 }

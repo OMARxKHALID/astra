@@ -110,7 +110,6 @@ export async function GET(request) {
       },
     });
   } catch (err) {
-    console.error("[subtitles/download]", err.message);
     return NextResponse.json(
       { error: err.message || "Download failed" },
       { status: 500 },

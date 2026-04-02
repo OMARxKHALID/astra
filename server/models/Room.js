@@ -73,13 +73,20 @@ export class Room {
     this.tsLockUntil = Date.now() + ms;
   }
 
-  receiveTimestamp(userId, time) {
+  receiveTimestamp(userId, time, isHost = false) {
     if (Date.now() < this.tsLockUntil) return;
     if (typeof time !== "number" || time < 0) return;
-    // [Note] normalize: subtract elapsed time since last broadcast to prevent artificial forward push
+    
     const staleness = (Date.now() - this.lastBroadcastTime) / 1000;
     const normalized = Math.max(0, time - staleness);
-    if (normalized > this.videoTS) this.videoTS = normalized;
+
+    // [Note] Security: If host-only mode is on, guests can only report their own pos
+    // and cannot push the "Master" room time forward.
+    const canAffectMaster = !this.hostOnlyControls || isHost;
+    if (canAffectMaster && normalized > this.videoTS) {
+      this.videoTS = normalized;
+    }
+    
     this.tsMap[userId] = normalized;
   }
 

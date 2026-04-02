@@ -37,7 +37,6 @@ export async function searchYouTube(query, pageToken = null) {
     const items = data.items.map((item) => normalizeYouTubeVideo(item));
     return { items, nextPageToken: data.nextPageToken || null };
   } catch (err) {
-    console.error(`YouTube fetch error [${query}]:`, err);
     return { items: [], nextPageToken: null };
   }
 }

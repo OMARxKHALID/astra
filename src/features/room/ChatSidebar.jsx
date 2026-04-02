@@ -61,7 +61,7 @@ export default function ChatSidebar({
     const textBefore = input.slice(0, cursor);
     const textAfter = input.slice(cursor);
     const lastAt = textBefore.lastIndexOf("@");
-    
+
     if (lastAt !== -1) {
       const newVal = `${textBefore.slice(0, lastAt)}@${user.name} ${textAfter}`;
       setInput(newVal);
@@ -92,7 +92,9 @@ export default function ChatSidebar({
       }
       if (e.key === "ArrowUp") {
         e.preventDefault();
-        setMentionIndex((prev) => (prev - 1 + mentionList.length) % mentionList.length);
+        setMentionIndex(
+          (prev) => (prev - 1 + mentionList.length) % mentionList.length,
+        );
         return;
       }
       if (e.key === "Enter" || e.key === "Tab") {
@@ -116,11 +118,11 @@ export default function ChatSidebar({
   function handleInputChange(e) {
     const val = e.target.value;
     setInput(val);
-    
+
     const cursor = e.target.selectionStart || 0;
     const textBefore = val.slice(0, cursor);
     const lastAt = textBefore.lastIndexOf("@");
-    
+
     if (lastAt !== -1 && !textBefore.slice(lastAt).includes(" ")) {
       setShowMentions(true);
       setMentionQuery(textBefore.slice(lastAt + 1));
@@ -145,12 +147,15 @@ export default function ChatSidebar({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto no-scrollbar px-4 py-3 space-y-4"
+        className="flex-1 overflow-y-auto no-scrollbar px-4 pt-6 pb-3 space-y-4"
       >
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full gap-3 opacity-30">
-            <ChatBubbleIcon className="w-9 h-9 text-white/40" strokeWidth={1} />
-            <p className="text-[11px] font-mono text-center max-w-[160px] leading-relaxed uppercase tracking-[0.15em] text-white/30">
+          <div className="flex flex-col items-center justify-center h-full gap-3 animate-[fadeIn_0.8s_ease-out]">
+            <div className="relative">
+              <ChatBubbleIcon className="w-9 h-9 text-white/5" strokeWidth={1} />
+              <div className="absolute inset-0 bg-amber/20 blur-xl rounded-full opacity-20" />
+            </div>
+            <p className="text-[11px] font-mono text-center max-w-[160px] leading-relaxed uppercase tracking-[0.25em] text-white/40">
               The thread is quiet.
             </p>
           </div>
@@ -167,20 +172,20 @@ export default function ChatSidebar({
         ))}
 
         {activeTypers.length > 0 && (
-          <div className="flex items-center gap-2 px-1 py-0.5">
-            <div className="flex gap-0.5">
+          <div className="flex items-center gap-2.5 px-2 py-1 animate-[slideUp_0.3s_ease-out]">
+            <div className="flex gap-1">
               {[0, 1, 2].map((i) => (
                 <span
                   key={i}
-                  className="w-0.5 h-0.5 rounded-full bg-amber/50 animate-bounce"
+                  className="w-1 h-1 rounded-full bg-amber/40 animate-bounce"
                   style={{ animationDelay: `${i * 150}ms` }}
                 />
               ))}
             </div>
-            <span className="text-[10.5px] font-mono italic text-white/40">
+            <span className="text-[10px] font-mono uppercase tracking-[0.1em] text-white/40">
               {activeTypers.length === 1
-                ? `${activeTypers[0]} is typing…`
-                : `${activeTypers.slice(0, -1).join(", ")} & ${activeTypers.at(-1)} are typing…`}
+                ? `${activeTypers[0]} typing`
+                : `${activeTypers.length} typing`}
             </span>
           </div>
         )}
@@ -193,7 +198,9 @@ export default function ChatSidebar({
           {showMentions && mentionList.length > 0 && (
             <div className="absolute bottom-full mb-2 left-0 w-full max-w-[210px] overflow-y-auto glass-card rounded-2xl p-1 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200 thin-scrollbar shadow-2xl border-white/10">
               <div className="px-2 py-0.5 mb-1 border-b border-white/5">
-                <span className="text-[10px] font-black text-amber uppercase tracking-[0.25em]">Mention Participant</span>
+                <span className="text-[10px] font-black text-amber uppercase tracking-[0.25em]">
+                  Mention Participant
+                </span>
               </div>
               <div className="space-y-0.5">
                 {mentionList.map((user, i) => (
@@ -202,13 +209,17 @@ export default function ChatSidebar({
                     onClick={() => selectMention(user)}
                     onMouseEnter={() => setMentionIndex(i)}
                     className={`w-full text-left px-2 py-1.5 rounded-xl text-[11px] transition-all flex items-center justify-between group ${
-                      i === mentionIndex 
-                        ? "bg-amber text-void font-bold shadow-lg shadow-amber/10 scale-[1.01]" 
+                      i === mentionIndex
+                        ? "bg-amber text-void font-bold shadow-lg shadow-amber/10 scale-[1.01]"
                         : "text-white/60 hover:bg-white/5"
                     }`}
                   >
                     <span className="truncate pr-2">@{user.name}</span>
-                    {i === mentionIndex && <span className="text-[7px] font-black uppercase opacity-60 shrink-0">Pick</span>}
+                    {i === mentionIndex && (
+                      <span className="text-[7px] font-black uppercase opacity-60 shrink-0">
+                        Pick
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
@@ -238,7 +249,10 @@ export default function ChatSidebar({
 
               <div className="flex items-center gap-[1.5px] h-3 mr-4 opacity-50">
                 {[1, 2, 3, 4, 5, 6].map((i) => {
-                  const scale = Math.max(0.1, (audioLevel / 255) * (i % 2 === 0 ? 1 : 0.6));
+                  const scale = Math.max(
+                    0.1,
+                    (audioLevel / 255) * (i % 2 === 0 ? 1 : 0.6),
+                  );
                   return (
                     <span
                       key={i}

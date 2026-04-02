@@ -159,7 +159,6 @@ export function useRoomSocket(props) {
         const { default: io } = await import("socket.io-client");
         ioRef.current = io;
       } catch (err) {
-        console.error("[useRoomSocket] Error loading socket.io:", err);
         return;
       }
     }
@@ -172,7 +171,6 @@ export function useRoomSocket(props) {
     socketRef.current = socket;
 
     socket.on("connect", () => {
-      console.log(`[socket] Connected! Joining room:${roomId} as ${userId}`);
       onConnStatus?.("connected");
       socket.emit("JOIN_ROOM", {
         roomId,
@@ -199,11 +197,9 @@ export function useRoomSocket(props) {
 
     const handlers = {
       disconnect: (reason) => {
-        console.warn(`[socket] Disconnected: ${reason}`);
         p.current.onConnStatus?.("reconnecting");
       },
       connect_error: (err) => {
-        console.error(`[socket] Connection error:`, err);
         p.current.onConnStatus?.("reconnecting");
       },
       "REC:host": (m) => {
@@ -322,7 +318,6 @@ export function useRoomSocket(props) {
         p.current.onChatMessage?.({ type: "chat_history", ...m }),
       chat_update: (m) => p.current.onChatUpdate?.(m),
       "REC:error": (m) => {
-        console.error(`[socket] REC:error:`, m);
         if (m.code === "STRICT_VIDEO_MODE") {
           p.current.onChatMessage?.({
             senderId: "system",

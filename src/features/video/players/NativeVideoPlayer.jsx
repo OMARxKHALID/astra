@@ -240,7 +240,7 @@ export default function NativeVideoPlayer({
         await v.requestPictureInPicture();
       }
     } catch (err) {
-      console.warn("[PiP]", err.message);
+      // [Note] PiP Fail: Likely due to lack of user gesture or device support
     }
   };
 

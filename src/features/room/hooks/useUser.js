@@ -7,7 +7,7 @@ import { LS_KEYS } from "@/constants/config";
 import { ls } from "@/utils/localStorage";
 
 export default function useUser(sendRef) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [userId, setUserId] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [nameReady, setNameReady] = useState(false);
@@ -15,7 +15,9 @@ export default function useUser(sendRef) {
   const [nameInput, setNameInput] = useState("");
 
   useEffect(() => {
-    // [Note] Identity unification: Prioritize session user ID over local storage
+    // [Note] Identity Lock: Wait for session status to resolve to avoid temporary identity flips
+    if (status === "loading") return;
+
     if (session?.user?.id) {
       setUserId(session.user.id);
       return;
@@ -34,9 +36,11 @@ export default function useUser(sendRef) {
         : `guest-${Math.random().toString(36).slice(2, 11)}-${Date.now().toString(36)}`;
     ls.set(key, id);
     setUserId(id);
-  }, [session?.user?.id]);
+  }, [session?.user?.id, status]);
 
   useEffect(() => {
+    if (status === "loading") return;
+
     const stored = ls.get(LS_KEYS.displayName);
     const sessionName = session?.user?.name;
     const name =
@@ -48,7 +52,7 @@ export default function useUser(sendRef) {
     setDisplayName(name);
     setNameReady(true);
     setNameInput(name);
-  }, [session?.user?.name]);
+  }, [session?.user?.name, status]);
 
   const commitName = useCallback(
     (raw) => {

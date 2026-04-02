@@ -12,9 +12,11 @@ export function SplitView({
   usersContent,
   bentoVideoRef,
   isResizing,
+  containerRef,
 }) {
   return (
     <main
+      ref={containerRef}
       className={`relative z-10 flex-1 min-h-0 min-w-0 bento-grid
         ${showSidebar ? "sidebar-open" : "sidebar-closed"}
         ${
@@ -57,6 +59,12 @@ export function SplitView({
             {usersContent}
           </div>
         </aside>
+      )}
+      {isResizing && (
+        <div 
+          className="fixed inset-0 z-[9999] cursor-col-resize select-none"
+          style={{ background: "transparent" }}
+        />
       )}
     </main>
   );

@@ -143,12 +143,12 @@ export default function SettingsPanel({
         ref={panelRef}
         className="relative z-10 w-full sm:max-w-[480px] glass-card rounded-[var(--radius-panel)] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 border-none"
       >
-        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/10 bg-white/[0.02]">
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border bg-white/[0.03]">
           <div>
-            <h2 className="font-display font-bold text-lg text-white/90">
+            <h2 className="font-display font-bold text-xl text-bright">
               Settings
             </h2>
-            <p className="text-[10px] font-mono mt-0.5 uppercase tracking-wider text-white/50">
+            <p className="text-[10px] font-mono mt-0.5 uppercase tracking-wider text-muted">
               {isHost ? "You are the host" : "Host controls only"}
             </p>
           </div>
@@ -308,7 +308,7 @@ export default function SettingsPanel({
                         onChange={(e) => setPwInput(e.target.value)}
                         placeholder="New password…"
                         maxLength={64}
-                        className="w-full pr-10 bg-white/5 border border-white/10 rounded-[var(--radius-pill)] px-4 py-2 text-xs outline-none focus:border-amber/40 font-mono text-white/90 placeholder-white/30 transition-all"
+                        className="w-full pr-10 bg-surface/40 border border-border rounded-[var(--radius-pill)] px-4 py-2 text-xs outline-none focus:border-amber/40 font-mono text-white/90 placeholder-white/30 transition-all"
                       />
                       <button
                         type="button"

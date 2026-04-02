@@ -14,8 +14,14 @@ export default function RecentRooms() {
 
   useEffect(() => {
     try {
-      setRecentRooms(JSON.parse(ls.get(LS_KEYS.history) || "[]"));
-    } catch {}
+      const stored = JSON.parse(ls.get(LS_KEYS.history) || "[]");
+      // [Note] Sanitization: De-duplicate results to prevent React 'unique key' warnings 
+      // if multiple sync events accidentally double-recorded a visit.
+      const unique = Array.from(new Map(stored.filter(r => r.roomId).map(r => [r.roomId, r])).values());
+      setRecentRooms(unique.slice(0, 10));
+    } catch {
+      setRecentRooms([]);
+    }
   }, []);
 
   useEffect(() => {
@@ -89,7 +95,10 @@ export default function RecentRooms() {
                 className="relative group border-b last:border-0 border-white/10"
               >
                 <button
-                  onClick={() => router.push(`/room/${r.roomId}`)}
+                  onClick={() => {
+                    const urlStr = r.videoUrl ? `?url=${encodeURIComponent(r.videoUrl)}` : "";
+                    router.push(`/room/${r.roomId}${urlStr}`);
+                  }}
                   className="w-full flex items-center gap-3 p-3 hover:bg-white/10 transition-all text-left group-hover:pl-4 duration-300"
                 >
                   {r.thumbnail ? (

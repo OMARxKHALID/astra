@@ -13,9 +13,22 @@ import Row from "@/features/content/MediaRow";
 import SearchOverlay from "@/features/content/SearchOverlay";
 import UserMenu from "@/components/UserMenu";
 
+import { useSearchParams } from "next/navigation";
+import { useToast } from "@/components/Toast";
+import ToastContainer from "@/components/Toast";
+
 export default function HomeView({ initialData }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { toasts, addToast } = useToast();
+
   const [data, setData] = useState(initialData);
+  useEffect(() => {
+    if (searchParams.get("kicked")) {
+      addToast("You were removed or the session ended.", "error", 5000);
+      router.replace("/");
+    }
+  }, [searchParams, addToast, router]);
   const [loading, setLoading] = useState(!initialData);
   const [showSearch, setShowSearch] = useState(false);
   const [favorites, setFavorites] = useState([]);
@@ -75,7 +88,7 @@ export default function HomeView({ initialData }) {
       fetch(`/api/tmdb/recommendations?id=${last.id}&type=${last.type}`)
         .then((r) => r.json())
         .then((d) => setRecommendations((d.items || []).slice(0, 20)))
-        .catch(console.error);
+        .catch(() => {});
     }
   }, []);
 
@@ -195,6 +208,7 @@ export default function HomeView({ initialData }) {
           onPick={handleNavigateToInfo}
         />
       )}
+      <ToastContainer toasts={toasts} />
     </div>
   );
 }

@@ -3,7 +3,18 @@
 import { useState, useCallback, useRef } from "react";
 
 export default function useRoomState(initialMeta) {
-  const [serverState, setServerState] = useState(null);
+  const [serverState, setServerState] = useState(
+    initialMeta?.videoUrl
+      ? {
+          videoUrl: initialMeta.videoUrl,
+          hasPassword: initialMeta.hasPassword ?? false,
+          isPlaying: false,
+          currentTime: 0,
+          playbackRate: 1,
+          isHostHint: initialMeta.isHostHint,
+        }
+      : null,
+  );
   const [syncStatus, setSyncStatus] = useState("synced");
   const [connStatus, setConnStatus] = useState("connecting");
   const [participants, setParticipants] = useState([]);

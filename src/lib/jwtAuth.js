@@ -8,12 +8,9 @@ function b64url(str) {
 function secret() {
   const s = process.env.JWT_SECRET;
   if (!s) {
-    // In dev: warn once and use a stable-ish fallback.
-    // In prod: JWT_SECRET MUST be set — token won't survive server restarts otherwise.
-    if (process.env.NODE_ENV === "production")
-      console.error(
-        "[jwt] JWT_SECRET is not set in production! Host tokens will not be verifiable.",
-      );
+    if (process.env.NODE_ENV === "production") {
+      // [Note] Critical security: JWT_SECRET must be set on Vercel/Render for token persistence
+    }
     return "dev-fallback-not-secure";
   }
   return s;
@@ -31,9 +28,7 @@ export function signJwt(payload, expiry = JWT_EXPIRY_S) {
   const signature = createHmac("sha256", secret())
     .update(`${header}.${claims}`)
     .digest("base64url");
-  const token = `${header}.${claims}.${signature}`;
-  console.log(`[jwt] Signed token for room:${payload.roomId} sub:${payload.sub}`);
-  return token;
+  return `${header}.${claims}.${signature}`;
 }
 
 export function verifyJwt(token) {
@@ -43,7 +38,6 @@ export function verifyJwt(token) {
   const expected = createHmac("sha256", secret())
     .update(`${header}.${claims}`)
     .digest("base64url");
-  // Constant-time comparison to prevent timing attacks
   const a = Buffer.from(sig, "base64url");
   const b = Buffer.from(expected, "base64url");
   if (a.length !== b.length || !timingSafeEqual(a, b))

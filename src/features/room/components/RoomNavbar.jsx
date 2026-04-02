@@ -6,7 +6,6 @@ import {
   Pencil as PencilIcon,
   PanelRight as SidebarIcon,
   Monitor as TheatreIcon,
-  ExternalLink as PopoutIcon,
   Link as LinkIcon,
 } from "lucide-react";
 import SyncStatusIndicator from "@/components/SyncStatusIndicator";
@@ -31,23 +30,25 @@ export function RoomNavbar({
           <div className="w-7 h-7 rounded-[var(--radius-pill)] bg-amber flex items-center justify-center font-display font-black text-void text-[11.5px]">
             AS
           </div>
-          <span className="font-display font-bold text-base tracking-tight text-white/40 hidden md:block">
+          <span className="font-display font-bold text-base tracking-tight text-white/70 hidden md:block">
             Astra Sync
           </span>
         </button>
 
         <div className="flex items-center gap-2 px-2.5 py-2 rounded-[var(--radius-pill)] glass-card text-[11px] font-mono uppercase tracking-[0.2em] shrink-0">
-          <span className={`w-1.5 h-1.5 rounded-full transition-colors duration-500 ${room.connStatus === "connected" ? "bg-jade animate-pulse" : room.connStatus === "reconnecting" ? "bg-danger" : "bg-amber"}`} />
-          <span className="text-white/40 font-black hidden xs:inline">
+          <span
+            className={`w-1.5 h-1.5 rounded-full transition-colors duration-500 ${room.connStatus === "connected" ? "bg-jade animate-pulse" : room.connStatus === "reconnecting" ? "bg-danger" : "bg-amber"}`}
+          />
+          <span className="text-white/70 font-black hidden xs:inline">
             {roomId?.slice?.(0, 6)}
           </span>
-          <span className="text-white/40 font-black xs:hidden">
+          <span className="text-white/70 font-black xs:hidden">
             {roomId?.slice?.(0, 6)}
           </span>
         </div>
 
-        {identity.nameReady &&
-          (identity.editingName ? (
+        {identity.nameReady ? (
+          identity.editingName ? (
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -79,7 +80,14 @@ export function RoomNavbar({
               <PencilIcon className="w-3.5 h-3.5 shrink-0" />
               <span className="truncate">{identity.displayName}</span>
             </button>
-          ))}
+          )
+        ) : (
+          /* [Note] Navbar skeleton: ensures space is reserved for user identity */
+          <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-[var(--radius-pill)] glass-card opacity-20 animate-pulse w-24">
+            <div className="w-3.5 h-3.5 bg-white/20 rounded-full" />
+            <div className="h-2 w-12 bg-white/20 rounded-full" />
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-1.5 shrink-0">
@@ -124,8 +132,6 @@ export function RoomNavbar({
         >
           <SettingsIcon className="w-4 h-4" />
         </button>
-
-
 
         <button
           onClick={() => {

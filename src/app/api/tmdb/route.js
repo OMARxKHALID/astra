@@ -14,7 +14,6 @@ export async function GET(req) {
 
     return NextResponse.json({ items });
   } catch (err) {
-    console.error("[TMDB API Error]", err);
     return NextResponse.json({ items: [] });
   }
 }

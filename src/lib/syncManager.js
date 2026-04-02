@@ -34,19 +34,22 @@ export function getLeaderTime(tsMap) {
   return _cachedLeader;
 }
 
-// [Note] proportional playback-rate correction (bi-directional)
+// [Note] Proportional rate correction: uses a gentle ramp and high precision (toFixed 4) 
+// to prevent the audio resampler from 'popping' during micro-adjustments.
 export function computeCorrection(localTime, targetTime, isPlaying) {
   if (!isPlaying) return { action: "none", playbackRate: 1 };
   const drift = targetTime - localTime;
-  if (Math.abs(drift) <= SYNC_TOLERANCE_S)
-    return { action: "none", playbackRate: 1 };
+  
+  // Use a smaller internal tolerance for smoother handling 
+  if (Math.abs(drift) <= 0.2) return { action: "none", playbackRate: 1 };
 
+  // [Note] Cubic-like ramp: drift / 40 creates a nearly imperceptible transition
+  // Capping at 1.06 ensures pitch shifting remains within reasonable bounds.
   if (drift > 0) {
-    // [Note] drift/15 ramp: gentler slope reduces audio resampler noise
-    const rate = parseFloat(Math.min(1 + drift / 15, 1.1).toFixed(2));
+    const rate = parseFloat(Math.min(1 + drift / 40, 1.06).toFixed(4));
     return { action: "soft", playbackRate: rate };
   }
 
-  const rate = parseFloat(Math.max(1 + drift / 15, 0.9).toFixed(2));
+  const rate = parseFloat(Math.max(1 + drift / 40, 0.94).toFixed(4));
   return { action: "soft", playbackRate: rate };
 }

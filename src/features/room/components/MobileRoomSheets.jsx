@@ -17,10 +17,10 @@ export function MobileRoomSheets({
         className="lg:hidden fixed inset-0 z-40 bg-void/60 backdrop-blur-sm"
         onClick={() => room.setMobileSheet(null)}
       />
-      <div className="lg:hidden fixed bottom-0 inset-x-0 z-50 h-[70vh] flex flex-col glass-card !rounded-t-[var(--radius-sheet)] border-t border-white/10 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-          <span className="font-display font-semibold text-white/40">
-            {room.mobileSheet === "chat" ? "Chat" : "Participants"}
+      <div className="lg:hidden fixed bottom-0 inset-x-0 z-50 h-[75vh] flex flex-col glass-card !rounded-t-[var(--radius-sheet)] border-t border-border overflow-hidden shadow-[0_-20px_60px_rgba(0,0,0,0.4)]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border/40">
+          <span className="font-display font-bold text-sm text-white/60 uppercase tracking-widest">
+            {room.mobileSheet === "chat" ? "Room Chat" : "Participants"}
           </span>
           <button
             onClick={() => room.setMobileSheet(null)}

@@ -21,7 +21,6 @@ const getInfoData = cache(async function getInfoData(type, id) {
 
     return data;
   } catch (e) {
-    console.error("Failed to fetch info data:", e);
     return null;
   }
 });

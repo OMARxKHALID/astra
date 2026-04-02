@@ -14,17 +14,23 @@ export default function useSidebar() {
   const dragStartX = useRef(0);
   const dragStartW = useRef(0);
   const isDragging = useRef(false);
+  const containerRef = useRef(null);
 
   const rafId = useRef(null);
   const latestX = useRef(0);
+  const currentWidthRef = useRef(350);
 
   // Load saved width
   useEffect(() => {
     const saved = ls.get(LS_KEYS.sidebarWidth);
-    if (saved) setSidebarWidth(parseInt(saved, 10));
+    if (saved) {
+      const val = parseInt(saved, 10);
+      setSidebarWidth(val);
+      currentWidthRef.current = val;
+    }
   }, []);
 
-  // Persist width
+  // Persist width only once when React state changes (at the end of drag)
   useEffect(() => {
     ls.set(LS_KEYS.sidebarWidth, sidebarWidth.toString());
   }, [sidebarWidth]);
@@ -36,16 +42,20 @@ export default function useSidebar() {
       Math.min(dragStartW.current + delta, MAX_WIDTH)
     );
 
-    setSidebarWidth(next);
+    // [Note] Butter Smooth Resizing: directly update the DOM property 
+    // to bypass the React re-render cycle during rapid mouse moves.
+    if (containerRef.current) {
+      containerRef.current.style.setProperty("--sidebar-width", `${next}px`);
+    }
+    
+    currentWidthRef.current = next;
     rafId.current = null;
   }, []);
 
   const onMouseMove = useCallback((e) => {
     if (!isDragging.current) return;
-
     latestX.current = e.clientX;
 
-    // throttle using RAF
     if (rafId.current === null) {
       rafId.current = requestAnimationFrame(updateWidth);
     }
@@ -56,6 +66,9 @@ export default function useSidebar() {
 
     isDragging.current = false;
     setIsResizing(false);
+
+    // Commit the final width to React state to ensure persistence and consistency
+    setSidebarWidth(currentWidthRef.current);
 
     document.body.style.cursor = "";
     document.body.style.userSelect = "";
@@ -74,12 +87,12 @@ export default function useSidebar() {
       setIsResizing(true);
 
       dragStartX.current = e.clientX;
-      dragStartW.current = sidebarWidth;
+      dragStartW.current = currentWidthRef.current;
 
       document.body.style.cursor = "col-resize";
       document.body.style.userSelect = "none";
     },
-    [sidebarWidth],
+    [],
   );
 
   useEffect(() => {
@@ -98,5 +111,6 @@ export default function useSidebar() {
     sidebarWidth,
     isResizing,
     onDragStart,
+    containerRef,
   };
 }

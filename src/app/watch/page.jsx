@@ -235,16 +235,13 @@ function WatchContent() {
         <div className="flex items-stretch border border-amber/20 rounded-[var(--radius-pill)] bg-amber/5 backdrop-blur-xl transition-all shadow-2xl hover:border-amber/40 hover:bg-amber/10 shrink-0">
           <button
             disabled={creating}
-            onClick={async () => {
-              setCreating(true);
-              try {
-                const { roomId } = await createRoom(url);
-                router.push(
-                  `/room/${roomId}?url=${encodeURIComponent(url)}&tmdb=${tmdbId}&type=${type}`,
-                );
-              } catch {
-                setCreating(false);
-              }
+            onClick={() => {
+              // [Note] Instant Sync: Navigate immediately with a client-generated ID
+              // to eliminate the perceived delay of the API network roundtrip.
+              const { roomId } = createRoom(url);
+              router.push(
+                `/room/${roomId}?url=${encodeURIComponent(url)}&tmdb=${tmdbId}&type=${type}`,
+              );
             }}
             className="flex items-center justify-center gap-2 px-3 sm:px-5 h-9 text-amber cursor-pointer font-body text-[12px] font-black transition-all active:scale-[0.98] disabled:opacity-50 rounded-l-[var(--radius-pill)]"
           >
@@ -262,7 +259,11 @@ function WatchContent() {
           >
             <button
               onClick={() => setCloudOpen(!cloudOpen)}
-              className="px-3 sm:px-3.5 h-9 text-amber cursor-pointer font-body hover:bg-white/10 transition-all active:scale-[0.98] flex items-center justify-center border-r border-amber/10"
+              className={`px-3 sm:px-3.5 h-9 text-amber cursor-pointer font-body hover:bg-white/10 transition-all active:scale-[0.98] flex items-center justify-center ${
+                !isActiveTv
+                  ? "rounded-r-[var(--radius-pill)]"
+                  : "border-r border-amber/10"
+              }`}
               title="Change Server"
             >
               <Cloud className="w-4 h-4" strokeWidth={2.5} />
@@ -283,33 +284,51 @@ function WatchContent() {
             )}
 
             {cloudOpen && (
-              <div className="absolute top-full right-0 mt-3 w-[160px] p-1.5 flex flex-col gap-0.5 rounded-xl border border-white/10 glass-card bg-void/90 backdrop-blur-xl shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
-                <div className="px-2 py-1 mb-1 text-[8px] font-black text-[var(--color-muted)] uppercase tracking-wider font-mono">
-                  Select Provider
+              <div className="absolute top-full right-0 mt-3 w-52 p-2 flex flex-col gap-1 rounded-2xl border border-white/5 glass-card bg-void/90 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                <div className="px-3 py-2 border-b border-white/5 mb-1 flex items-center justify-between">
+                  <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] font-mono">
+                    Select Server
+                  </span>
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber/20" />
                 </div>
-                {serverOptions.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => {
-                      const newUrl = buildEmbedUrl(
-                        opt.value,
-                        activeTmdbId,
-                        isActiveTv ? "tv" : "movie",
-                        activeS,
-                        activeE,
-                      );
-                      setCloudOpen(false);
-                      if (newUrl) {
-                        router.replace(
-                          `/watch?url=${encodeURIComponent(newUrl)}&tmdb=${activeTmdbId}&type=${isActiveTv ? "tv" : "movie"}&s=${activeS}&e=${activeE}`,
-                        );
-                      }
-                    }}
-                    className="w-full text-left px-3 py-2.5 rounded-md text-[10px] font-bold tracking-wide transition-colors flex items-center justify-between text-white/70 hover:bg-white/10 hover:text-white"
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+
+                <div className="flex flex-col gap-0.5">
+                  {serverOptions.map((opt) => {
+                    const isActive = opt.value === detectServer(url);
+                    return (
+                      <button
+                        key={opt.value}
+                        onClick={() => {
+                          const newUrl = buildEmbedUrl(
+                            opt.value,
+                            activeTmdbId,
+                            isActiveTv ? "tv" : "movie",
+                            activeS,
+                            activeE,
+                          );
+                          setCloudOpen(false);
+                          if (newUrl) {
+                            router.replace(
+                              `/watch?url=${encodeURIComponent(newUrl)}&tmdb=${activeTmdbId}&type=${isActiveTv ? "tv" : "movie"}&s=${activeS}&e=${activeE}`,
+                            );
+                          }
+                        }}
+                        className={`w-full text-left px-3 py-2.5 rounded-xl text-[10px] font-bold tracking-wide transition-all flex items-center justify-between group ${
+                          isActive
+                            ? "bg-amber/15 text-white border border-amber/20 shadow-inner ring-1 ring-amber/10"
+                            : "text-white/60 hover:bg-white/10 hover:text-white border border-transparent"
+                        }`}
+                      >
+                        <span className="truncate">{opt.label}</span>
+                        {isActive ? (
+                          <div className="w-1.5 h-1.5 rounded-full bg-amber shadow-[0_0_8px_rgba(245,158,11,0.8)] animate-pulse" />
+                        ) : (
+                          <div className="w-1 h-1 rounded-full bg-white/5 group-hover:bg-white/20 transition-colors" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -344,9 +363,5 @@ function WatchContent() {
 }
 
 export default function WatchPage() {
-  return (
-    <Suspense fallback={<Loading />}>
-      <WatchContent />
-    </Suspense>
-  );
+  return <WatchContent />;
 }

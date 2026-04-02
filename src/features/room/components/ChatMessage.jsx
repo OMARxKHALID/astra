@@ -1,4 +1,5 @@
-import { memo } from "react";
+import { memo, useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { SYSTEM_ICONS } from "../roomMaps";
 import { VoiceNote } from "./VoiceNote";
 
@@ -10,10 +11,32 @@ function ChatMessageInner({
   currentUserId,
 }) {
   const REACTION_EMOJIS = ["❤️", "😂", "🔥", "👍", "😮"];
+  const msgRef = useRef(null);
+  const [isHovered, setIsHovered] = useState(false);
+  const [rect, setRect] = useState(null);
+
+  // [Note] Coordinate Sync: Ensure the portal-based picker hides or repositions 
+  // during scroll to maintain the 'stuck-to-bubble' illusion.
+  useEffect(() => {
+    if (!isHovered) return;
+    const hideOnScroll = () => setIsHovered(false);
+    window.addEventListener("scroll", hideOnScroll, true);
+    return () => window.removeEventListener("scroll", hideOnScroll, true);
+  }, [isHovered]);
+
+  const handleMouseEnter = () => {
+    if (!msgRef.current) return;
+    setRect(msgRef.current.getBoundingClientRect());
+    setIsHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+  };
 
   const renderTextWithMentions = (text) => {
     if (!text) return null;
-    const parts = text.split(/(@\w+)/g);
+    const parts = text.split(/(@[\w-]+)/g);
     return parts.map((part, i) => {
       if (part.startsWith("@")) {
         return (
@@ -73,50 +96,66 @@ function ChatMessageInner({
 
   return (
     <div
-      className={`flex ${isOwn ? "flex-row-reverse" : "flex-row"} gap-2 group relative hover:z-50`}
+      ref={msgRef}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className={`flex ${isOwn ? "flex-row-reverse" : "flex-row"} gap-2 group relative animate-[messageIn_0.35s_cubic-bezier(0.23,1,0.32,1)]`}
     >
-      {/* [Note] Reaction Picker: Tactical bar with chiselled radii for high-density space */}
-      <div
-        className={`absolute -top-7 ${isOwn ? "right-0" : "left-0"} opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 flex items-center gap-1 p-1 glass-card rounded-xl shadow-2xl pointer-events-none group-hover:pointer-events-auto scale-90 group-hover:scale-100 origin-bottom border-white/10`}
-      >
-        {REACTION_EMOJIS.map((emoji) => (
-          <button
-            key={emoji}
-            type="button"
-            onClick={() => onReaction?.(emoji)}
-            className="w-5 h-5 flex items-center justify-center text-xs hover:scale-125 transition-transform active:scale-90 opacity-70 hover:opacity-100"
-          >
-            {emoji}
-          </button>
-        ))}
-      </div>
-      <div className={`shrink-0 mt-0.5 ${isOwn ? "order-2" : "order-1"}`}>
+      {/* [Note] Border-Proof Portal: Bypasses header/overflow boundaries. Uses fixed 
+          positioning synced to the bubble's viewport coordinates. */}
+      {isHovered && rect && typeof document !== "undefined" && createPortal(
+        <div
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          className="fixed flex items-center gap-1 p-1 bg-void/60 backdrop-blur-xl rounded-xl shadow-[0_30px_90px_rgba(0,0,0,0.6)] z-[999] animate-in fade-in zoom-in-95 duration-200 border border-white/5"
+          style={{
+            top: `${rect.top - 28}px`,
+            left: isOwn ? `${rect.right - 100}px` : `${rect.left + 30}px`,
+          }}
+        >
+          {REACTION_EMOJIS.map((emoji) => (
+            <button
+              key={emoji}
+              type="button"
+              onClick={() => {
+                onReaction?.(emoji);
+                setIsHovered(false);
+              }}
+              className="w-5 h-5 flex items-center justify-center text-[13px] hover:scale-125 transition-transform active:scale-90"
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+      <div className={`shrink-0 mt-0.5 transition-transform duration-300 group-hover:scale-110 ${isOwn ? "order-2" : "order-1"}`}>
         <img
           src={`https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(name)}`}
           alt={name}
-          className="w-6 h-6 object-contain rounded-xl bg-white/10 p-1 border border-white/10"
+          className="w-5 h-5 object-contain rounded-[var(--radius-pill)] bg-white/10 p-1 border border-white/10 shadow-sm"
           loading="lazy"
         />
       </div>
       <div
-        className={`flex flex-col gap-1 max-w-[85%] sm:max-w-[75%] ${isOwn ? "items-end order-1" : "items-start order-2"}`}
+        className={`flex flex-col gap-0.5 max-w-[90%] sm:max-w-[82%] transition-all duration-300 ${isOwn ? "items-end order-1" : "items-start order-2"}`}
       >
         {!isOwn && (
-          <div className="flex items-center gap-1.5 px-0.5 mb-px opacity-60">
-            <span className="text-[11px] font-bold text-white/50">{name}</span>
-            <span className="text-[10px] font-mono text-white/50">{time}</span>
+          <div className="flex items-center gap-1.5 px-0.5 mb-px opacity-50 group-hover:opacity-100 transition-opacity">
+            <span className="text-[10px] font-bold text-white/90 uppercase tracking-wider">{name}</span>
+            <span className="text-[9px] font-mono text-white/40">{time}</span>
           </div>
         )}
 
         {msg.dataUrl && (
-          <div className={msg.text ? "mb-1" : ""}>
+          <div className={`${msg.text ? "mb-1" : ""} transition-transform duration-300 group-hover:scale-[1.01]`}>
             {isAudio ? (
               <VoiceNote src={msg.dataUrl} isOwn={isOwn} />
             ) : (
               <img
                 src={msg.dataUrl}
                 alt="Screenshot"
-                className="max-w-[220px] rounded-2xl border shadow-lg"
+                className="max-w-full rounded-[var(--radius-panel)] border shadow-lg"
                 style={{ borderColor: "var(--color-border)" }}
               />
             )}
@@ -124,11 +163,11 @@ function ChatMessageInner({
         )}
         {msg.text && (
           <div
-            className={`px-3 py-1.5 rounded-2xl text-[13.5px] font-mono leading-snug break-words shadow-sm relative border
+            className={`px-3 py-1.5 rounded-[var(--radius-pill)] text-[13px] font-mono leading-tight break-words shadow-sm relative border transition-all duration-300 group-hover:shadow-lg
               ${
                 isOwn
-                  ? "bg-amber text-void font-bold border-amber/40"
-                  : "bg-white/5 text-white/90 shadow-sm border-white/10 backdrop-blur-md"
+                  ? "bg-amber text-void font-bold border-amber/40 group-hover:border-amber/60 group-hover:brightness-105"
+                  : "bg-white/5 text-white/90 shadow-sm border-white/10 backdrop-blur-md group-hover:bg-white/10 group-hover:border-white/20"
               }`}
           >
             {isOwn ? msg.text : renderTextWithMentions(msg.text)}
@@ -137,7 +176,7 @@ function ChatMessageInner({
 
         {msg.reactions && Object.keys(msg.reactions).length > 0 && (
           <div
-            className={`flex flex-wrap gap-1 mt-1 ${isOwn ? "justify-end" : "justify-start"}`}
+            className={`flex flex-wrap gap-1 mt-0.5 animate-[fadeIn_0.5s_ease-out] ${isOwn ? "justify-end" : "justify-start"}`}
           >
             {Object.entries(msg.reactions).map(([emoji, users]) => {
               const hasReacted = users.includes(currentUserId);
@@ -146,16 +185,16 @@ function ChatMessageInner({
                   key={emoji}
                   type="button"
                   onClick={() => onReaction?.(emoji)}
-                  className={`flex items-center gap-1 px-2 py-0.5 rounded-lg border transition-all duration-300
+                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded-[var(--radius-pill)] border transition-all duration-300 hover:scale-105 active:scale-95
                     ${
                       hasReacted
-                        ? "bg-amber/15 border-amber/40 text-amber shadow-sm scale-105 font-bold"
+                        ? "bg-amber/15 border-amber/40 text-amber shadow-[0_0_12px_rgba(var(--color-amber-rgb),0.1)] font-bold"
                         : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"
                     }`}
                 >
                   <span className="text-[10px] leading-none">{emoji}</span>
                   {users.length > 0 && (
-                    <span className="text-[10px] font-mono opacity-80 leading-none">{users.length}</span>
+                    <span className="text-[9px] font-mono opacity-80 leading-none">{users.length}</span>
                   )}
                 </button>
               );
@@ -164,7 +203,7 @@ function ChatMessageInner({
         )}
 
         {(isOwn || (!msg.text && msg.dataUrl)) && (
-          <span className="text-[10px] font-mono text-white/50 px-1 mt-0.5">
+          <span className="text-[9px] font-mono text-white/40 px-1 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             {time}
           </span>
         )}
