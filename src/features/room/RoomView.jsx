@@ -325,6 +325,7 @@ export default function RoomView({ roomId, initialMeta }) {
               }
               typingUsers={room.typingUsers}
               onTyping={() => sendRef.current?.({ type: "typing" })}
+              addToast={addToast}
             />
           </>
         }
@@ -376,6 +377,7 @@ export default function RoomView({ roomId, initialMeta }) {
         sendRef={sendRef}
         isHost={isHost}
         leaderTime={leaderTime}
+        addToast={addToast}
       />
       {mounted && (
         <SettingsPanel
@@ -462,6 +464,7 @@ export default function RoomView({ roomId, initialMeta }) {
               }
               typingUsers={room.typingUsers}
               onTyping={() => sendRef.current?.({ type: "typing" })}
+              addToast={addToast}
             />
           </div>,
           document.fullscreenElement,

@@ -19,6 +19,7 @@ export default function ChatSidebar({
   onReaction,
   typingUsers = {},
   onTyping,
+  addToast,
 }) {
   const [input, setInput] = useState("");
   const [showMentions, setShowMentions] = useState(false);
@@ -32,7 +33,7 @@ export default function ChatSidebar({
     startRecording,
     stopRecording,
     cancelRecording,
-  } = useRecord(onSend);
+  } = useRecord(onSend, (msg) => addToast?.(msg, "error"));
 
   const bottomRef = useRef(null);
   const atBottomRef = useRef(true);
@@ -152,7 +153,10 @@ export default function ChatSidebar({
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-3 animate-[fadeIn_0.8s_ease-out]">
             <div className="relative">
-              <ChatBubbleIcon className="w-9 h-9 text-white/5" strokeWidth={1} />
+              <ChatBubbleIcon
+                className="w-9 h-9 text-white/5"
+                strokeWidth={1}
+              />
               <div className="absolute inset-0 bg-amber/20 blur-xl rounded-full opacity-20" />
             </div>
             <p className="text-[11px] font-mono text-center max-w-[160px] leading-relaxed uppercase tracking-[0.25em] text-white/40">

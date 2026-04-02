@@ -3,20 +3,18 @@
 import { Mic, MicOff, Video, VideoOff, PhoneOff } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-export function CallGrid({ 
-  isJoined, 
+export function CallGrid({
+  isJoined,
   isJoining,
-  isCalling,
-  localStream, 
-  remoteStreams, 
+  localStream,
+  remoteStreams,
   remoteStatus,
-  displayNames, 
-  onJoin,
-  onLeave, 
-  onToggleMic, 
-  onToggleCam, 
-  micActive, 
-  camActive 
+  displayNames,
+  onLeave,
+  onToggleMic,
+  onToggleCam,
+  micActive,
+  camActive,
 }) {
   const [pos, setPos] = useState({ x: 16, y: 80 });
   const [isDragging, setIsDragging] = useState(false);
@@ -27,7 +25,12 @@ export function CallGrid({
     const clientX = e.type === "mousedown" ? e.clientX : e.touches[0].clientX;
     const clientY = e.type === "mousedown" ? e.clientY : e.touches[0].clientY;
     setIsDragging(true);
-    startRef.current = { x: clientX, y: clientY, initialX: pos.x, initialY: pos.y };
+    startRef.current = {
+      x: clientX,
+      y: clientY,
+      initialX: pos.x,
+      initialY: pos.y,
+    };
   };
 
   useEffect(() => {
@@ -65,46 +68,53 @@ export function CallGrid({
   if (!isJoined && !isJoining) return null;
 
   return (
-    <div 
+    <div
       ref={containerRef}
       className={`fixed z-50 flex flex-col gap-3 sm:gap-4 items-end pointer-events-none transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 ${isDragging ? "transition-none" : ""}`}
-      style={{ 
-        bottom: `${pos.y}px`, 
-        right: `${pos.x}px`, 
+      style={{
+        bottom: `${pos.y}px`,
+        right: `${pos.x}px`,
         transform: `scale(${isDragging ? 1.02 : 1})`,
-        touchAction: 'none'
+        touchAction: "none",
       }}
     >
       <div className="flex flex-wrap justify-end gap-2 sm:gap-3 max-w-[95vw] sm:max-w-[800px] pointer-events-auto">
         {isJoined && (
-          <VideoCircle 
-            stream={localStream} 
-            name="You" 
-            isLocal 
-            micActive={micActive} 
-            camActive={camActive} 
+          <VideoCircle
+            stream={localStream}
+            name="You"
+            isLocal
+            micActive={micActive}
+            camActive={camActive}
           />
         )}
-        
+
         {Object.entries(remoteStreams).map(([uid, stream]) => (
-          <VideoCircle 
-            key={uid} 
-            stream={stream} 
-            name={displayNames[uid] || "Guest"} 
+          <VideoCircle
+            key={uid}
+            stream={stream}
+            name={displayNames[uid] || "Guest"}
             micActive={remoteStatus?.[uid]?.micActive !== false}
             camActive={remoteStatus?.[uid]?.camActive !== false}
           />
         ))}
       </div>
 
-      <div className={`glass-card p-1.5 sm:px-3 sm:py-2 flex items-center gap-1.5 sm:gap-2 pointer-events-auto shadow-2xl rounded-full border border-white/10 transition-all ${isDragging ? "ring-2 ring-amber/40 bg-white/10" : "bg-white/5"}`}>
-        <div 
+      <div
+        className={`glass-card p-1.5 sm:px-3 sm:py-2 flex items-center gap-1.5 sm:gap-2 pointer-events-auto shadow-2xl rounded-full border border-white/10 transition-all ${isDragging ? "ring-2 ring-amber/40 bg-white/10" : "bg-white/5"}`}
+      >
+        <div
           onMouseDown={handleStart}
           onTouchStart={handleStart}
           className="w-7 h-8 sm:w-8 sm:h-9 flex items-center justify-center text-white/10 hover:text-white/30 cursor-grab active:cursor-grabbing transition-colors"
         >
           <div className="flex flex-col gap-0.5">
-            {[0, 1, 2].map(i => <div key={i} className="w-2.5 sm:w-3 h-0.5 bg-current rounded-full" />)}
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="w-2.5 sm:w-3 h-0.5 bg-current rounded-full"
+              />
+            ))}
           </div>
         </div>
 
@@ -117,23 +127,23 @@ export function CallGrid({
           </button>
         ) : (
           <>
-            <ControlButton 
-              onClick={onToggleMic} 
-              active={micActive} 
-              Icon={micActive ? Mic : MicOff} 
-              color={micActive ? "text-white/80" : "text-danger"} 
+            <ControlButton
+              onClick={onToggleMic}
+              active={micActive}
+              Icon={micActive ? Mic : MicOff}
+              color={micActive ? "text-white/80" : "text-danger"}
             />
-            <ControlButton 
-              onClick={onToggleCam} 
-              active={camActive} 
-              Icon={camActive ? Video : VideoOff} 
-              color={camActive ? "text-white/80" : "text-danger"} 
+            <ControlButton
+              onClick={onToggleCam}
+              active={camActive}
+              Icon={camActive ? Video : VideoOff}
+              color={camActive ? "text-white/80" : "text-danger"}
             />
-            <button 
-              onClick={onLeave} 
+            <button
+              onClick={onLeave}
               className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-danger/20 hover:bg-danger/30 flex items-center justify-center text-danger transition-all shadow-lg active:scale-90"
             >
-              <PhoneOff className="w-3.5 h-3.5 sm:w-4 h-4" />
+              <PhoneOff className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
           </>
         )}
@@ -165,12 +175,12 @@ function VideoCircle({ stream, name, isLocal, micActive, camActive }) {
         muted={isLocal}
         className={`w-full h-full object-cover transition-all duration-700 ${isLocal ? "scale-x-[-1]" : ""} ${showFallback ? "opacity-0 blur-xl scale-110" : "opacity-100 blur-0 scale-100"}`}
       />
-      
+
       {showFallback && (
         <div className="absolute inset-0 flex items-center justify-center bg-void/40 animate-in fade-in zoom-in-95 duration-500">
-           <div className="w-8 h-8 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-amber/30 to-amber-600/10 flex items-center justify-center border border-amber/20 text-amber font-mono font-black text-sm sm:text-2xl shadow-[0_0_25px_rgba(var(--color-amber-rgb),0.2)]">
-             {name[0].toUpperCase()}
-           </div>
+          <div className="w-8 h-8 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-amber/30 to-amber-600/10 flex items-center justify-center border border-amber/20 text-amber font-mono font-black text-sm sm:text-2xl shadow-[0_0_25px_rgba(var(--color-amber-rgb),0.2)]">
+            {name[0].toUpperCase()}
+          </div>
         </div>
       )}
 
@@ -198,8 +208,12 @@ function ControlButton({ onClick, active, Icon, color }) {
       onClick={onClick}
       className={`relative w-8 h-8 sm:w-9 sm:h-9 rounded-full ${active ? "bg-white/5" : "bg-danger/10"} hover:bg-white/20 flex items-center justify-center transition-all active:scale-90 shadow-lg group shrink-0`}
     >
-      <Icon className={`w-3.5 h-3.5 sm:w-4 h-4 ${color} transition-transform group-hover:scale-110`} />
-      {!active && <div className="absolute inset-0 rounded-full ring-1 ring-danger/40 animate-pulse pointer-events-none" />}
+      <Icon
+        className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${color} transition-transform group-hover:scale-110`}
+      />
+      {!active && (
+        <div className="absolute inset-0 rounded-full ring-1 ring-danger/40 animate-pulse pointer-events-none" />
+      )}
     </button>
   );
 }

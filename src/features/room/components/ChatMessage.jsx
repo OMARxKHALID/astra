@@ -15,7 +15,7 @@ function ChatMessageInner({
   const [isHovered, setIsHovered] = useState(false);
   const [rect, setRect] = useState(null);
 
-  // [Note] Coordinate Sync: Ensure the portal-based picker hides or repositions 
+  // [Note] Coordinate Sync: Ensure the portal-based picker hides or repositions
   // during scroll to maintain the 'stuck-to-bubble' illusion.
   useEffect(() => {
     if (!isHovered) return;
@@ -77,14 +77,8 @@ function ChatMessageInner({
     }
     return (
       <div className="flex justify-center">
-        <div
-          className="px-3.5 py-1 rounded-xl border text-[11px] font-mono uppercase tracking-wide flex items-center gap-1.5"
-          style={{
-            backgroundColor: "var(--color-surface)",
-            borderColor: "var(--color-border)",
-            color: "text-white/60",
-          }}
-        >
+        {/* [Note] Use Tailwind classes for color — inline style color expects a CSS value, not a class string */}
+        <div className="px-3.5 py-1 rounded-xl border border-white/10 text-[11px] font-mono uppercase tracking-wide flex items-center gap-1.5 bg-surface text-white/60">
           {icon}
           {text}
         </div>
@@ -101,35 +95,40 @@ function ChatMessageInner({
       onMouseLeave={handleMouseLeave}
       className={`flex ${isOwn ? "flex-row-reverse" : "flex-row"} gap-2 group relative animate-[messageIn_0.35s_cubic-bezier(0.23,1,0.32,1)]`}
     >
-      {/* [Note] Border-Proof Portal: Bypasses header/overflow boundaries. Uses fixed 
+      {/* [Note] Border-Proof Portal: Bypasses header/overflow boundaries. Uses fixed
           positioning synced to the bubble's viewport coordinates. */}
-      {isHovered && rect && typeof document !== "undefined" && createPortal(
-        <div
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          className="fixed flex items-center gap-1 p-1 bg-void/60 backdrop-blur-xl rounded-xl shadow-[0_30px_90px_rgba(0,0,0,0.6)] z-[999] animate-in fade-in zoom-in-95 duration-200 border border-white/5"
-          style={{
-            top: `${rect.top - 28}px`,
-            left: isOwn ? `${rect.right - 100}px` : `${rect.left + 30}px`,
-          }}
-        >
-          {REACTION_EMOJIS.map((emoji) => (
-            <button
-              key={emoji}
-              type="button"
-              onClick={() => {
-                onReaction?.(emoji);
-                setIsHovered(false);
-              }}
-              className="w-5 h-5 flex items-center justify-center text-[13px] hover:scale-125 transition-transform active:scale-90"
-            >
-              {emoji}
-            </button>
-          ))}
-        </div>,
-        document.body
-      )}
-      <div className={`shrink-0 mt-0.5 transition-transform duration-300 group-hover:scale-110 ${isOwn ? "order-2" : "order-1"}`}>
+      {isHovered &&
+        rect &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            className="fixed flex items-center gap-1 p-1 bg-void/60 backdrop-blur-xl rounded-xl shadow-[0_30px_90px_rgba(0,0,0,0.6)] z-[999] animate-in fade-in zoom-in-95 duration-200 border border-white/5"
+            style={{
+              top: `${rect.top - 28}px`,
+              left: isOwn ? `${rect.right - 100}px` : `${rect.left + 30}px`,
+            }}
+          >
+            {REACTION_EMOJIS.map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => {
+                  onReaction?.(emoji);
+                  setIsHovered(false);
+                }}
+                className="w-5 h-5 flex items-center justify-center text-[13px] hover:scale-125 transition-transform active:scale-90"
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>,
+          document.body,
+        )}
+      <div
+        className={`shrink-0 mt-0.5 transition-transform duration-300 group-hover:scale-110 ${isOwn ? "order-2" : "order-1"}`}
+      >
         <img
           src={`https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(name)}`}
           alt={name}
@@ -142,13 +141,17 @@ function ChatMessageInner({
       >
         {!isOwn && (
           <div className="flex items-center gap-1.5 px-0.5 mb-px opacity-50 group-hover:opacity-100 transition-opacity">
-            <span className="text-[10px] font-bold text-white/90 uppercase tracking-wider">{name}</span>
+            <span className="text-[10px] font-bold text-white/90 uppercase tracking-wider">
+              {name}
+            </span>
             <span className="text-[9px] font-mono text-white/40">{time}</span>
           </div>
         )}
 
         {msg.dataUrl && (
-          <div className={`${msg.text ? "mb-1" : ""} transition-transform duration-300 group-hover:scale-[1.01]`}>
+          <div
+            className={`${msg.text ? "mb-1" : ""} transition-transform duration-300 group-hover:scale-[1.01]`}
+          >
             {isAudio ? (
               <VoiceNote src={msg.dataUrl} isOwn={isOwn} />
             ) : (
@@ -194,7 +197,9 @@ function ChatMessageInner({
                 >
                   <span className="text-[10px] leading-none">{emoji}</span>
                   {users.length > 0 && (
-                    <span className="text-[9px] font-mono opacity-80 leading-none">{users.length}</span>
+                    <span className="text-[9px] font-mono opacity-80 leading-none">
+                      {users.length}
+                    </span>
                   )}
                 </button>
               );

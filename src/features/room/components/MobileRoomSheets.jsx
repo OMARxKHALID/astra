@@ -8,6 +8,7 @@ export function MobileRoomSheets({
   sendRef,
   isHost,
   leaderTime,
+  addToast,
 }) {
   if (!room.mobileSheet) return null;
 
@@ -40,6 +41,7 @@ export function MobileRoomSheets({
               }
               typingUsers={room.typingUsers}
               onTyping={() => sendRef.current?.({ type: "typing" })}
+              addToast={addToast}
             />
           ) : (
             <UserList

@@ -6,6 +6,7 @@ export function VoiceNote({ src, isOwn }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
   const togglePlay = () => {
     if (!audioRef.current) return;
@@ -22,6 +23,13 @@ export function VoiceNote({ src, isOwn }) {
     }
   };
 
+  const handleLoadedMetadata = () => {
+    const aud = audioRef.current;
+    if (aud && aud.duration && aud.duration !== Infinity) {
+      setDuration(aud.duration);
+    }
+  };
+
   const handleSeek = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const pos = (e.clientX - rect.left) / rect.width;
@@ -33,11 +41,14 @@ export function VoiceNote({ src, isOwn }) {
   };
 
   const formatTime = (t) => {
-    if (!t || isNaN(t)) return "0:00";
+    if (!t || isNaN(t) || t === Infinity) return "0:00";
     return `${Math.floor(t / 60)}:${Math.floor(t % 60)
       .toString()
       .padStart(2, "0")}`;
   };
+
+  // [Note] Show current time while playing, total duration when idle — mirrors native voice note UX
+  const displayTime = isPlaying || currentTime > 0 ? currentTime : duration;
 
   return (
     <div
@@ -75,7 +86,7 @@ export function VoiceNote({ src, isOwn }) {
       </div>
 
       <span className="text-[9px] font-mono tracking-wide shrink-0 font-medium">
-        {formatTime(currentTime)}
+        {formatTime(displayTime)}
       </span>
 
       <audio
@@ -84,9 +95,11 @@ export function VoiceNote({ src, isOwn }) {
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
         onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
         onEnded={() => {
           setIsPlaying(false);
           setProgress(0);
+          setCurrentTime(0);
           if (audioRef.current) audioRef.current.currentTime = 0;
         }}
       />

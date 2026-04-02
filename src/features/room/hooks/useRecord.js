@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 
-export function useRecord(onSend) {
+export function useRecord(onSend, onError) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioLevel, setAudioLevel] = useState(0);
@@ -12,9 +12,14 @@ export function useRecord(onSend) {
   const analyserRef = useRef(null);
   const animFrameRef = useRef(null);
   const isCancelledRef = useRef(false);
+  // [Note] Stable ref to stopRecording — avoids re-creating the interval closure on each render
+  const stopRecordingRef = useRef(null);
 
   const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state !== "inactive"
+    ) {
       mediaRecorderRef.current.stop();
     }
     clearInterval(recordingIntervalRef.current);
@@ -32,6 +37,9 @@ export function useRecord(onSend) {
     setAudioLevel(0);
   }, []);
 
+  // [Note] Keep ref in sync so the interval closure can call stopRecording without stale capture
+  stopRecordingRef.current = stopRecording;
+
   const cancelRecording = useCallback(() => {
     isCancelledRef.current = true;
     stopRecording();
@@ -40,19 +48,21 @@ export function useRecord(onSend) {
   const startRecording = useCallback(async () => {
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        alert("Microphone access is blocked by your browser on insecure HTTP connections. Please test this feature from your PC (localhost) or use a secure HTTPS tunnel like Ngrok.");
+        onError?.(
+          "Microphone unavailable. Use HTTPS or localhost to enable recording.",
+        );
         return;
       }
 
-      // Set up AudioContext synchronously on click to bypass mobile gesture limits
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       const audioCtx = new AudioCtx();
+      // [Note] Resume AudioContext synchronously on click to bypass mobile gesture limits
       if (audioCtx.state === "suspended") audioCtx.resume();
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       isCancelledRef.current = false;
 
-      // [Bugfix] Android Chrome Web Audio API Pump Hack
+      // [Note] Android Chrome Web Audio API pump hack — keeps the AudioContext graph alive
       const pumpAudio = new Audio();
       pumpAudio.muted = true;
       pumpAudio.srcObject = stream;
@@ -67,7 +77,7 @@ export function useRecord(onSend) {
       const source = audioCtx.createMediaStreamSource(stream);
       source.connect(analyser);
 
-      // Force Chrome to actually process the audio by terminating to a dummy stream destination
+      // [Note] Terminate to dummy destination so Chrome processes the graph and updates frequency data
       const dummyDestination = audioCtx.createMediaStreamDestination();
       analyser.connect(dummyDestination);
       analyser.fftSize = 256;
@@ -88,36 +98,42 @@ export function useRecord(onSend) {
       };
 
       mediaRecorder.onstop = () => {
-        if (isCancelledRef.current) {
-          stream.getTracks().forEach((track) => track.stop());
-          return;
-        }
-        const blob = new Blob(audioChunksRef.current, { type: "audio/webm;codecs=opus" });
+        stream.getTracks().forEach((track) => track.stop());
+        if (isCancelledRef.current) return;
+        const blob = new Blob(audioChunksRef.current, {
+          type: "audio/webm;codecs=opus",
+        });
         const reader = new FileReader();
         reader.readAsDataURL(blob);
         reader.onloadend = () => {
           onSend("", reader.result);
         };
-        stream.getTracks().forEach((track) => track.stop());
       };
 
       mediaRecorder.start();
       setIsRecording(true);
       setRecordingTime(0);
 
+      // [Note] Auto-stop at 60s: use ref-based call outside setState to avoid calling
+      // stopRecording() as a side effect inside the state updater (React strict mode violation)
       recordingIntervalRef.current = setInterval(() => {
         setRecordingTime((prev) => {
-          if (prev >= 59) {
-            stopRecording();
+          const next = prev + 1;
+          if (next >= 60) {
+            // [Note] Defer to next microtask — stopRecording must not be called inside setState
+            setTimeout(() => stopRecordingRef.current?.(), 0);
             return 60;
           }
-          return prev + 1;
+          return next;
         });
       }, 1000);
     } catch (err) {
       console.error("Microphone access denied:", err);
+      onError?.(
+        "Microphone access denied. Please check your browser permissions.",
+      );
     }
-  }, [onSend, stopRecording]);
+  }, [onSend, onError]);
 
   useEffect(() => {
     return () => {
@@ -126,7 +142,11 @@ export function useRecord(onSend) {
       if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
         audioCtxRef.current.close().catch(() => {});
       }
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      if (
+        mediaRecorderRef.current &&
+        mediaRecorderRef.current.state !== "inactive"
+      ) {
+        isCancelledRef.current = true;
         mediaRecorderRef.current.stop();
       }
     };

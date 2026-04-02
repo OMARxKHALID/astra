@@ -23,6 +23,9 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
   const pcRef = useRef({});
   const iceQueuesRef = useRef({});
   const localStreamRef = useRef(null);
+  // [Note] pcRoleRef tracks whether we are 'caller' (sent offer) or 'callee' (received offer) per peer.
+  // This prevents initiateCall from re-offering on callee PCs, which causes m-line order mismatch.
+  const pcRoleRef = useRef({});
   // [Note] Stable refs mirror isJoined/isJoining state — prevents stale closures in socket event handlers
   const isJoinedRef = useRef(false);
   const isJoiningRef = useRef(false);
@@ -40,6 +43,7 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
       Object.values(pcRef.current).forEach((pc) => {
         pc.onicecandidate = null;
         pc.ontrack = null;
+        pc.onconnectionstatechange = null;
         pc.close();
       });
     };
@@ -84,6 +88,19 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
     }
   }, [broadcastStatus]);
 
+  const cleanupPC = useCallback((targetUserId) => {
+    const pc = pcRef.current[targetUserId];
+    if (pc) {
+      pc.onicecandidate = null;
+      pc.ontrack = null;
+      pc.onconnectionstatechange = null;
+      pc.close();
+      delete pcRef.current[targetUserId];
+    }
+    delete iceQueuesRef.current[targetUserId];
+    delete pcRoleRef.current[targetUserId];
+  }, []);
+
   const getOrCreatePC = useCallback(
     (targetUserId) => {
       if (pcRef.current[targetUserId]) return pcRef.current[targetUserId];
@@ -94,6 +111,7 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
 
       const stream = localStreamRef.current;
       if (stream) {
+        // [Note] Sort tracks by kind (audio < video) to guarantee a stable m-line order across all PCs
         stream
           .getTracks()
           .sort((a, b) => a.kind.localeCompare(b.kind))
@@ -113,7 +131,8 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
         setRemoteStreams((prev) => ({ ...prev, [targetUserId]: e.streams[0] }));
       };
 
-      // [Note] Auto-cleanup failed/disconnected peer streams from the grid
+      // [Note] Full PC cleanup on failure/disconnect so getOrCreatePC builds a fresh one on reconnect,
+      // preventing the InvalidAccessError caused by reusing a PC with locked m-line order.
       pc.onconnectionstatechange = () => {
         if (["failed", "closed", "disconnected"].includes(pc.connectionState)) {
           setRemoteStreams((prev) => {
@@ -121,6 +140,9 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
             delete next[targetUserId];
             return next;
           });
+          delete pcRef.current[targetUserId];
+          delete iceQueuesRef.current[targetUserId];
+          delete pcRoleRef.current[targetUserId];
         }
       };
 
@@ -133,6 +155,8 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
     async (targetUserId) => {
       const pc = getOrCreatePC(targetUserId);
       if (pc.signalingState !== "stable") return;
+      // [Note] Mark as caller so the localStream useEffect does not re-offer on callee PCs
+      pcRoleRef.current[targetUserId] = "caller";
       try {
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
@@ -192,14 +216,12 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
     setLocalStream(null);
     setIsJoined(false);
     isJoinedRef.current = false;
-    Object.values(pcRef.current).forEach((pc) => pc.close());
-    pcRef.current = {};
-    iceQueuesRef.current = {};
+    Object.keys(pcRef.current).forEach((uid) => cleanupPC(uid));
     setRemoteStreams({});
     setRemoteStatus({});
     setActiveCallers(new Set());
     socketRef.current?.emit("CALL:leave", roomId);
-  }, [roomId, socketRef]);
+  }, [roomId, socketRef, cleanupPC]);
 
   const handleOffer = useCallback(
     async ({ from, offer }) => {
@@ -208,6 +230,10 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
       const isPolite = userId < from;
       const collision = pc.signalingState !== "stable";
       if (collision && !isPolite) return;
+
+      // [Note] Mark as callee so the localStream useEffect never calls initiateCall on this PC,
+      // which would generate an offer whose m-line order may not match the established answer.
+      pcRoleRef.current[from] = "callee";
 
       try {
         if (collision) {
@@ -264,7 +290,9 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
     }
   }, []);
 
-  // [Note] Track injection: inject local tracks into PCs created before media was acquired, then re-negotiate
+  // [Note] Track injection: inject local tracks into PCs created before media was acquired.
+  // Only re-negotiate for 'caller' role PCs — callee PCs must not re-offer because their
+  // m-line order is already locked by the remote peer's original offer.
   useEffect(() => {
     if (!localStream) return;
     Object.entries(pcRef.current).forEach(([uid, pc]) => {
@@ -277,7 +305,9 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
             pc.addTrack(track, localStream);
           }
         });
-      initiateCall(uid);
+      if (pcRoleRef.current[uid] !== "callee") {
+        initiateCall(uid);
+      }
     });
   }, [localStream, initiateCall]);
 
@@ -334,17 +364,13 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
             delete next[uid];
             return next;
           });
-          if (pcRef.current[uid]) {
-            pcRef.current[uid].close();
-            delete pcRef.current[uid];
-            delete iceQueuesRef.current[uid];
-          }
+          cleanupPC(uid);
           break;
         }
       }
       // [Note] isJoined/isJoining intentionally excluded from deps — read via stable refs to prevent handler churn
     },
-    [initiateCall, handleOffer, handleAnswer, handleIce],
+    [initiateCall, handleOffer, handleAnswer, handleIce, cleanupPC],
   );
 
   return {
