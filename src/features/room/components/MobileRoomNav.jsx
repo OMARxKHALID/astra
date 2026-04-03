@@ -1,7 +1,7 @@
 import React from "react";
 import { MessageSquare as ChatIcon, Users as UsersIcon, Video as VideoIcon } from "lucide-react";
 
-export function MobileRoomNav({ room, isTheatre, isFullscreen, isCallJoined, isCalling, onToggleCall }) {
+export function MobileRoomNav({ room, isTheatre, isFullscreen, isCallJoined, isCalling, onToggleCall, inCallCount = 0 }) {
   if (isFullscreen || isTheatre) return null;
 
   return (
@@ -38,9 +38,16 @@ export function MobileRoomNav({ room, isTheatre, isFullscreen, isCallJoined, isC
         }}
       />
       <MobileTabBtn
-        label={`People (${room.participants.length})`}
+        label={`People${inCallCount > 0 ? ` (${inCallCount}🎥)` : ""}`}
         active={room.mobileSheet === "users"}
-        icon={<UsersIcon className="w-5 h-5" />}
+        icon={
+          <div className="relative">
+            <UsersIcon className="w-5 h-5" />
+            {inCallCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-2 h-2 bg-jade rounded-full border-2 border-void" />
+            )}
+          </div>
+        }
         onClick={() =>
           room.setMobileSheet(room.mobileSheet === "users" ? null : "users")
         }

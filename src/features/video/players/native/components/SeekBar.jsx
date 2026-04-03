@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { formatTime } from "../../../utils";
 
 export default function SeekBar({
@@ -14,17 +15,25 @@ export default function SeekBar({
   canControl,
 }) {
   const progressPct = duration > 0 ? (localTime / duration) * 100 : 0;
+  const barRef = useRef(null);
+  const rectCacheRef = useRef({ width: 1, left: 0 });
 
-  // [Note] onTouchMove synthesizes a seek-change event from the touch X position,
-  // enabling real-time seek scrubbing on mobile where mousemove doesn't fire.
+  useEffect(() => {
+    if (!barRef.current) return;
+    const rect = barRef.current.getBoundingClientRect();
+    rectCacheRef.current = { width: rect.width, left: rect.left };
+    const ro = new ResizeObserver((entries) => {
+      rectCacheRef.current = entries[0].contentRect;
+    });
+    ro.observe(barRef.current);
+    return () => ro.disconnect();
+  }, []);
+
   const handleTouchMove = (e) => {
     if (!canControl || !duration) return;
     const touch = e.touches[0];
-    const rect = e.currentTarget.getBoundingClientRect();
-    const ratio = Math.max(
-      0,
-      Math.min(1, (touch.clientX - rect.left) / rect.width),
-    );
+    const { width, left } = rectCacheRef.current;
+    const ratio = Math.max(0, Math.min(1, (touch.clientX - left) / width));
     const syntheticValue = ratio * duration;
     onSeekChange({ target: { value: syntheticValue } });
   };
@@ -32,11 +41,8 @@ export default function SeekBar({
   const handleTouchEnd = (e) => {
     if (!canControl || !duration) return;
     const touch = e.changedTouches[0];
-    const rect = e.currentTarget.getBoundingClientRect();
-    const ratio = Math.max(
-      0,
-      Math.min(1, (touch.clientX - rect.left) / rect.width),
-    );
+    const { width, left } = rectCacheRef.current;
+    const ratio = Math.max(0, Math.min(1, (touch.clientX - left) / width));
     const syntheticValue = ratio * duration;
     onSeekCommit({ target: { value: syntheticValue } });
   };
@@ -73,6 +79,7 @@ export default function SeekBar({
       )}
 
       <div
+        ref={barRef}
         className="relative h-1.5 bg-white/10 rounded-full hover:h-2 transition-all duration-150 cursor-pointer overflow-hidden"
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}

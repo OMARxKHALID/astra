@@ -196,7 +196,7 @@ export default function ChatSidebar({
         <div ref={bottomRef} className="h-1" />
       </div>
 
-      <div className="px-4 py-2.5 border-t border-white/10 shrink-0">
+      <div className="px-3 py-3 border-t border-white/10 shrink-0">
         <div className="relative">
           {/* [Note] Mention Picker: Tactical drop-up with refined 2xl curvature for high-density UI */}
           {showMentions && mentionList.length > 0 && (

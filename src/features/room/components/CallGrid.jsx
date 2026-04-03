@@ -21,8 +21,13 @@ export function CallGrid({
   const [isDragging, setIsDragging] = useState(false);
   const startRef = useRef({ x: 0, y: 0, initialX: 0, initialY: 0 });
   const containerRef = useRef(null);
+  const dimsRef = useRef({ width: 0, height: 0 });
 
   const handleStart = (e) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    dimsRef.current = { width: rect.width, height: rect.height };
+
     const clientX = e.type === "mousedown" ? e.clientX : e.touches[0].clientX;
     const clientY = e.type === "mousedown" ? e.clientY : e.touches[0].clientY;
     setIsDragging(true);
@@ -44,10 +49,10 @@ export function CallGrid({
       const dy = startRef.current.y - clientY;
       let newX = startRef.current.initialX + dx;
       let newY = startRef.current.initialY + dy;
-      const rect = containerRef.current.getBoundingClientRect();
+      const { width, height } = dimsRef.current;
       const safeMargin = 12;
-      const maxX = window.innerWidth - rect.width - safeMargin;
-      const maxY = window.innerHeight - rect.height - safeMargin;
+      const maxX = window.innerWidth - width - safeMargin;
+      const maxY = window.innerHeight - height - safeMargin;
       newX = Math.max(safeMargin, Math.min(newX, maxX));
       newY = Math.max(safeMargin, Math.min(newY, maxY));
       setPos({ x: newX, y: newY });

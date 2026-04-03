@@ -369,6 +369,8 @@ export default function RoomView({ roomId, initialMeta }) {
               displayNames={room.displayNames}
               tsMap={room.tsMapState}
               leaderTime={leaderTime}
+              inCallUsers={Object.keys(call.remoteStreams)}
+              remoteStatus={call.remoteStatus}
               onKick={(uid) =>
                 sendRef.current?.({ type: "kick", targetUserId: uid })
               }
@@ -387,6 +389,7 @@ export default function RoomView({ roomId, initialMeta }) {
         isCallJoined={call.isJoined}
         isCalling={call.isCalling}
         onToggleCall={call.isJoined ? call.leaveCall : call.joinCall}
+        inCallCount={Object.keys(call.remoteStreams).length + (call.isJoined ? 1 : 0)}
       />
       <MobileRoomSheets
         room={room}
@@ -395,6 +398,8 @@ export default function RoomView({ roomId, initialMeta }) {
         isHost={isHost}
         leaderTime={leaderTime}
         addToast={addToast}
+        inCallUsers={Object.keys(call.remoteStreams)}
+        remoteStatus={call.remoteStatus}
       />
       {mounted && (
         <SettingsPanel
@@ -413,6 +418,7 @@ export default function RoomView({ roomId, initialMeta }) {
           onSetPassword={(pw) =>
             sendRef.current?.({ type: "set_password", password: pw })
           }
+          identity={identity}
           {...settings}
         />
       )}

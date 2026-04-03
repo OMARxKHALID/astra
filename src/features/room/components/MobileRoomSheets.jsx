@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import ChatSidebar from "../ChatSidebar";
 import UserList from "../UserList";
 
@@ -9,11 +9,27 @@ export function MobileRoomSheets({
   isHost,
   leaderTime,
   addToast,
+  inCallUsers = [],
+  remoteStatus = {},
 }) {
-  // [Note] Swipe-to-dismiss: track vertical drag from the drag-handle so the sheet
-  // can be closed by pulling it down — mirrors native bottom-sheet UX on iOS/Android.
   const [dragY, setDragY] = useState(0);
   const dragStartRef = useRef(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const visualHeight = window.visualHeight || window.innerHeight;
+      const diff = window.innerHeight - visualHeight;
+      setKeyboardHeight(diff > 0 ? diff : 0);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("visualviewport", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("visualviewport", handleResize);
+    };
+  }, []);
 
   const handleDragStart = (e) => {
     dragStartRef.current = e.touches[0].clientY;
@@ -36,6 +52,10 @@ export function MobileRoomSheets({
 
   if (!room.mobileSheet) return null;
 
+  const sheetHeight = keyboardHeight > 0 
+    ? `calc(100dvh - ${keyboardHeight}px)` 
+    : "h-[75dvh]";
+
   return (
     <>
       <div
@@ -43,15 +63,14 @@ export function MobileRoomSheets({
         onClick={() => room.setMobileSheet(null)}
       />
       <div
-        className="lg:hidden fixed bottom-0 inset-x-0 z-50 h-[75vh] flex flex-col glass-card !rounded-t-[var(--radius-sheet)] border-t border-border overflow-hidden shadow-[0_-20px_60px_rgba(0,0,0,0.4)]"
+        className={`lg:hidden fixed bottom-0 inset-x-0 z-50 ${sheetHeight} flex flex-col glass-card border-t border-border overflow-hidden shadow-[0_-20px_60px_rgba(0,0,0,0.4)]`}
         style={{
           transform: `translateY(${dragY}px)`,
-          transition:
-            dragY === 0 ? "transform 0.3s cubic-bezier(0.23,1,0.32,1)" : "none",
+          transition: dragY === 0 ? "transform 0.3s cubic-bezier(0.23,1,0.32,1)" : "none",
         }}
       >
         <div
-          className="flex flex-col items-center pt-3 pb-1 cursor-grab active:cursor-grabbing touch-none"
+          className="flex flex-col items-center pt-3 pb-1 cursor-grab active:cursor-grabbing touch-none shrink-0"
           onTouchStart={handleDragStart}
           onTouchMove={handleDragMove}
           onTouchEnd={handleDragEnd}
@@ -59,7 +78,7 @@ export function MobileRoomSheets({
           <div className="w-10 h-1 rounded-full bg-white/15" />
         </div>
 
-        <div className="flex items-center justify-between px-6 py-3 border-b border-border/40">
+        <div className="flex items-center justify-between px-6 py-3 border-b border-border/40 shrink-0">
           <span className="font-display font-bold text-sm text-white/60 uppercase tracking-widest">
             {room.mobileSheet === "chat" ? "Room Chat" : "Participants"}
           </span>
@@ -70,7 +89,7 @@ export function MobileRoomSheets({
             ✕
           </button>
         </div>
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden min-h-0">
           {room.mobileSheet === "chat" ? (
             <ChatSidebar
               messages={room.messages}
@@ -92,6 +111,8 @@ export function MobileRoomSheets({
               displayNames={room.displayNames}
               tsMap={room.tsMapState}
               leaderTime={leaderTime}
+              inCallUsers={inCallUsers}
+              remoteStatus={remoteStatus}
               onKick={(uid) =>
                 sendRef.current?.({ type: "kick", targetUserId: uid })
               }

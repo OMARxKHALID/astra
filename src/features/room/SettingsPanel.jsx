@@ -14,6 +14,9 @@ import {
   Key as KeyIcon,
   Eye,
   EyeOff,
+  User,
+  Check,
+  Pencil,
 } from "lucide-react";
 import { useToast } from "@/components/Toast";
 
@@ -92,17 +95,29 @@ export default function SettingsPanel({
   setAmbilightEnabled,
   mirrorCameraEnabled,
   setMirrorCameraEnabled,
+  identity,
 }) {
   const { addToast } = useToast();
   const panelRef = useRef(null);
   const [pwInput, setPwInput] = useState("");
   const [pwMode, setPwMode] = useState("idle");
   const [showPw, setShowPw] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState(identity?.displayName || "");
 
   const toggleAndToast = (setter, label, currentVal) => {
     const next = !currentVal;
     setter(next);
     addToast(`${label} ${next ? "Enabled" : "Disabled"}`, "success");
+  };
+
+  const commitName = () => {
+    const name = nameInput.trim().slice(0, 24);
+    if (!name) return;
+    identity?.setDisplayName?.(name);
+    identity?.commitName?.(name);
+    setEditingName(false);
+    addToast("Name updated!", "success");
   };
 
   // [Note] small delay so the open-click doesn't immediately re-close
@@ -163,6 +178,55 @@ export default function SettingsPanel({
         </div>
 
         <div className="px-6 pb-6 max-h-[75vh] overflow-y-auto no-scrollbar">
+          <SectionLabel>Profile</SectionLabel>
+          <div className="mb-4">
+            <div className="flex items-center gap-3">
+              {editingName ? (
+                <>
+                  <input
+                    type="text"
+                    value={nameInput}
+                    onChange={(e) => setNameInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") commitName();
+                      if (e.key === "Escape") {
+                        setNameInput(identity?.displayName || "");
+                        setEditingName(false);
+                      }
+                    }}
+                    className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white/90 text-sm outline-none focus:border-amber/40"
+                    autoFocus
+                    maxLength={24}
+                  />
+                  <button
+                    onClick={commitName}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-amber/20 text-amber hover:bg-amber/30"
+                  >
+                    <Check className="w-4 h-4" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="flex-1 flex items-center gap-2">
+                    <User className="w-4 h-4 text-white/40" />
+                    <span className="text-white/90 text-sm font-medium">
+                      {identity?.displayName || "Guest"}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setNameInput(identity?.displayName || "");
+                      setEditingName(true);
+                    }}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-amber hover:bg-white/5 transition-colors"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
           <SectionLabel>Playback</SectionLabel>
           <Row
             label="Host-only controls"
