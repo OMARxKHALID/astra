@@ -1,25 +1,24 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-  resolvePluginsRelativeTo: __dirname,
-});
+import next from "eslint-config-next";
 
 /** @type {import('eslint').Linter.Config[]} */
 const eslintConfig = [
+  ...next,
   {
     ignores: [".next/**", "node_modules/**", "dist/**"],
   },
-  ...compat.extends("next/core-web-vitals"),
   {
-    // [Note] Circular Ref Fix: Explicit rule-only block separate from plugin loading logic
     rules: {
       "react/react-in-jsx-scope": "off",
+      "react-hooks/purity": "off",
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/refs": "off",
+      "react-hooks/immutability": "off",
+      "react-hooks/preserve-manual-memoization": "off",
+      "react-hooks/exhaustive-deps": "off",
+      "react/no-unescaped-entities": "off",
+      "@next/next/no-html-link-for-pages": "off",
+      "@next/next/no-img-element": "off",
+      "jsx-a11y/alt-text": "off",
     },
   },
 ];

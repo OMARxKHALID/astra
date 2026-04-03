@@ -4,10 +4,8 @@ import withPWA from "@ducanh2912/next-pwa";
 const nextConfig = {
   output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
 
-  // Silence Turbopack migration errors and enable custom webpack support
   turbopack: {},
 
-  // Suppress dev cross-origin warning for network access
   allowedDevOrigins: [
     "localhost",
     "127.0.0.1",
