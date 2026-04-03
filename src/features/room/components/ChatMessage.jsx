@@ -12,19 +12,32 @@ function ChatMessageInner({
 }) {
   const REACTION_EMOJIS = ["❤️", "😂", "🔥", "👍", "😮"];
   const msgRef = useRef(null);
+  const pickerRef = useRef(null);
   const [isHovered, setIsHovered] = useState(false);
   const [rect, setRect] = useState(null);
-  // [Note] longPressTimer: mobile long-press (500ms) to show the reaction picker,
-  // since onMouseEnter never fires on touch-only devices.
   const longPressTimerRef = useRef(null);
+  const isTouchSessionRef = useRef(false);
 
-  // [Note] Coordinate Sync: Ensure the portal-based picker hides or repositions
-  // during scroll to maintain the 'stuck-to-bubble' illusion.
+  // [Note] Global pointerdown to close picker when tapping anywhere outside it.
+  // This replaces onMouseLeave-based hiding which fires spuriously on mobile Safari
+  // when the finger lifts, dismissing the picker before the emoji tap can register.
   useEffect(() => {
     if (!isHovered) return;
-    const hideOnScroll = () => setIsHovered(false);
-    window.addEventListener("scroll", hideOnScroll, true);
-    return () => window.removeEventListener("scroll", hideOnScroll, true);
+    const close = (e) => {
+      if (pickerRef.current && pickerRef.current.contains(e.target)) return;
+      if (msgRef.current && msgRef.current.contains(e.target)) return;
+      setIsHovered(false);
+    };
+    document.addEventListener("pointerdown", close, true);
+    return () => document.removeEventListener("pointerdown", close, true);
+  }, [isHovered]);
+
+  // [Note] Coordinate Sync: hide picker on scroll to keep it from drifting.
+  useEffect(() => {
+    if (!isHovered) return;
+    const hide = () => setIsHovered(false);
+    window.addEventListener("scroll", hide, true);
+    return () => window.removeEventListener("scroll", hide, true);
   }, [isHovered]);
 
   const showPicker = () => {
@@ -33,14 +46,38 @@ function ChatMessageInner({
     setIsHovered(true);
   };
 
-  const handleMouseEnter = () => showPicker();
-  const handleMouseLeave = () => setIsHovered(false);
+  // Desktop: hover to show
+  const handleMouseEnter = (e) => {
+    if (isTouchSessionRef.current) return;
+    showPicker();
+  };
+  const handleMouseLeave = (e) => {
+    // [Note] Only hide on mouse events, never on pointer-type touch.
+    // On mobile Safari, mouseleave fires when the finger lifts, which would
+    // immediately dismiss the picker before the user can tap an emoji.
+    if (e.pointerType === "touch") return;
+    if (pickerRef.current?.contains(e.relatedTarget)) return;
+    setIsHovered(false);
+  };
 
-  const handleTouchStart = () => {
-    longPressTimerRef.current = setTimeout(showPicker, 500);
+  // Mobile: long-press to show
+  const handleTouchStart = (e) => {
+    isTouchSessionRef.current = true;
+    longPressTimerRef.current = setTimeout(() => {
+      // Prevent context menu / selection on long-press
+      showPicker();
+    }, 500);
+  };
+  const handleTouchMove = () => {
+    // Cancel long-press if finger moves (user is scrolling)
+    clearTimeout(longPressTimerRef.current);
   };
   const handleTouchEnd = () => {
     clearTimeout(longPressTimerRef.current);
+    // Reset touch session flag after a short delay so mouseleave guard works correctly
+    setTimeout(() => {
+      isTouchSessionRef.current = false;
+    }, 300);
   };
 
   const renderTextWithMentions = (text) => {
@@ -102,34 +139,39 @@ function ChatMessageInner({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchEnd}
       className={`flex ${isOwn ? "flex-row-reverse" : "flex-row"} gap-2 group relative animate-[messageIn_0.35s_cubic-bezier(0.23,1,0.32,1)]`}
     >
-      {/* [Note] Border-Proof Portal: Bypasses header/overflow boundaries. Uses fixed
-          positioning synced to the bubble's viewport coordinates. */}
+      {/* [Note] Emoji picker portal: uses pointerdown-outside to close (not mouseleave)
+          so the picker stays alive long enough for mobile tap to register on an emoji.
+          Emoji buttons use onPointerDown for immediate response on both mouse and touch. */}
       {isHovered &&
         rect &&
         typeof document !== "undefined" &&
         createPortal(
           <div
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            className="fixed flex items-center gap-1 p-1 bg-void/60 backdrop-blur-xl rounded-xl shadow-[0_30px_90px_rgba(0,0,0,0.6)] z-[999] animate-in fade-in zoom-in-95 duration-200 border border-white/5"
+            ref={pickerRef}
+            className="fixed flex items-center gap-1 p-1 bg-void/80 backdrop-blur-xl rounded-xl shadow-[0_30px_90px_rgba(0,0,0,0.6)] z-[999] animate-in fade-in zoom-in-95 duration-200 border border-white/10"
             style={{
-              top: `${rect.top - 28}px`,
-              left: isOwn ? `${rect.right - 100}px` : `${rect.left + 30}px`,
+              top: `${rect.top - 36}px`,
+              left: isOwn ? `${rect.right - 140}px` : `${rect.left + 30}px`,
             }}
           >
             {REACTION_EMOJIS.map((emoji) => (
               <button
                 key={emoji}
                 type="button"
-                onClick={() => {
+                // [Note] onPointerDown fires immediately on both mouse click and touch tap,
+                // before any browser synthetic event delay — ensures emoji registers on mobile.
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                   onReaction?.(emoji);
                   setIsHovered(false);
                 }}
-                className="w-5 h-5 flex items-center justify-center text-[13px] hover:scale-125 transition-transform active:scale-90 touch-manipulation"
+                className="w-8 h-8 flex items-center justify-center text-[18px] hover:scale-125 active:scale-95 transition-transform touch-manipulation rounded-lg hover:bg-white/10"
               >
                 {emoji}
               </button>
@@ -198,7 +240,10 @@ function ChatMessageInner({
                 <button
                   key={emoji}
                   type="button"
-                  onClick={() => onReaction?.(emoji)}
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    onReaction?.(emoji);
+                  }}
                   className={`flex items-center gap-1 px-1.5 py-0.5 rounded-[var(--radius-pill)] border transition-all duration-300 hover:scale-105 active:scale-95 touch-manipulation
                     ${
                       hasReacted

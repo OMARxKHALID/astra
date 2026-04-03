@@ -10,6 +10,9 @@ const ICE_CONFIG = {
   ],
 };
 
+const TAG = "[call]";
+const pcTag = (uid) => `${TAG}[PC:${String(uid).slice(0, 6)}]`;
+
 export function useVideoCall({ roomId, userId, socketRef, addToast }) {
   const [localStream, setLocalStream] = useState(null);
   const [remoteStreams, setRemoteStreams] = useState({});
@@ -23,10 +26,12 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
   const pcRef = useRef({});
   const iceQueuesRef = useRef({});
   const localStreamRef = useRef(null);
-  // [Note] pcRoleRef tracks whether we are 'caller' (sent offer) or 'callee' (received offer) per peer.
-  // This prevents initiateCall from re-offering on callee PCs, which causes m-line order mismatch.
+  // [Note] pcRoleRef: 'caller' (sent offer) or 'callee' (received offer) per peer.
   const pcRoleRef = useRef({});
-  // [Note] Stable refs mirror isJoined/isJoining state — prevents stale closures in socket event handlers
+  // [Note] isNegotiatingRef: per-peer lock that prevents concurrent createOffer() calls.
+  // createOffer() is async — React can flush effects between it and setLocalDescription(),
+  // causing two concurrent offers on the same PC which produces the m-line order mismatch.
+  const isNegotiatingRef = useRef({});
   const isJoinedRef = useRef(false);
   const isJoiningRef = useRef(false);
 
@@ -44,6 +49,9 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
         pc.onicecandidate = null;
         pc.ontrack = null;
         pc.onconnectionstatechange = null;
+        pc.onsignalingstatechange = null;
+        pc.onicegatheringstatechange = null;
+        pc.oniceconnectionstatechange = null;
         pc.close();
       });
     };
@@ -59,7 +67,6 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
     [roomId, socketRef],
   );
 
-  // [Note] toggleMic/toggleCam read from localStreamRef to avoid stale state on rapid toggles
   const toggleMic = useCallback(() => {
     const stream = localStreamRef.current;
     if (!stream) return;
@@ -91,31 +98,48 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
   const cleanupPC = useCallback((targetUserId) => {
     const pc = pcRef.current[targetUserId];
     if (pc) {
+      console.log(
+        `${pcTag(targetUserId)} cleanup — conn:${pc.connectionState} signal:${pc.signalingState}`,
+      );
       pc.onicecandidate = null;
       pc.ontrack = null;
       pc.onconnectionstatechange = null;
+      pc.onsignalingstatechange = null;
+      pc.onicegatheringstatechange = null;
+      pc.oniceconnectionstatechange = null;
       pc.close();
       delete pcRef.current[targetUserId];
     }
     delete iceQueuesRef.current[targetUserId];
     delete pcRoleRef.current[targetUserId];
+    delete isNegotiatingRef.current[targetUserId];
   }, []);
 
-  // [Note] injectTracksIntoPC matches senders by KIND, not track ID.
-  // When localStream's object reference changes (React re-render), new tracks have new IDs,
-  // so track-ID matching would always call addTrack — creating new transceivers and
-  // causing the "m-line order doesn't match" InvalidAccessError on the next createOffer().
+  // [Note] injectTracksIntoPC matches senders by KIND not track ID.
+  // New stream object references (React re-render) give tracks new IDs, so ID-matching
+  // always called addTrack — creating new transceivers → m-line order mismatch on next offer.
   // replaceTrack swaps media on the existing transceiver with zero SDP side effects.
-  const injectTracksIntoPC = useCallback((pc, stream) => {
+  const injectTracksIntoPC = useCallback((pc, stream, uid) => {
     const senders = pc.getSenders();
+    console.log(
+      `${pcTag(uid)} injectTracks — senders:${senders.length} tracks:${stream.getTracks().length} signal:${pc.signalingState}`,
+    );
     stream
       .getTracks()
       .sort((a, b) => a.kind.localeCompare(b.kind))
       .forEach((track) => {
         const existing = senders.find((s) => s.track?.kind === track.kind);
         if (existing) {
-          existing.replaceTrack(track).catch(() => {});
+          if (existing.track?.id !== track.id) {
+            console.log(`${pcTag(uid)} replaceTrack kind=${track.kind}`);
+            existing
+              .replaceTrack(track)
+              .catch((err) =>
+                console.warn(`${pcTag(uid)} replaceTrack failed:`, err.message),
+              );
+          }
         } else {
+          console.log(`${pcTag(uid)} addTrack kind=${track.kind}`);
           pc.addTrack(track, stream);
         }
       });
@@ -123,50 +147,86 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
 
   const getOrCreatePC = useCallback(
     (targetUserId) => {
-      if (pcRef.current[targetUserId]) return pcRef.current[targetUserId];
+      if (pcRef.current[targetUserId]) {
+        const ex = pcRef.current[targetUserId];
+        console.log(
+          `${pcTag(targetUserId)} getOrCreatePC REUSE — signal:${ex.signalingState} conn:${ex.connectionState}`,
+        );
+        return ex;
+      }
 
+      console.log(`${pcTag(targetUserId)} getOrCreatePC CREATE`);
       const pc = new RTCPeerConnection(ICE_CONFIG);
       pcRef.current[targetUserId] = pc;
       iceQueuesRef.current[targetUserId] = [];
 
       const stream = localStreamRef.current;
       if (stream) {
-        // [Note] Sort tracks by kind (audio < video) to guarantee a stable m-line order across all PCs
         stream
           .getTracks()
           .sort((a, b) => a.kind.localeCompare(b.kind))
-          .forEach((track) => pc.addTrack(track, stream));
+          .forEach((track) => {
+            console.log(
+              `${pcTag(targetUserId)} addTrack-on-create kind=${track.kind}`,
+            );
+            pc.addTrack(track, stream);
+          });
+      } else {
+        console.warn(
+          `${pcTag(targetUserId)} no localStream at PC creation — tracks injected later`,
+        );
       }
 
       pc.onicecandidate = (e) => {
         if (e.candidate) {
+          console.log(
+            `${pcTag(targetUserId)} ICE candidate type=${e.candidate.type}`,
+          );
           socketRef.current?.emit("CALL:ice", roomId, {
             candidate: e.candidate,
             to: targetUserId,
           });
+        } else {
+          console.log(`${pcTag(targetUserId)} ICE gathering complete`);
         }
       };
 
       pc.ontrack = (e) => {
+        console.log(`${pcTag(targetUserId)} ontrack kind=${e.track.kind}`);
         setRemoteStreams((prev) => ({ ...prev, [targetUserId]: e.streams[0] }));
       };
 
-      // [Note] Only cleanup on terminal states (failed/closed).
-      // "disconnected" is transient — ICE restarts can recover it automatically.
-      // Destroying the PC on "disconnected" forces full renegotiation whose new m-line
-      // order may not match the remote's locked expectation, causing InvalidAccessError.
+      // [Note] Only destroy PC on terminal states (failed/closed).
+      // "disconnected" is transient — ICE can self-heal without renegotiation.
       pc.onconnectionstatechange = () => {
-        if (["failed", "closed"].includes(pc.connectionState)) {
+        const state = pc.connectionState;
+        console.log(`${pcTag(targetUserId)} connectionState → ${state}`);
+        if (["failed", "closed"].includes(state)) {
+          console.log(`${pcTag(targetUserId)} terminal — removing`);
           setRemoteStreams((prev) => {
-            const next = { ...prev };
-            delete next[targetUserId];
-            return next;
+            const n = { ...prev };
+            delete n[targetUserId];
+            return n;
           });
           delete pcRef.current[targetUserId];
           delete iceQueuesRef.current[targetUserId];
           delete pcRoleRef.current[targetUserId];
+          delete isNegotiatingRef.current[targetUserId];
         }
       };
+
+      pc.onsignalingstatechange = () =>
+        console.log(
+          `${pcTag(targetUserId)} signalingState → ${pc.signalingState}`,
+        );
+      pc.onicegatheringstatechange = () =>
+        console.log(
+          `${pcTag(targetUserId)} iceGatheringState → ${pc.iceGatheringState}`,
+        );
+      pc.oniceconnectionstatechange = () =>
+        console.log(
+          `${pcTag(targetUserId)} iceConnectionState → ${pc.iceConnectionState}`,
+        );
 
       return pc;
     },
@@ -176,34 +236,93 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
   const initiateCall = useCallback(
     async (targetUserId) => {
       const pc = getOrCreatePC(targetUserId);
-      if (pc.signalingState !== "stable") return;
-      // [Note] Mark as caller so the localStream useEffect does not re-offer on callee PCs
+      const signal = pc.signalingState;
+      const hasRemote = !!pc.remoteDescription;
+      const negotiating = !!isNegotiatingRef.current[targetUserId];
+
+      console.log(
+        `${pcTag(targetUserId)} initiateCall — signal:${signal} hasRemote:${hasRemote} negotiating:${negotiating} role:${pcRoleRef.current[targetUserId]}`,
+      );
+
+      // Guard 1: wrong signaling state
+      if (signal !== "stable") {
+        console.warn(
+          `${pcTag(targetUserId)} initiateCall SKIPPED — not stable (${signal})`,
+        );
+        return;
+      }
+      // Guard 2: handshake already complete, replaceTrack was sufficient
+      if (hasRemote) {
+        console.log(
+          `${pcTag(targetUserId)} initiateCall SKIPPED — handshake complete, replaceTrack sufficient`,
+        );
+        return;
+      }
+      // Guard 3: another createOffer() is already in flight on this PC.
+      // React can flush effects between createOffer() and setLocalDescription() (both async),
+      // so two concurrent offers can be created. The second setLocalDescription() fails with
+      // "order of m-lines doesn't match" because Chrome compares it against the first offer.
+      if (negotiating) {
+        console.warn(
+          `${pcTag(targetUserId)} initiateCall SKIPPED — offer already in flight (negotiation lock)`,
+        );
+        return;
+      }
+
+      isNegotiatingRef.current[targetUserId] = true;
       pcRoleRef.current[targetUserId] = "caller";
+
       try {
+        console.log(`${pcTag(targetUserId)} createOffer…`);
         const offer = await pc.createOffer();
+        const mLines = (offer.sdp?.match(/^m=/gm) || []).length;
+        console.log(
+          `${pcTag(targetUserId)} offer ready — mLines:${mLines} signal:${pc.signalingState}`,
+        );
+
+        if (pc.signalingState !== "stable") {
+          console.warn(
+            `${pcTag(targetUserId)} signalingState changed during createOffer (${pc.signalingState}) — aborting`,
+          );
+          return;
+        }
+
         await pc.setLocalDescription(offer);
+        console.log(`${pcTag(targetUserId)} setLocalDescription(offer) OK`);
         socketRef.current?.emit("CALL:offer", roomId, {
           offer,
           to: targetUserId,
         });
       } catch (err) {
-        console.error("[call] Initiation error:", err);
+        console.error(
+          `${pcTag(targetUserId)} initiateCall ERROR:`,
+          err.name,
+          err.message,
+        );
+        delete pcRoleRef.current[targetUserId];
+      } finally {
+        isNegotiatingRef.current[targetUserId] = false;
       }
     },
     [getOrCreatePC, roomId, socketRef],
   );
 
   const joinCall = useCallback(async () => {
+    console.log(`${TAG} joinCall — requesting media`);
     try {
       setIsJoining(true);
       isJoiningRef.current = true;
-      if (!navigator?.mediaDevices?.getUserMedia) {
+      if (!navigator?.mediaDevices?.getUserMedia)
         throw new Error("Requires secure context");
-      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
       });
+      console.log(
+        `${TAG} joinCall — stream tracks:`,
+        stream.getTracks().map((t) => `${t.kind}:${t.id.slice(0, 8)}`),
+      );
       localStreamRef.current = stream;
       setLocalStream(stream);
       setIsJoined(true);
@@ -214,10 +333,9 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
         micActive: true,
         camActive: true,
       });
-      // [Note] No initiateCall loop here — existing callers hear CALL:user_joined and initiate to us.
-      // This avoids creating peer connections with room participants who never clicked "Join Call".
+      console.log(`${TAG} joinCall — emitted CALL:join`);
     } catch (err) {
-      console.error("[call] Join error:", err);
+      console.error(`${TAG} joinCall ERROR:`, err.name, err.message);
       const msg =
         err.name === "NotAllowedError" || err.name === "PermissionDeniedError"
           ? "Camera/mic access denied"
@@ -231,8 +349,8 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
     }
   }, [roomId, socketRef, addToast]);
 
-  // [Note] leaveCall uses localStreamRef internally — localStream state intentionally excluded from deps
   const leaveCall = useCallback(() => {
+    console.log(`${TAG} leaveCall`);
     localStreamRef.current?.getTracks().forEach((t) => t.stop());
     localStreamRef.current = null;
     setLocalStream(null);
@@ -247,30 +365,47 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
 
   const handleOffer = useCallback(
     async ({ from, offer }) => {
+      const mLines = (offer.sdp?.match(/^m=/gm) || []).length;
+      console.log(`${pcTag(from)} handleOffer — mLines:${mLines}`);
       const pc = getOrCreatePC(from);
-
       const isPolite = userId < from;
       const collision = pc.signalingState !== "stable";
-      if (collision && !isPolite) return;
+      console.log(
+        `${pcTag(from)} handleOffer — signal:${pc.signalingState} collision:${collision} isPolite:${isPolite}`,
+      );
 
-      // [Note] Mark as callee so the localStream useEffect never calls initiateCall on this PC,
-      // which would generate an offer whose m-line order may not match the established answer.
+      if (collision && !isPolite) {
+        console.warn(
+          `${pcTag(from)} handleOffer — glare, impolite peer dropping offer`,
+        );
+        return;
+      }
+
       pcRoleRef.current[from] = "callee";
 
       try {
         if (collision) {
+          console.log(`${pcTag(from)} handleOffer — rollback for glare`);
           await pc.setLocalDescription({ type: "rollback" });
+          isNegotiatingRef.current[from] = false;
         }
         await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        console.log(`${pcTag(from)} setRemoteDescription(offer) OK`);
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
+        console.log(`${pcTag(from)} setLocalDescription(answer) OK`);
         socketRef.current?.emit("CALL:answer", roomId, { answer, to: from });
 
         while (iceQueuesRef.current[from]?.length) {
           await pc.addIceCandidate(iceQueuesRef.current[from].shift());
         }
+        console.log(`${pcTag(from)} ICE queue drained`);
       } catch (err) {
-        console.error("[call] Signal error (Offer):", err);
+        console.error(
+          `${pcTag(from)} handleOffer ERROR:`,
+          err.name,
+          err.message,
+        );
       }
     },
     [userId, getOrCreatePC, roomId, socketRef],
@@ -278,21 +413,30 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
 
   const handleAnswer = useCallback(async ({ from, answer }) => {
     const pc = pcRef.current[from];
-    if (!pc) return;
-    // [Note] Guard: only accept answer when we have a pending local offer — prevents InvalidStateError
+    if (!pc) {
+      console.warn(`${pcTag(from)} handleAnswer — no PC`);
+      return;
+    }
+    console.log(`${pcTag(from)} handleAnswer — signal:${pc.signalingState}`);
     if (pc.signalingState !== "have-local-offer") {
       console.warn(
-        `[call] Received answer from ${from} in state: ${pc.signalingState}. Ignoring.`,
+        `${pcTag(from)} handleAnswer IGNORED — wrong state:${pc.signalingState}`,
       );
       return;
     }
     try {
       await pc.setRemoteDescription(new RTCSessionDescription(answer));
+      console.log(`${pcTag(from)} setRemoteDescription(answer) OK`);
       while (iceQueuesRef.current[from]?.length) {
         await pc.addIceCandidate(iceQueuesRef.current[from].shift());
       }
+      console.log(`${pcTag(from)} ICE queue drained`);
     } catch (err) {
-      console.error("[call] Signal error (Answer):", err);
+      console.error(
+        `${pcTag(from)} handleAnswer ERROR:`,
+        err.name,
+        err.message,
+      );
     }
   }, []);
 
@@ -303,47 +447,82 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
       if (pc.remoteDescription) {
         await pc.addIceCandidate(new RTCIceCandidate(candidate));
       } else {
-        // [Note] Queue candidates that arrive before remote description is set — flushed post-handshake
+        console.log(`${pcTag(from)} queuing ICE (no remoteDescription yet)`);
         iceQueuesRef.current[from] = iceQueuesRef.current[from] || [];
         iceQueuesRef.current[from].push(new RTCIceCandidate(candidate));
       }
     } catch (err) {
-      console.warn("[call] ICE error:", err);
+      console.warn(`${pcTag(from)} ICE error:`, err.message);
     }
   }, []);
 
-  // [Note] Track injection uses injectTracksIntoPC (replaceTrack by kind) instead of addTrack by ID.
-  // When React re-renders create a new localStream object reference, track IDs change even if the
-  // underlying device is the same. Matching by kind + replaceTrack keeps the existing transceiver
-  // structure intact — no new m-lines, no InvalidAccessError on the next createOffer().
-  // Only caller-role PCs renegotiate; callee PCs must never re-offer (their m-line order is
-  // locked by the remote peer's original offer).
+  // [Note] localStream useEffect: injects tracks into any PCs created before media was acquired,
+  // then initiates the offer if no handshake has started. The negotiation lock (isNegotiatingRef)
+  // prevents a second initiateCall from racing a concurrent one that was triggered by the
+  // call_user_joined socket event and is already awaiting createOffer()/setLocalDescription().
   useEffect(() => {
     if (!localStream) return;
+    console.log(
+      `${TAG} localStream useEffect — ${Object.keys(pcRef.current).length} PCs`,
+    );
     Object.entries(pcRef.current).forEach(([uid, pc]) => {
-      injectTracksIntoPC(pc, localStream);
-      if (pcRoleRef.current[uid] !== "callee") {
+      injectTracksIntoPC(pc, localStream, uid);
+      const role = pcRoleRef.current[uid];
+      const hasRemote = !!pc.remoteDescription;
+      const negotiating = !!isNegotiatingRef.current[uid];
+      console.log(
+        `${pcTag(uid)} post-inject — role:${role} hasRemote:${hasRemote} negotiating:${negotiating}`,
+      );
+      if (role !== "callee" && !hasRemote && !negotiating) {
+        console.log(`${pcTag(uid)} useEffect→initiateCall`);
         initiateCall(uid);
+      } else {
+        const reason =
+          role === "callee"
+            ? "callee role"
+            : hasRemote
+              ? "handshake complete"
+              : "negotiation in flight";
+        console.log(`${pcTag(uid)} useEffect skip initiateCall — ${reason}`);
       }
     });
   }, [localStream, injectTracksIntoPC, initiateCall]);
 
   const handleSocketEvent = useCallback(
     async (event) => {
+      const evtUserId = event.userId || event.from;
+      console.log(
+        `${TAG} socketEvent type=${event.type} peer=${String(evtUserId || "").slice(0, 6)}`,
+      );
+
       switch (event.type) {
-        // [Note] "user_joined" (room join) intentionally NOT handled — only CALL:user_joined triggers negotiation.
-        // Reacting to every room join would create orphaned peer connections with non-call participants.
         case "call_user_joined": {
+          // [Note] Self-guard: React StrictMode double-mounts cause the same user to have two
+          // socket connections in the same room. Socket B receives CALL:user_joined emitted by
+          // Socket A (same userId). Initiating a PC to yourself creates a spurious concurrent
+          // offer that races the real offer and causes the m-line order mismatch crash.
+          if (event.userId === userId) {
+            console.warn(
+              `${TAG} call_user_joined IGNORED — received own userId (double-socket from StrictMode)`,
+            );
+            return;
+          }
           setActiveCallers((prev) => new Set(prev).add(event.userId));
-          // [Note] Read joined state via refs — state values are stale inside this memoized callback
           if (isJoinedRef.current || isJoiningRef.current) {
+            console.log(
+              `${TAG} call_user_joined — initiating to ${String(event.userId).slice(0, 6)}`,
+            );
             initiateCall(event.userId);
+          } else {
+            console.log(`${TAG} call_user_joined — not in call, skipping`);
           }
           break;
         }
         case "offer": {
-          // [Note] Guard: drop offers if we're not in the call — prevents ghost connections for passive viewers
-          if (!isJoinedRef.current && !isJoiningRef.current) break;
+          if (!isJoinedRef.current && !isJoiningRef.current) {
+            console.log(`${TAG} offer DROPPED — not in call`);
+            break;
+          }
           setActiveCallers((prev) => new Set(prev).add(event.from));
           await handleOffer(event);
           break;
@@ -366,28 +545,28 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
         case "user_left":
         case "call_user_left": {
           const uid = event.userId || event.from;
+          console.log(`${TAG} user left — cleanup ${String(uid).slice(0, 6)}`);
           setActiveCallers((prev) => {
-            const next = new Set(prev);
-            next.delete(uid);
-            return next;
+            const n = new Set(prev);
+            n.delete(uid);
+            return n;
           });
           setRemoteStreams((prev) => {
-            const next = { ...prev };
-            delete next[uid];
-            return next;
+            const n = { ...prev };
+            delete n[uid];
+            return n;
           });
           setRemoteStatus((prev) => {
-            const next = { ...prev };
-            delete next[uid];
-            return next;
+            const n = { ...prev };
+            delete n[uid];
+            return n;
           });
           cleanupPC(uid);
           break;
         }
       }
-      // [Note] isJoined/isJoining intentionally excluded from deps — read via stable refs to prevent handler churn
     },
-    [initiateCall, handleOffer, handleAnswer, handleIce, cleanupPC],
+    [userId, initiateCall, handleOffer, handleAnswer, handleIce, cleanupPC],
   );
 
   return {
