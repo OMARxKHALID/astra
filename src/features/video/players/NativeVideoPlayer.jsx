@@ -4,6 +4,7 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import { useVideoHotkeys } from "../utils";
 import { LS_KEYS } from "@/constants/config";
 import { ls } from "@/utils/localStorage";
+import { usePlayerControls } from "./usePlayerControls";
 
 import useHLS from "./native/hooks/useHLS";
 import useAmbilight from "./native/hooks/useAmbilight";
@@ -53,7 +54,7 @@ export default function NativeVideoPlayer({
   const [buffering, setBuffering] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [showSubtitles, setShowSubtitles] = useState(true);
-  const [ctrlVis, setCtrlVis] = useState(true);
+  const { ctrlVis, setCtrlVis, showCtrl } = usePlayerControls(3000);
   const [showStats, setShowStats] = useState(false);
   const [volumeOsd, setVolumeOsd] = useState(null);
   const [videoError, setVideoError] = useState(false);
@@ -79,7 +80,6 @@ export default function NativeVideoPlayer({
   const [subtitleOffset, setSubtitleOffset] = useState(0);
 
   const containerRef = useRef(null);
-  const hideTimer = useRef(null);
   const volumeOsdTimer = useRef(null);
   const seekingRef = useRef(false);
   // [Note] lastTapRef + singleTapTimer: manual double-tap detector for mobile.
@@ -128,16 +128,8 @@ export default function NativeVideoPlayer({
     );
   }, []);
 
-  // [Note] Idle timer: hide controls after 3s mouse inactivity
-  const showCtrl = useCallback(() => {
-    setCtrlVis(true);
-    clearTimeout(hideTimer.current);
-    hideTimer.current = setTimeout(() => setCtrlVis(false), 3000);
-  }, []);
-
   useEffect(() => {
     showCtrl();
-    return () => clearTimeout(hideTimer.current);
   }, [showCtrl]);
 
   useEffect(() => {

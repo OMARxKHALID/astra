@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect, useCallback } from "react";
 import { onVMReady, useVideoHotkeys } from "../utils";
+import { usePlayerControls } from "./usePlayerControls";
 import EmbedControls from "../controls/EmbedControls";
 import VideoPoster from "../controls/VideoPoster";
 
@@ -26,15 +27,14 @@ export default function VimeoPlayer({
   const containerRef = useRef(null);
   const iframeRef = useRef(null);
   const playerRef = useRef(null);
+  const { ctrlVis, setCtrlVis, showCtrl, isFullscreen } = usePlayerControls(3000);
   const [ready, setReady] = useState(false);
   const [localTime, setLocalTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [bufferedPct, setBufferedPct] = useState(0);
-  const [ctrlVis, setCtrlVis] = useState(true);
   const [muted, setMuted] = useState(false);
   const [ccEnabled, setCcEnabled] = useState(false);
   const [volume, setVolume] = useState(1);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [thumbnailUrl, setThumbnailUrl] = useState(null);
 
   // [Note] Fetch thumbnail via server proxy (avoids CORS)
@@ -72,16 +72,9 @@ export default function VimeoPlayer({
     img.onerror = () => onAmbiColors(null);
     return () => onAmbiColors(null);
   }, [thumbnailUrl, onAmbiColors]);
-  const hideTimer = useRef(null);
 
   // [Note] read by SyncEngine to suppress rate corrections while stalled
   const isBufferingRef = useRef(false);
-
-  const showCtrl = useCallback(() => {
-    setCtrlVis(true);
-    clearTimeout(hideTimer.current);
-    hideTimer.current = setTimeout(() => setCtrlVis(false), 3000);
-  }, []);
 
   useEffect(() => {
     if (!ready || !playerRef.current) return;
@@ -227,12 +220,6 @@ export default function VimeoPlayer({
     if (!document.fullscreenElement) containerRef.current?.requestFullscreen();
     else document.exitFullscreen();
   }
-
-  useEffect(() => {
-    const onFS = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener("fullscreenchange", onFS);
-    return () => document.removeEventListener("fullscreenchange", onFS);
-  }, []);
 
   useVideoHotkeys({
     videoRef,

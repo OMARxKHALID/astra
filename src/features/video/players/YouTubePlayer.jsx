@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { onYTReady, useVideoHotkeys } from "../utils";
 import { YT_AD_POLL_MS as AD_POLL_MS } from "@/constants/config";
+import { usePlayerControls } from "./usePlayerControls";
 import EmbedControls from "../controls/EmbedControls";
 import VideoPoster from "../controls/VideoPoster";
 
@@ -28,17 +29,15 @@ export default function YouTubePlayer({
   const containerRef = useRef(null);
   const iframeContainerRef = useRef(null);
   const playerRef = useRef(null);
+  const { ctrlVis, setCtrlVis, showCtrl, isFullscreen, setIsFullscreen } = usePlayerControls(3000);
   const [ready, setReady] = useState(false);
   const [localTime, setLocalTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [bufferedPct, setBufferedPct] = useState(0);
-  const [ctrlVis, setCtrlVis] = useState(true);
   const [muted, setMuted] = useState(false);
   const [ccEnabled, setCcEnabled] = useState(false);
   const [volume, setVolume] = useState(1);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isAdPlaying, setIsAdPlaying] = useState(false);
-  const hideTimer = useRef(null);
   const pendingSeekRef = useRef(null);
   const ccEnabledRef = useRef(ccEnabled);
   const isBufferingRef = useRef(false);
@@ -81,12 +80,6 @@ export default function YouTubePlayer({
     img.onerror = () => onAmbiColors(null);
     return () => onAmbiColors(null);
   }, [thumbnailUrl, onAmbiColors]);
-
-  const showCtrl = useCallback(() => {
-    setCtrlVis(true);
-    clearTimeout(hideTimer.current);
-    hideTimer.current = setTimeout(() => setCtrlVis(false), 3000);
-  }, []);
 
   // [Note] Ad Skipper: If getVideoData mismatch → seekTo(9999) to force completion
   const startAdWatch = useCallback(() => {
@@ -316,12 +309,6 @@ export default function YouTubePlayer({
       }
     } catch {}
   }, [ccEnabled, ready]);
-
-  useEffect(() => {
-    const onFS = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener("fullscreenchange", onFS);
-    return () => document.removeEventListener("fullscreenchange", onFS);
-  }, []);
 
   function handlePlayPause() {
     if (!ready || !canControl) return;
