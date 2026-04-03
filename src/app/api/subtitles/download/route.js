@@ -1,12 +1,22 @@
 import { NextResponse } from "next/server";
 import { gunzipSync } from "zlib";
 
-const API_KEY =
-  process.env.OPENSUBTITLES_KEY || "Zff4vJKGx6hFiW02ouPLV1iXQCB3VjL1";
+const API_KEY = process.env.OPENSUBTITLES_KEY;
 const API_BASE = "https://api.opensubtitles.com/api/v1";
+
+if (!API_KEY) {
+  console.warn("[subtitles] OPENSUBTITLES_KEY not set - subtitle download disabled");
+}
 
 export async function GET(request) {
   try {
+    if (!API_KEY) {
+      return NextResponse.json(
+        { error: "OpenSubtitles API key not configured" },
+        { status: 503 },
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const subUrlOrId = searchParams.get("url");
 

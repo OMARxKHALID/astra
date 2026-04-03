@@ -1,7 +1,7 @@
 import { Server } from "socket.io";
 import http from "http";
 import pkg from "@next/env";
-import { SOCKET_PING_INTERVAL, SOCKET_PING_TIMEOUT } from "./constants.js";
+import { DEBUG, SOCKET_PING_INTERVAL, SOCKET_PING_TIMEOUT } from "./constants.js";
 import { saveRoom } from "./models/Room.js";
 import registerChatHandlers from "./handlers/chatHandler.js";
 import registerVideoHandlers from "./handlers/videoHandler.js";
@@ -100,6 +100,6 @@ function electNewHost(room) {
   }
 }
 
-httpServer.listen(PORT, "0.0.0.0", () =>
-  console.log(`\n🚀 [socket.io] ONLINE: 0.0.0.0:${PORT}\n`),
-);
+httpServer.listen(PORT, "0.0.0.0", () => {
+  if (DEBUG) console.log(`\n🚀 [socket.io] ONLINE: 0.0.0.0:${PORT}\n`);
+});

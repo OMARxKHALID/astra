@@ -2,6 +2,8 @@ export const SYNC_CHECK_INTERVAL = 200;
 export const SYNC_TOLERANCE_S = 0.5;
 export const CLOCK_RECAL_INTERVAL = 30_000;
 
+export const DEBUG = process.env.NODE_ENV !== "production";
+
 export const HOST_RECONNECT_GRACE_MS = 6_000;
 export const EMPTY_ROOM_CLEANUP_MS = 30_000;
 export const SAVE_DEBOUNCE_MS = 2_000;
@@ -11,7 +13,6 @@ export const JWT_EXPIRY_S = 86_400;
 export const MAX_DATAURL_BYTES = 500_000;
 export const MAX_CHAT_MESSAGES = 200;
 export const MAX_HISTORY_ENTRIES = 12;
-export const MAX_RECENT_ROOMS = 3;
 export const MAX_RECENT_SUBS = 5;
 
 export const YT_AD_POLL_MS = 800;

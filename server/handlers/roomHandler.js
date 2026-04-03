@@ -1,10 +1,21 @@
 import { Room, saveRoom, cleanupRoom } from "../models/Room.js";
 import { verifyHostToken, hashPassword } from "../utils/auth.js";
 import {
+  DEBUG,
   EMPTY_ROOM_CLEANUP_MS,
   HOST_RECONNECT_GRACE_MS,
 } from "../constants.js";
 import { redis } from "../utils/redis.js";
+
+const log = (...args) => {
+  if (DEBUG) console.log(...args);
+};
+const warn = (...args) => {
+  if (DEBUG) console.warn(...args);
+};
+const error = (...args) => {
+  if (DEBUG) error(...args);
+};
 
 export default function registerRoomHandlers(
   io,
@@ -16,12 +27,12 @@ export default function registerRoomHandlers(
 ) {
   socket.on("JOIN_ROOM", async (msg) => {
     const { roomId, token, clientId, videoUrl, username, password } = msg || {};
-    console.log(
+    log(
       `[socket] JOIN_ROOM: room=${roomId} user=${clientId} hasToken=${!!token}`,
     );
 
     if (!roomId || !clientId) {
-      console.warn(`[socket] JOIN_ROOM aborted: missing roomId or clientId`);
+      warn(`[socket] JOIN_ROOM aborted: missing roomId or clientId`);
       return;
     }
 
@@ -31,7 +42,7 @@ export default function registerRoomHandlers(
       try {
         const stored = await redis.get(`room:${roomId}`);
         if (stored) {
-          console.log(`[redis] Restoring room:${roomId} from storage`);
+          log(`[redis] Restoring room:${roomId} from storage`);
           room = new Room(
             roomId,
             stored.video,
@@ -63,11 +74,11 @@ export default function registerRoomHandlers(
 
     if (isHost) {
       if (jwtPayload) {
-        console.log(
+        log(
           `[auth] Valid host token for room:${roomId} user:${jwtPayload.hostId}`,
         );
       } else {
-        console.error(
+        error(
           `[auth] INVALID host token for room:${roomId} user:${clientId}`,
         );
       }
@@ -144,7 +155,7 @@ export default function registerRoomHandlers(
     }
 
     io.to(roomId).emit("REC:roster", room.getParticipants());
-    console.log(`[socket] User joined room:${roomId} as ${displayName} (${clientId})`);
+    log(`[socket] User joined room:${roomId} as ${displayName} (${clientId})`);
     if (wasNew)
       socket
         .to(roomId)

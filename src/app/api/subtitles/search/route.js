@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 
-const API_KEY = process.env.OPENSUBTITLES_KEY || "Zff4vJKGx6hFiW02ouPLV1iXQCB3VjL1";
+const API_KEY = process.env.OPENSUBTITLES_KEY;
 const API_BASE = "https://api.opensubtitles.com/api/v1";
+
+if (!API_KEY) {
+  console.warn("[subtitles] OPENSUBTITLES_KEY not set - subtitle search disabled");
+}
 
 // [Note] OpenSubtitles Hash: block-checksum of first and last 64KB + file size
 function computeHash(buffer, size) {
@@ -18,6 +22,10 @@ function computeHash(buffer, size) {
 
 export async function GET(request) {
   try {
+    if (!API_KEY) {
+      return NextResponse.json({ title: "Unknown", subtitles: [] });
+    }
+
     const { searchParams } = new URL(request.url);
     const query = searchParams.get("q");
     const videoUrl = searchParams.get("url");
