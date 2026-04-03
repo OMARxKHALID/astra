@@ -121,8 +121,9 @@ export function useRoomSocket(props) {
         leaderTime,
         s.isPlaying,
       );
+      const speedSyncOn = p.current.speedSyncEnabled !== false;
       const commandedRate =
-        p.current.speedSyncEnabled !== false || s?.hostId === p.current.userId
+        speedSyncOn || s?.hostId === p.current.userId
           ? s.playbackRate || 1
           : 1;
 
@@ -371,6 +372,7 @@ export function useRoomSocket(props) {
         socket.emit("CMD:ts", p.current.roomId, {
           currentTime: v.currentTime,
           clientId: p.current.userId,
+          ts: Date.now(),
         });
       }
     }, 1000);

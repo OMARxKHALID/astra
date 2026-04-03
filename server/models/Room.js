@@ -73,11 +73,13 @@ export class Room {
     this.tsLockUntil = Date.now() + ms;
   }
 
-  receiveTimestamp(userId, time, isHost = false) {
+  receiveTimestamp(userId, time, isHost = false, clientTs = null) {
     if (Date.now() < this.tsLockUntil) return;
     if (typeof time !== "number" || time < 0) return;
     
-    const staleness = (Date.now() - this.lastBroadcastTime) / 1000;
+    const staleness = clientTs 
+      ? (Date.now() - clientTs) / 1000 
+      : (Date.now() - this.lastBroadcastTime) / 1000;
     const normalized = Math.max(0, time - staleness);
 
     // [Note] Security: If host-only mode is on, guests can only report their own pos

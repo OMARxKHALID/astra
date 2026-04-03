@@ -327,7 +327,7 @@ export default function RoomView({ roomId, initialMeta }) {
                   Live Feed
                 </span>
                 <span className="text-[10px] font-mono text-white/30 uppercase">
-                  {room.messages.length} messages
+                  {room.messages.length} message{room.messages.length !== 1 ? "s" : ""}
                 </span>
               </div>
             </div>
@@ -358,7 +358,7 @@ export default function RoomView({ roomId, initialMeta }) {
                   Watching
                 </span>
                 <span className="text-[10px] font-mono text-white/30 uppercase">
-                  {room.participants.length} Participant
+                  {room.participants.length} Participant{room.participants.length !== 1 ? "s" : ""}
                 </span>
               </div>
             </div>

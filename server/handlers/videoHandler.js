@@ -18,7 +18,8 @@ export default function registerVideoHandlers(
     if (now - (tsLastSent.get(socket.id) ?? 0) < 500) return;
     tsLastSent.set(socket.id, now);
     const time = typeof payload === "object" ? payload.currentTime : payload;
-    room.receiveTimestamp(meta.userId, time, meta.isHost);
+    const clientTs = typeof payload === "object" ? payload.ts : null;
+    room.receiveTimestamp(meta.userId, time, meta.isHost, clientTs);
   });
 
   socket.on("CMD:play", (_rId, msg) => {
