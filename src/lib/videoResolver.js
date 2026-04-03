@@ -24,6 +24,7 @@ const EMBED_DOMAINS = [
   "moviesapi.club",
   "moviesapi.to",
   "player.smashy.stream",
+  "cflul.x9l.workers.dev",
 ];
 
 import {
@@ -55,6 +56,8 @@ export function classifyUrl(raw) {
   }
 
   const hostname = parsed.hostname.replace(/^www\./, "");
+  if (hostname.endsWith(".workers.dev") && parsed.pathname.startsWith("/vid/"))
+    return { type: "hls", url: t };
   if (EMBED_DOMAINS.some((d) => d.replace(/^www\./, "") === hostname))
     return { type: "embed", url: t };
 
