@@ -20,6 +20,7 @@ import { SplitView } from "./components/SplitView";
 import { RoomNavbar } from "./components/RoomNavbar";
 import { MobileRoomNav } from "./components/MobileRoomNav";
 import { MobileRoomSheets } from "./components/MobileRoomSheets";
+import { IncomingCallBanner } from "./components/IncomingCallBanner";
 
 // [Note] Optimization: Lazy load heavy overlays to shrink initial bundle
 const SettingsPanel = dynamic(() => import("./SettingsPanel"), { ssr: false });
@@ -76,17 +77,6 @@ export default function RoomView({ roomId, initialMeta }) {
     socketRef,
     addToast,
   });
-
-  useEffect(() => {
-    if (call.isCalling && !call.isJoined && !call.isJoining) {
-      addToast(
-        "Active video call. Click the video icon to join!",
-        "info",
-        5000,
-        <VideoIcon className="w-4 h-4 text-amber" />,
-      );
-    }
-  }, [call.isCalling, call.isJoined, call.isJoining, addToast]);
 
   const {
     handleChatMessage,
@@ -433,6 +423,13 @@ export default function RoomView({ roomId, initialMeta }) {
         micActive={call.micActive}
         camActive={call.camActive}
         mirrorCameraEnabled={settings.mirrorCameraEnabled}
+      />
+
+      <IncomingCallBanner
+        visible={call.isCalling && !call.isJoined && !call.isJoining}
+        callerName={call.activeCallers?.size > 0 ? "Someone" : "Incoming call"}
+        onAccept={call.joinCall}
+        onDecline={call.leaveCall}
       />
 
       {mounted &&

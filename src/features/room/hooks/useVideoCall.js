@@ -586,6 +586,7 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
     isJoined,
     isJoining,
     isCalling: activeCallers.size > 0,
+    activeCallers,
     localStream,
     remoteStreams,
     remoteStatus,
