@@ -71,6 +71,19 @@ export default function RoomView({ roomId, initialMeta }) {
   const room = useRoomState(initialMeta);
   const sidebar = useSidebar();
 
+  // Close panels on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        if (settings.showSettings) settings.setShowSettings(false);
+        if (settings.showShortcuts) settings.setShowShortcuts(false);
+        if (room.mobileSheet) room.setMobileSheet(null);
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [settings, room]);
+
   const call = useVideoCall({
     roomId,
     userId: identity.userId,

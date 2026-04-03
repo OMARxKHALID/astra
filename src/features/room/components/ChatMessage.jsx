@@ -56,6 +56,7 @@ function ChatMessageInner({
     // On mobile Safari, mouseleave fires when the finger lifts, which would
     // immediately dismiss the picker before the user can tap an emoji.
     if (e.pointerType === "touch") return;
+    if (!e.relatedTarget) return;
     if (pickerRef.current?.contains(e.relatedTarget)) return;
     setIsHovered(false);
   };
@@ -153,10 +154,10 @@ function ChatMessageInner({
         createPortal(
           <div
             ref={pickerRef}
-            className="fixed flex items-center gap-1 p-1 bg-void/80 backdrop-blur-xl rounded-xl shadow-[0_30px_90px_rgba(0,0,0,0.6)] z-[999] animate-in fade-in zoom-in-95 duration-200 border border-white/10"
+            className="fixed flex items-center gap-0.5 p-0.5 bg-void/80 backdrop-blur-xl rounded-xl shadow-[0_30px_90px_rgba(0,0,0,0.6)] z-[999] animate-in fade-in zoom-in-95 duration-200 border border-white/10"
             style={{
-              top: `${rect.top - 36}px`,
-              left: isOwn ? `${rect.right - 140}px` : `${rect.left + 30}px`,
+              top: `${rect.top - 32}px`,
+              left: isOwn ? `${rect.right - 100}px` : `${rect.left - 4}px`,
             }}
           >
             {REACTION_EMOJIS.map((emoji) => (
@@ -171,7 +172,7 @@ function ChatMessageInner({
                   onReaction?.(emoji);
                   setIsHovered(false);
                 }}
-                className="w-8 h-8 flex items-center justify-center text-[18px] hover:scale-125 active:scale-95 transition-transform touch-manipulation rounded-lg hover:bg-white/10"
+                className="w-6 h-6 flex items-center justify-center text-[14px] hover:scale-125 active:scale-95 transition-transform touch-manipulation rounded-md hover:bg-white/10"
               >
                 {emoji}
               </button>
