@@ -82,9 +82,8 @@ export default function NativeVideoPlayer({
   const containerRef = useRef(null);
   const volumeOsdTimer = useRef(null);
   const seekingRef = useRef(false);
-  // [Note] lastTapRef + singleTapTimer: manual double-tap detector for mobile.
-  // onDoubleClick doesn't fire reliably on iOS/Android Chrome so we track two
-  // taps within 300ms via onTouchEnd timestamps instead.
+  // [Note] Mobile double-tap: onDoubleClick unreliable on iOS/Android Chrome,
+  // so we track two taps within 300ms via onTouchEnd timestamps instead.
   const lastTapRef = useRef(0);
   const singleTapTimerRef = useRef(null);
 

@@ -71,13 +71,27 @@ export default function RoomView({ roomId, initialMeta }) {
   const room = useRoomState(initialMeta);
   const sidebar = useSidebar();
 
-  // Close panels on Escape key
+  // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Ignore if typing in an input
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName)) return;
+      if (e.target.isContentEditable) return;
+
       if (e.key === "Escape") {
         if (settings.showSettings) settings.setShowSettings(false);
         if (settings.showShortcuts) settings.setShowShortcuts(false);
         if (room.mobileSheet) room.setMobileSheet(null);
+      }
+
+      // T - Toggle theatre mode
+      if (e.key.toLowerCase() === "t" && !settings.showSettings && !settings.showShortcuts) {
+        settings.setTheatreMode(!settings.theatreMode);
+      }
+
+      // ? - Show shortcuts
+      if (e.key === "?" && !settings.showSettings && !settings.showShortcuts) {
+        settings.setShowShortcuts(true);
       }
     };
     document.addEventListener("keydown", handleKeyDown);

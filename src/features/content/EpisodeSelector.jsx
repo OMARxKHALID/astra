@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import { ChevronLeft, ChevronRight, X, Play, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Clock } from "lucide-react";
 
 export default function EpisodeSelector({
   tmdbId,
@@ -66,19 +65,18 @@ export default function EpisodeSelector({
   return (
     <>
       <div
-        className="sm:hidden fixed inset-0 bg-void/40 backdrop-blur-sm z-40 pointer-events-auto"
+        className="fixed inset-0 bg-void/40 backdrop-blur-sm z-40 pointer-events-auto"
         onClick={onClose}
       />
       <div
-        className={`absolute inset-0 z-50 pointer-events-none flex sm:items-center sm:justify-end items-end justify-center
-        ${isFs ? "sm:pr-10 sm:pt-20 sm:pb-20" : "sm:pr-6 sm:pt-24 sm:pb-24"}`}
+        className="fixed inset-0 z-50 pointer-events-none flex items-center justify-end"
       >
         <div
-          className={`glass-card w-full h-[75vh] sm:h-fit flex flex-col pointer-events-auto animate-in fade-in slide-in-from-bottom-10 sm:slide-in-from-right-4 duration-500 rounded-t-[32px] sm:rounded-2xl rounded-b-none sm:rounded-b-2xl shadow-[0_50px_150px_rgba(0,0,0,0.7)] relative overflow-hidden bg-void/90 border border-white/5
-          ${isFs ? "sm:w-[660px] sm:h-[90dvh]" : "sm:w-[320px] sm:max-h-[560px]"}`}
+          className={`glass-card flex flex-col pointer-events-auto animate-in fade-in slide-in-from-right-4 duration-500 shadow-[0_50px_150px_rgba(0,0,0,0.7)] relative overflow-hidden bg-void/90 border border-white/5
+          ${isFs ? "w-[660px] h-[90dvh] mr-4" : "w-[320px] max-h-[560px] mr-4 mt-4 rounded-2xl"}`}
         >
           <div
-            className={`relative z-10 ${isFs ? "px-10 pt-10 pb-6" : "px-3 pt-3.5 pb-2"}`}
+            className={`shrink-0 z-10 ${isFs ? "px-10 pt-10 pb-6" : "px-3 pt-3.5 pb-2"}`}
           >
             <div className="flex items-center justify-between mb-4 px-1">
               <h2
@@ -121,7 +119,7 @@ export default function EpisodeSelector({
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto thin-scrollbar px-2 pb-2 relative z-10 scroll-smooth">
+          <div className="flex-1 min-h-0 overflow-y-auto thin-scrollbar px-2 pb-2 relative z-10 scroll-smooth">
             {loading ? (
               <div className="flex flex-col items-center justify-center py-12 gap-3">
                 <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
@@ -224,7 +222,7 @@ export default function EpisodeSelector({
           </div>
 
           <div
-            className={`border-t border-white/5 bg-void relative z-20 ${isFs ? "px-10 py-8" : "px-3.5 py-2.5"}`}
+            className={`shrink-0 border-t border-white/5 bg-void relative z-20 ${isFs ? "px-10 py-8" : "px-3.5 py-2.5"}`}
           >
             <div className="flex items-center justify-between">
               <span

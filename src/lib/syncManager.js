@@ -34,8 +34,8 @@ export function getLeaderTime(tsMap) {
   return _cachedLeader;
 }
 
-// [Note] Proportional rate correction: uses a gentle ramp and high precision (toFixed 4) 
-// to prevent the audio resampler from 'popping' during micro-adjustments.
+// [Note] Proportional rate correction: gentle ramp + high precision (toFixed 4)
+// to prevent audio resampler 'popping' during micro-adjustments.
 export function computeCorrection(localTime, targetTime, isPlaying) {
   if (!isPlaying) return { action: "none", playbackRate: 1 };
   const drift = targetTime - localTime;
@@ -43,7 +43,7 @@ export function computeCorrection(localTime, targetTime, isPlaying) {
   // Use a smaller internal tolerance for smoother handling 
   if (Math.abs(drift) <= 0.2) return { action: "none", playbackRate: 1 };
 
-  // [Note] Cubic-like ramp: drift / 40 creates a nearly imperceptible transition
+  // [Note] Cubic-like ramp: drift / 40 creates a nearly imperceptible transition.
   // Capping at 1.06 ensures pitch shifting remains within reasonable bounds.
   if (drift > 0) {
     const rate = parseFloat(Math.min(1 + drift / 40, 1.06).toFixed(4));

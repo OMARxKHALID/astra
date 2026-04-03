@@ -129,8 +129,7 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
   }, []);
 
   // [Note] injectTracksIntoPC matches senders by KIND not track ID.
-  // New stream object references (React re-render) give tracks new IDs, so ID-matching
-  // always called addTrack — creating new transceivers → m-line order mismatch on next offer.
+  // ID-matching always called addTrack → new transceivers → m-line order mismatch.
   // replaceTrack swaps media on the existing transceiver with zero SDP side effects.
   const injectTracksIntoPC = useCallback((pc, stream, uid) => {
     const senders = pc.getSenders();
@@ -257,24 +256,21 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
         `${pcTag(targetUserId)} initiateCall — signal:${signal} hasRemote:${hasRemote} negotiating:${negotiating} role:${pcRoleRef.current[targetUserId]}`,
       );
 
-      // Guard 1: wrong signaling state
       if (signal !== "stable") {
         warn(
           `${pcTag(targetUserId)} initiateCall SKIPPED — not stable (${signal})`,
         );
         return;
       }
-      // Guard 2: handshake already complete, replaceTrack was sufficient
       if (hasRemote) {
         debug(
           `${pcTag(targetUserId)} initiateCall SKIPPED — handshake complete, replaceTrack sufficient`,
         );
         return;
       }
-      // Guard 3: another createOffer() is already in flight on this PC.
-      // React can flush effects between createOffer() and setLocalDescription() (both async),
+      // [Note] Guard: React can flush effects between createOffer() and setLocalDescription(),
       // so two concurrent offers can be created. The second setLocalDescription() fails with
-      // "order of m-lines doesn't match" because Chrome compares it against the first offer.
+      // "order of m-lines doesn't match" because Chrome compares against the first offer.
       if (negotiating) {
         warn(
           `${pcTag(targetUserId)} initiateCall SKIPPED — offer already in flight (negotiation lock)`,
@@ -469,10 +465,9 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
     }
   }, []);
 
-  // [Note] localStream useEffect: injects tracks into any PCs created before media was acquired,
-  // then initiates the offer if no handshake has started. The negotiation lock (isNegotiatingRef)
-  // prevents a second initiateCall from racing a concurrent one that was triggered by the
-  // call_user_joined socket event and is already awaiting createOffer()/setLocalDescription().
+  // [Note] localStream useEffect: injects tracks into PCs created before media was acquired,
+  // then initiates the offer if no handshake started. The negotiation lock prevents a second
+  // initiateCall from racing a concurrent one triggered by call_user_joined.
   useEffect(() => {
     if (!localStream) return;
     debug(
@@ -510,10 +505,9 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
 
       switch (event.type) {
         case "call_user_joined": {
-          // [Note] Self-guard: React StrictMode double-mounts cause the same user to have two
-          // socket connections in the same room. Socket B receives CALL:user_joined emitted by
-          // Socket A (same userId). Initiating a PC to yourself creates a spurious concurrent
-          // offer that races the real offer and causes the m-line order mismatch crash.
+          // [Note] React StrictMode double-mounts cause the same user to have two
+          // socket connections. Socket B receives CALL:user_joined emitted by Socket A.
+          // Initiating a PC to yourself creates a spurious concurrent offer that crashes.
           if (event.userId === userId) {
             warn(
               `${TAG} call_user_joined IGNORED — received own userId (double-socket from StrictMode)`,
