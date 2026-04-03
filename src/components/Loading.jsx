@@ -5,7 +5,7 @@ export default function Loading({ full = true, size = "md" }) {
     sm: "w-5 h-5 border-2",
     md: "w-9 h-9 border-[3px]",
     lg: "w-12 h-12 border-4",
-    xl: "w-14 h-14 border-2 shadow-[0_0_20px_rgba(245,158,11,0.12)]",
+    xl: "w-14 h-14 border-2",
   };
 
   const container = (

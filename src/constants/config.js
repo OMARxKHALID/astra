@@ -36,4 +36,5 @@ export const LS_KEYS = {
   sidebarWidth: "as_sidebarwidth",
   favorites: "as_favorites",
   watched: "as_watched",
+  mirrorCamera: "as_mirrorcamera",
 };

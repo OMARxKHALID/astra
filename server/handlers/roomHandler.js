@@ -14,7 +14,7 @@ const warn = (...args) => {
   if (DEBUG) console.warn(...args);
 };
 const error = (...args) => {
-  if (DEBUG) error(...args);
+  if (DEBUG) console.error(...args);
 };
 
 export default function registerRoomHandlers(

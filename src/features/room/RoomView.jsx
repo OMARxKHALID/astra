@@ -432,6 +432,7 @@ export default function RoomView({ roomId, initialMeta }) {
         onToggleCam={call.toggleCam}
         micActive={call.micActive}
         camActive={call.camActive}
+        mirrorCameraEnabled={settings.mirrorCameraEnabled}
       />
 
       {mounted &&

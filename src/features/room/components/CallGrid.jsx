@@ -15,6 +15,7 @@ export function CallGrid({
   onToggleCam,
   micActive,
   camActive,
+  mirrorCameraEnabled = true,
 }) {
   const [pos, setPos] = useState({ x: 16, y: 80 });
   const [isDragging, setIsDragging] = useState(false);
@@ -86,6 +87,7 @@ export function CallGrid({
             isLocal
             micActive={micActive}
             camActive={camActive}
+            mirrorCameraEnabled={mirrorCameraEnabled}
           />
         )}
 
@@ -101,28 +103,28 @@ export function CallGrid({
       </div>
 
       <div
-        className={`glass-card p-1.5 sm:px-3 sm:py-2 flex items-center gap-1.5 sm:gap-2 pointer-events-auto shadow-2xl rounded-full border border-white/10 transition-all ${isDragging ? "ring-2 ring-amber/40 bg-white/10" : "bg-white/5"}`}
+        className={`glass-card p-1 sm:px-2 sm:py-1.5 flex items-center gap-1 pointer-events-auto rounded-full border border-white/10 transition-all ${isDragging ? "ring-2 ring-amber/40 bg-white/10" : "bg-white/5"}`}
       >
         <div
           onMouseDown={handleStart}
           onTouchStart={handleStart}
-          className="w-7 h-8 sm:w-8 sm:h-9 flex items-center justify-center text-white/10 hover:text-white/30 cursor-grab active:cursor-grabbing transition-colors touch-manipulation"
+          className="w-5 h-6 sm:w-6 sm:h-7 flex items-center justify-center text-white/10 hover:text-white/30 cursor-grab active:cursor-grabbing transition-colors touch-manipulation"
         >
           <div className="flex flex-col gap-0.5">
             {[0, 1, 2].map((i) => (
               <div
                 key={i}
-                className="w-2.5 sm:w-3 h-0.5 bg-current rounded-full"
+                className="w-2 sm:w-2.5 h-0.5 bg-current rounded-full"
               />
             ))}
           </div>
         </div>
 
-        <div className="w-[1px] h-4 bg-white/10 mx-0.5" />
+        <div className="w-[1px] h-3 bg-white/10 mx-0.5" />
 
         {isJoining ? (
-          <button className="h-8 sm:h-9 px-3 sm:px-4 rounded-full bg-white/5 border border-white/5 text-white/40 text-[9px] sm:text-[11px] font-black uppercase tracking-widest flex items-center gap-2">
-            <div className="w-3 h-3 sm:w-3.5 sm:h-3.5 border-2 border-white/10 border-t-white/40 rounded-full animate-spin" />
+          <button className="h-6 sm:h-7 px-2 sm:px-3 rounded-full bg-white/5 border border-white/5 text-white/40 text-[8px] sm:text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 border-2 border-white/10 border-t-white/40 rounded-full animate-spin" />
             <span className="hidden sm:inline">Connecting</span>
           </button>
         ) : (
@@ -132,18 +134,20 @@ export function CallGrid({
               active={micActive}
               Icon={micActive ? Mic : MicOff}
               color={micActive ? "text-white/80" : "text-danger"}
+              compact
             />
             <ControlButton
               onClick={onToggleCam}
               active={camActive}
               Icon={camActive ? Video : VideoOff}
               color={camActive ? "text-white/80" : "text-danger"}
+              compact
             />
             <button
               onClick={onLeave}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-danger/20 hover:bg-danger/30 flex items-center justify-center text-danger transition-all shadow-lg active:scale-90 touch-manipulation"
+              className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-danger/20 hover:bg-danger/30 flex items-center justify-center text-danger transition-all active:scale-90 touch-manipulation"
             >
-              <PhoneOff className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <PhoneOff className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </button>
           </>
         )}
@@ -152,7 +156,7 @@ export function CallGrid({
   );
 }
 
-function VideoCircle({ stream, name, isLocal, micActive, camActive }) {
+function VideoCircle({ stream, name, isLocal, micActive, camActive, mirrorCameraEnabled = true }) {
   const videoRef = useRef(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const holdTimerRef = useRef(null);
@@ -178,10 +182,10 @@ function VideoCircle({ stream, name, isLocal, micActive, camActive }) {
 
   return (
     <div
-      className={`glass-card relative overflow-hidden group shadow-2xl rounded-2xl sm:rounded-[var(--radius-panel)] border border-white/5 bg-void/60 transition-all duration-300 cursor-pointer touch-manipulation
+      className={`glass-card relative overflow-hidden group rounded-2xl sm:rounded-[var(--radius-panel)] border border-white/5 bg-void/60 transition-all duration-300 cursor-pointer touch-manipulation
         ${
           isExpanded
-            ? "w-36 h-36 sm:w-56 sm:h-56 border-amber/30 shadow-[0_0_30px_rgba(245,158,11,0.15)]"
+            ? "w-36 h-36 sm:w-56 sm:h-56 border-amber/30"
             : "w-20 h-20 sm:w-36 sm:h-36 hover:w-28 hover:h-28 sm:hover:w-48 sm:hover:h-48 hover:border-white/20"
         }`}
       onClick={() => setIsExpanded((v) => !v)}
@@ -194,12 +198,12 @@ function VideoCircle({ stream, name, isLocal, micActive, camActive }) {
         autoPlay
         playsInline
         muted={isLocal}
-        className={`w-full h-full object-cover transition-all duration-700 ${isLocal ? "scale-x-[-1]" : ""} ${showFallback ? "opacity-0 blur-xl scale-110" : "opacity-100 blur-0 scale-100"}`}
+        className={`w-full h-full object-cover transition-all duration-700 ${isLocal && mirrorCameraEnabled ? "scale-x-[-1]" : ""} ${showFallback ? "opacity-0 blur-xl scale-110" : "opacity-100 blur-0 scale-100"}`}
       />
 
       {showFallback && (
         <div className="absolute inset-0 flex items-center justify-center bg-void/40 animate-in fade-in zoom-in-95 duration-500">
-          <div className="w-8 h-8 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-amber/30 to-amber-600/10 flex items-center justify-center border border-amber/20 text-amber font-mono font-black text-sm sm:text-2xl shadow-[0_0_25px_rgba(var(--color-amber-rgb),0.2)]">
+          <div className="w-8 h-8 sm:w-16 sm:h-16 rounded-full bg-white/10 flex items-center justify-center border border-white/10 text-white/60 font-mono font-black text-sm sm:text-2xl">
             {name[0].toUpperCase()}
           </div>
         </div>
@@ -212,7 +216,7 @@ function VideoCircle({ stream, name, isLocal, micActive, camActive }) {
           </span>
         </div>
         {!micActive && (
-          <div className="w-4 h-4 sm:w-7 sm:h-7 rounded-full bg-danger/20 backdrop-blur-md flex items-center justify-center border border-danger/20 shadow-lg">
+          <div className="w-4 h-4 sm:w-7 sm:h-7 rounded-full bg-danger/20 backdrop-blur-md flex items-center justify-center border border-danger/20">
             <MicOff className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-danger" />
           </div>
         )}
@@ -223,14 +227,14 @@ function VideoCircle({ stream, name, isLocal, micActive, camActive }) {
   );
 }
 
-function ControlButton({ onClick, active, Icon, color }) {
+function ControlButton({ onClick, active, Icon, color, compact }) {
   return (
     <button
       onClick={onClick}
-      className={`relative w-8 h-8 sm:w-9 sm:h-9 rounded-full ${active ? "bg-white/5" : "bg-danger/10"} hover:bg-white/20 flex items-center justify-center transition-all active:scale-90 shadow-lg group shrink-0 touch-manipulation`}
+      className={`relative rounded-full ${active ? "bg-white/5" : "bg-danger/10"} hover:bg-white/20 flex items-center justify-center transition-all active:scale-90 group shrink-0 touch-manipulation ${compact ? "w-6 h-6 sm:w-7 sm:h-7" : "w-8 h-8 sm:w-9 sm:h-9"}`}
     >
       <Icon
-        className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${color} transition-transform group-hover:scale-110`}
+        className={`${compact ? "w-2.5 h-2.5 sm:w-3 sm:h-3" : "w-3.5 h-3.5 sm:w-4 sm:h-4"} ${color} transition-transform group-hover:scale-110`}
       />
       {!active && (
         <div className="absolute inset-0 rounded-full ring-1 ring-danger/40 animate-pulse pointer-events-none" />

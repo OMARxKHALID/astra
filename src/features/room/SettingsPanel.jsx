@@ -90,6 +90,8 @@ export default function SettingsPanel({
   setSpeedSyncEnabled,
   ambilightEnabled,
   setAmbilightEnabled,
+  mirrorCameraEnabled,
+  setMirrorCameraEnabled,
 }) {
   const { addToast } = useToast();
   const panelRef = useRef(null);
@@ -245,6 +247,15 @@ export default function SettingsPanel({
               toggleAndToast(setAmbilightEnabled, "Ambilight", ambilightEnabled)
             }
             icon={<Sparkles className="w-4 h-4" />}
+          />
+          <Row
+            label="Mirror my camera"
+            description="Flip local video for selfie view"
+            enabled={mirrorCameraEnabled}
+            onToggle={() =>
+              toggleAndToast(setMirrorCameraEnabled, "Mirror Camera", mirrorCameraEnabled)
+            }
+            icon={<Camera className="w-4 h-4" />}
           />
 
           <SectionLabel>Security</SectionLabel>

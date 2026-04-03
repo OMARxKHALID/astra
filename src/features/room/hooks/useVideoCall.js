@@ -15,15 +15,15 @@ const TAG = "[call]";
 const pcTag = (uid) => `${TAG}[PC:${String(uid).slice(0, 6)}]`;
 
 const debug = (...args) => {
-  if (DEBUG) debug(...args);
+  if (DEBUG) console.log(...args);
 };
 
 const warn = (...args) => {
-  if (DEBUG) warn(...args);
+  if (DEBUG) console.warn(...args);
 };
 
 const error = (...args) => {
-  if (DEBUG) error(...args);
+  if (DEBUG) console.error(...args);
 };
 
 export function useVideoCall({ roomId, userId, socketRef, addToast }) {
