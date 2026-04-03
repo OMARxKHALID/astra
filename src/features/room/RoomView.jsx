@@ -234,6 +234,7 @@ export default function RoomView({ roomId, initialMeta }) {
         isCallJoined={call.isJoined}
         isCalling={call.isCalling}
         onToggleCall={call.isJoined ? call.leaveCall : call.joinCall}
+        debugMode={room.debugMode}
       />
 
       <SplitView
@@ -371,6 +372,7 @@ export default function RoomView({ roomId, initialMeta }) {
               leaderTime={leaderTime}
               inCallUsers={Object.keys(call.remoteStreams)}
               remoteStatus={call.remoteStatus}
+              typingUsers={room.typingUsers}
               onKick={(uid) =>
                 sendRef.current?.({ type: "kick", targetUserId: uid })
               }

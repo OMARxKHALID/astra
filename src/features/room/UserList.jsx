@@ -100,10 +100,17 @@ export default function UserList({
   leaderTime = 0,
   inCallUsers = [],
   remoteStatus = {},
+  typingUsers = {},
 }) {
   const [confirmTransfer, setConfirmTransfer] = useState(null);
   const getName = (uid) =>
     displayNames[uid] || `Guest-${uid.slice(0, 4).toUpperCase()}`;
+  
+  const now = Date.now();
+  const isTyping = (uid) => {
+    const typing = typingUsers[uid];
+    return typing && now - typing.ts < 3000;
+  };
 
   function handleTransfer(uid) {
     if (confirmTransfer === uid) {
@@ -118,14 +125,6 @@ export default function UserList({
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto no-scrollbar px-3 py-2 space-y-1">
-        {participants.length === 0 && (
-          <div className="flex items-center justify-center h-full opacity-30">
-            <p className="text-[10px] font-mono uppercase tracking-wider text-center" style={{ color: "var(--color-muted)" }}>
-              No one here yet
-            </p>
-          </div>
-        )}
-
         {participants.map((uid) => {
           const isMe = uid === myUserId;
           const isThisHost = uid === hostId;
@@ -163,7 +162,18 @@ export default function UserList({
                       host
                     </span>
                   )}
-                  <SyncStatus deviation={deviation} />
+                  {isTyping(uid) ? (
+                    <span className="text-[9px] text-amber/70 font-mono flex items-center gap-1">
+                      <span className="flex gap-0.5">
+                        <span className="w-1 h-1 bg-amber/70 rounded-full animate-[bounce_1s_infinite]" style={{ animationDelay: "0ms" }} />
+                        <span className="w-1 h-1 bg-amber/70 rounded-full animate-[bounce_1s_infinite]" style={{ animationDelay: "150ms" }} />
+                        <span className="w-1 h-1 bg-amber/70 rounded-full animate-[bounce_1s_infinite]" style={{ animationDelay: "300ms" }} />
+                      </span>
+                      typing
+                    </span>
+                  ) : (
+                    <SyncStatus deviation={deviation} />
+                  )}
                 </div>
               </div>
 

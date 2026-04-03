@@ -143,7 +143,7 @@ function ChatMessageInner({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchEnd}
-      className={`flex ${isOwn ? "flex-row-reverse" : "flex-row"} gap-2 group relative animate-[messageIn_0.35s_cubic-bezier(0.23,1,0.32,1)]`}
+      className={`flex ${isOwn ? "flex-row-reverse" : "flex-row"} gap-2 group relative cursor-pointer animate-[messageIn_0.35s_cubic-bezier(0.23,1,0.32,1)]`}
     >
       {/* [Note] Emoji picker portal: uses pointerdown-outside to close (not mouseleave)
           so the picker stays alive long enough for mobile tap to register on an emoji.

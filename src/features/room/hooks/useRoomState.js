@@ -28,6 +28,13 @@ export default function useRoomState(initialMeta) {
   const [roomPassword, setRoomPassword] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
   const [mobileSheet, setMobileSheet] = useState(null);
+  const [debugMode, setDebugMode] = useState(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("debug") === "1";
+    }
+    return false;
+  });
 
   const displayNamesRef = useRef(displayNames);
   displayNamesRef.current = displayNames;
@@ -65,6 +72,8 @@ export default function useRoomState(initialMeta) {
     setUnreadCount,
     mobileSheet,
     setMobileSheet,
+    debugMode,
+    setDebugMode,
     handleStateUpdate,
     handleTsMapUpdate,
   };

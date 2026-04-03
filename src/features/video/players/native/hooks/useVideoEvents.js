@@ -75,31 +75,74 @@ export default function useVideoEvents({
 
       if (!v.error) {
         setVideoError({
-          title: "Playback Error",
-          detail:
-            "URL is not a direct video. Paste an .mp4, .m3u8, or player URL.",
+          title: "Video Not Supported",
+          detail: "This URL format isn't supported. Try a direct MP4, M3U8 stream, or YouTube link.",
         });
         return;
       }
+
+      const errorMsg = v.error.message || "";
+      const isCORS = errorMsg.includes("CORS") || errorMsg.includes("cross-origin") || errorMsg.includes("net::ERR_FAILED");
+      const isNetwork = v.error.code === 2 || errorMsg.includes("network") || errorMsg.includes("fetch");
+      const is404 = errorMsg.includes("404") || errorMsg.includes("Not Found");
+      const is403 = errorMsg.includes("403") || errorMsg.includes("Forbidden");
+      const isAborted = v.error.code === 1 || errorMsg.includes("aborted");
+
+      if (isAborted) {
+        return;
+      }
+
+      if (isCORS) {
+        setVideoError({
+          title: "Video Blocked by Browser",
+          detail: "This video can't be loaded due to browser security restrictions. Try a different video source or use a proxy/CORS-enabled URL.",
+        });
+        return;
+      }
+
+      if (is404) {
+        setVideoError({
+          title: "Video Not Found",
+          detail: "The video URL no longer exists or is broken. Please check the link and try again.",
+        });
+        return;
+      }
+
+      if (is403) {
+        setVideoError({
+          title: "Access Denied",
+          detail: "This video is not publicly available. Try a different video URL.",
+        });
+        return;
+      }
+
+      if (isNetwork) {
+        setVideoError({
+          title: "Network Error",
+          detail: "Unable to connect to the video. Check your internet connection and try again.",
+        });
+        return;
+      }
+
       const MAP = {
-        1: ["Loading Cancelled", "Video loading aborted."],
-        2: ["Network Error", "A network error stopped the download."],
         3: [
-          "Decoding Error",
-          "The file appears corrupt or uses an unsupported codec.",
+          "Video Format Error",
+          "The file format isn't supported by your browser. Try a different video.",
         ],
-        4: ["Format Not Supported", "This URL cannot be played directly."],
+        4: [
+          "Cannot Play Video",
+          "This video can't be played directly. Try a direct MP4 link.",
+        ],
       };
       const [title, detail] = MAP[v.error.code] || [
-        "Unknown Error",
-        `Code ${v.error.code}`,
+        "Playback Failed",
+        "Something went wrong playing this video. Try a different URL.",
       ];
-      const errorMsg = detail + (v.error.message ? ` (${v.error.message})` : "");
       setVideoError({
         title,
-        detail: errorMsg,
+        detail,
       });
-      addToast?.(`${title}: ${errorMsg}`, "error");
+      addToast?.(`${title}: ${detail}`, "error");
     };
 
     v.addEventListener("timeupdate", onTime);

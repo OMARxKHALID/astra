@@ -113,6 +113,7 @@ export function MobileRoomSheets({
               leaderTime={leaderTime}
               inCallUsers={inCallUsers}
               remoteStatus={remoteStatus}
+              typingUsers={room.typingUsers}
               onKick={(uid) =>
                 sendRef.current?.({ type: "kick", targetUserId: uid })
               }

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { ChatMessage } from "./components/ChatMessage";
 import { useRecord } from "./hooks/useRecord";
+import EmptyState from "@/components/EmptyState";
 
 export default function ChatSidebar({
   messages = [],
@@ -151,18 +152,11 @@ export default function ChatSidebar({
         className="flex-1 overflow-y-auto no-scrollbar px-4 pt-6 pb-3 space-y-4"
       >
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full gap-3 animate-[fadeIn_0.8s_ease-out]">
-            <div className="relative">
-              <ChatBubbleIcon
-                className="w-9 h-9 text-white/5"
-                strokeWidth={1}
-              />
-              <div className="absolute inset-0 bg-amber/20 blur-xl rounded-full opacity-20" />
-            </div>
-            <p className="text-[11px] font-mono text-center max-w-[160px] leading-relaxed uppercase tracking-[0.25em] text-white/40">
-              The thread is quiet.
-            </p>
-          </div>
+          <EmptyState
+            icon={ChatBubbleIcon}
+            title="The thread is quiet"
+            description="Start the conversation!"
+          />
         )}
         {messages.map((msg, i) => (
           <ChatMessage

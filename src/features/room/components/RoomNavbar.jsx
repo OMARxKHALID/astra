@@ -17,10 +17,16 @@ export function RoomNavbar({
   isCallJoined,
   isCalling,
   onToggleCall,
+  debugMode = false,
 }) {
   return (
     <nav className="room-navbar relative z-30 shrink-0 px-2 sm:px-4 py-2 flex items-center justify-between gap-1 sm:gap-2">
       <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
+        {debugMode && (
+          <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-danger/20 text-danger/80 border border-danger/30 shrink-0">
+            DEBUG
+          </span>
+        )}
         <button
           onClick={() => router.push("/")}
           className="flex items-center gap-1.5 px-2 py-1.5 sm:px-3 sm:py-2 rounded-full glass-card hover:border-white/10 transition-all active:scale-95 shrink-0"
