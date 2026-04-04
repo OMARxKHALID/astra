@@ -6,36 +6,67 @@ export default function ErrorOverlay({ error, onRetry, onDismiss }) {
   if (!error) return null;
 
   const errorTitle = typeof error === "object" ? error.title : "Playback Error";
-  const showTips = ["Video Not Supported", "Cannot Play Video", "Playback Failed", "Format Not Supported"].includes(errorTitle);
 
-  const getTips = () => {
-    if (errorTitle === "Video Blocked by Browser") {
-      return [
-        "Try a different video URL",
-        "Use a CORS-enabled proxy",
-        "Host video on your own server",
-      ];
-    }
-    if (errorTitle === "Network Error") {
-      return [
-        "Check your internet connection",
-        "Try reloading the page",
-        "Use a different video URL",
-      ];
-    }
-    if (errorTitle === "Video Not Found" || errorTitle === "Access Denied") {
-      return [
-        "Check if the URL is correct",
-        "The video may have been removed",
-        "Try a different video source",
-      ];
-    }
-    return [
-      "Direct .mp4 or .m3u8 stream URL",
-      "YouTube or Vimeo link",
-      "CDN/proxy URL ending in .mp4",
-    ];
+  const TIPS_MAP = {
+    "Video Blocked by Browser": [
+      "Try a different video URL or CDN host",
+      "Use a CORS-enabled proxy or server",
+      "Host the video file on your own server",
+    ],
+    "Network Error": [
+      "Check your internet connection",
+      "Try reloading the page",
+      "Use a different video URL",
+    ],
+    "Video Not Found": [
+      "Double-check the URL is correct",
+      "The video may have been removed",
+      "Try a different video source",
+    ],
+    "Access Denied": [
+      "The video may require authentication",
+      "Try a publicly accessible URL",
+      "Use an embed player URL instead",
+    ],
+    "Stream Error": [
+      "The HLS stream may have expired",
+      "Try refreshing the stream URL",
+      "Check if the source is still live",
+    ],
+    "Video Not Supported": [
+      "Use a direct .mp4 or .m3u8 URL",
+      "Paste a YouTube or Vimeo link",
+      "Try a CDN/proxy URL with a known extension",
+    ],
+    "Cannot Play Video": [
+      "Use a direct .mp4 or .m3u8 URL",
+      "YouTube or Vimeo links work best",
+      "Try an embed player URL instead",
+    ],
+    "Playback Failed": [
+      "Use a direct .mp4 or .m3u8 URL",
+      "YouTube or Vimeo links work best",
+      "CDN proxy URL ending in .mp4",
+    ],
+    "Video Format Error": [
+      "Use a .mp4, .webm, or .m3u8 URL",
+      "YouTube or Vimeo links are reliable",
+      "Check if the file codec is H.264",
+    ],
+    "Custom URL Failed": [
+      "Use a direct .mp4 or .m3u8 URL",
+      "Workers.dev and CDN proxy URLs are supported",
+      "Try a YouTube, Vimeo, or embed URL",
+    ],
   };
+
+  const tips = TIPS_MAP[errorTitle] ?? [
+    "Direct .mp4 or .m3u8 stream URL",
+    "YouTube or Vimeo link",
+    "CDN/proxy URL ending in .mp4",
+  ];
+
+  const showTips = errorTitle in TIPS_MAP;
 
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center bg-void/92 backdrop-blur-xl gap-5 text-center px-6 z-30">
@@ -55,7 +86,7 @@ export default function ErrorOverlay({ error, onRetry, onDismiss }) {
             <p className="text-[10px] font-mono text-white/40 uppercase tracking-widest">
               Try instead:
             </p>
-            {getTips().map((tip) => (
+            {tips.map((tip) => (
               <div
                 key={tip}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-[var(--radius-pill)] bg-white/10 border border-white/10"

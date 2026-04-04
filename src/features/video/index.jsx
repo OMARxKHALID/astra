@@ -4,10 +4,18 @@ import dynamic from "next/dynamic";
 import { memo, useEffect } from "react";
 import { classifyUrl } from "@/lib/videoResolver";
 
-const NativeVideoPlayer = dynamic(() => import("./players/NativeVideoPlayer"), { ssr: false });
-const YouTubePlayer = dynamic(() => import("./players/YouTubePlayer"), { ssr: false });
-const VimeoPlayer = dynamic(() => import("./players/VimeoPlayer"), { ssr: false });
-const EmbedPlayer = dynamic(() => import("./players/EmbedPlayer"), { ssr: false });
+const NativeVideoPlayer = dynamic(() => import("./players/NativeVideoPlayer"), {
+  ssr: false,
+});
+const YouTubePlayer = dynamic(() => import("./players/YouTubePlayer"), {
+  ssr: false,
+});
+const VimeoPlayer = dynamic(() => import("./players/VimeoPlayer"), {
+  ssr: false,
+});
+const EmbedPlayer = dynamic(() => import("./players/EmbedPlayer"), {
+  ssr: false,
+});
 
 function VideoPlayer({
   videoRef,
@@ -58,7 +66,14 @@ function VideoPlayer({
     onToggleEpisodes,
   };
 
-  if (source.type === "mp4" || source.type === "hls")
+  // [Note] "direct" type: valid http/https URL with no recognized extension or pattern.
+  // Sent to NativeVideoPlayer which sets v.src directly — browser negotiates content-type
+  // via response headers. Falls back to the error overlay if the server rejects it.
+  if (
+    source.type === "mp4" ||
+    source.type === "hls" ||
+    source.type === "direct"
+  )
     return (
       <NativeVideoPlayer
         videoRef={videoRef}
