@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { generateId } from "@/utils/id";
 
 const TYPE_MAP = {
   success: {
@@ -67,10 +68,7 @@ export function useToast() {
 
   const addToast = useCallback(
     (message, type = "success", duration = 3000, icon = null) => {
-      const id =
-        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-          ? crypto.randomUUID()
-          : Date.now().toString() + Math.random().toString(36).slice(2, 7);
+      const id = generateId(16);
       setToasts((prev) => [...prev, { id, message, type, icon }]);
       setTimeout(
         () => setToasts((prev) => prev.filter((t) => t.id !== id)),

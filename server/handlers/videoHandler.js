@@ -75,10 +75,24 @@ export default function registerVideoHandlers(
     if (!meta?.isHost) return;
     const room = rooms.get(meta.roomId);
     if (!room) return;
+
+    const rawUrl = typeof data?.video === "string" ? data.video.trim().slice(0, 2048) : "";
+
+    if (rawUrl) {
+      try { new URL(rawUrl); }
+      catch {
+        socket.emit("REC:error", {
+          message: "Invalid video URL",
+          code: "INVALID_URL",
+        });
+        return;
+      }
+    }
+
     if (
       room.strictVideoUrlMode &&
-      data?.video &&
-      !isStrictVideoUrl(data.video)
+      rawUrl &&
+      !isStrictVideoUrl(rawUrl)
     ) {
       socket.emit("REC:error", {
         message:
@@ -87,11 +101,12 @@ export default function registerVideoHandlers(
       });
       return;
     }
+
     room.changeVideo(
-      data?.video || "",
+      rawUrl,
       data?.videoTS || 0,
       data?.paused || false,
-      data?.subtitleUrl || "",
+      typeof data?.subtitleUrl === "string" ? data.subtitleUrl.trim().slice(0, 2048) : "",
     );
     io.to(room.roomId).emit("REC:host", room.publicState());
     saveRoom(room);
@@ -101,15 +116,18 @@ export default function registerVideoHandlers(
     const ctx = getCtx();
     if (!ctx) return;
     
-    const inputUrl = url == null ? "" : String(url);
+    const inputUrl = url == null ? "" : String(url).trim().slice(0, 2048);
     
     let finalUrl = inputUrl;
-    if (/^\d+$/.test(inputUrl.trim())) {
-      const fileId = inputUrl.trim();
+    if (/^\d+$/.test(inputUrl)) {
+      const fileId = inputUrl;
       const serverUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
       finalUrl = `${serverUrl}/api/subtitles/download?url=${fileId}`;
-    } else if (inputUrl.startsWith("blob:")) {
-      finalUrl = inputUrl;
+    } else if (inputUrl.startsWith("blob:") || inputUrl.startsWith("data:") || inputUrl.startsWith("http")) {
+      try { new URL(inputUrl); }
+      catch { finalUrl = ""; }
+    } else if (inputUrl) {
+      finalUrl = "";
     }
     
     ctx.room.subtitleUrl = finalUrl;

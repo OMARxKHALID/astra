@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Download, X } from "lucide-react";
+import { ls } from "@/utils/localStorage";
 
 export default function PwaOnboarding() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -12,7 +13,7 @@ export default function PwaOnboarding() {
       e.preventDefault();
       setDeferredPrompt(e);
       
-      const dismissed = localStorage.getItem("astra_pwa_dismissed");
+      const dismissed = ls.get("astra_pwa_dismissed");
       const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
       
       if (!dismissed && !isStandalone) {
@@ -36,7 +37,7 @@ export default function PwaOnboarding() {
 
   const handleDismiss = () => {
     setShowBanner(false);
-    localStorage.setItem("astra_pwa_dismissed", "true");
+    ls.set("astra_pwa_dismissed", "true");
   };
 
   if (!showBanner) return null;

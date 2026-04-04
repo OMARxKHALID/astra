@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { buildEmbedUrl } from "@/lib/videoResolver";
 
-export function useVideoState({ videoUrl, params, roomId, router, sendRef }) {
+export function useVideoState({ videoUrl, params, roomId, router, sendRef, isHost }) {
   const [episodesOpen, setEpisodesOpen] = useState(false);
   const [seasonCache, setSeasonCache] = useState({});
 
@@ -17,7 +17,7 @@ export function useVideoState({ videoUrl, params, roomId, router, sendRef }) {
 
   const handleSelectEpisode = useCallback(
     ({ season, episode }) => {
-      if (!parsed.id) return;
+      if (!parsed.id || !isHost) return;
       const newUrl = buildEmbedUrl(
         "vidlink",
         parsed.id,
@@ -33,7 +33,7 @@ export function useVideoState({ videoUrl, params, roomId, router, sendRef }) {
         });
       }
     },
-    [parsed.id, sendRef],
+    [parsed.id, isHost, sendRef],
   );
 
   return {

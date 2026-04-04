@@ -53,12 +53,23 @@ export default async function RoomPage({ params, searchParams }) {
   
   // Reconstruct URLs split by un-encoded query params into separate searchParams props
   let urlParam = sp?.url ? decodeURIComponent(sp.url) : null;
-  if (urlParam && (urlParam.includes("vidsrc") || urlParam.includes("vidlink") || urlParam.includes("youtube"))) {
-    const APP_PARAMS = new Set(["url", "tmdb", "type", "s", "e", "h"]);
-    const others = Object.keys(sp).filter(k => !APP_PARAMS.has(k));
-    if (others.length > 0) {
-      const qs = others.map(k => `${k}=${sp[k]}`).join("&");
-      urlParam = urlParam.includes("?") ? `${urlParam}&${qs}` : `${urlParam}?${qs}`;
+  if (urlParam && urlParam.startsWith("http")) {
+    try {
+      const parsed = new URL(urlParam);
+      const APP_PARAMS = new Set(["url", "tmdb", "type", "s", "e", "h"]);
+      const others = Object.keys(sp).filter(k => !APP_PARAMS.has(k));
+      if (others.length > 0) {
+        const qs = others.flatMap(k => {
+          const val = sp[k];
+          const arr = Array.isArray(val) ? val : [val];
+          return arr.filter(Boolean).map(v => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`);
+        }).join("&");
+        if (qs) {
+          urlParam = parsed.search ? `${urlParam}&${qs}` : `${urlParam}?${qs}`;
+        }
+      }
+    } catch {
+      // malformed URL — use as-is
     }
   }
 

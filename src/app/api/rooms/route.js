@@ -24,12 +24,15 @@ export async function POST(request) {
 
     const hostToken = signJwt({ sub: hostId, roomId, role: "host" }, 86400);
 
-    roomStore.set(roomId, {
+    const stored = await roomStore.set(roomId, {
       roomId,
       videoUrl: finalVideoUrl,
       hostId,
       createdAt: Date.now(),
-    }).catch(() => {});
+    });
+    if (!stored) {
+      console.error(`[api/rooms] Failed to persist room ${roomId} in Redis`);
+    }
 
     return NextResponse.json({ roomId, hostToken, hostId }, { status: 201 });
   } catch (err) {

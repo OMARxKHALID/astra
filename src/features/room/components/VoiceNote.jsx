@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Play as PlayIcon, Pause as PauseIcon } from "lucide-react";
+import { formatTime } from "@/utils/time";
 
 export function VoiceNote({ src, isOwn }) {
   const audioRef = useRef(null);
@@ -61,13 +62,6 @@ export function VoiceNote({ src, isOwn }) {
     e.preventDefault();
     const touch = e.changedTouches[0];
     seekFromClientX(touch.clientX);
-  };
-
-  const formatTime = (t) => {
-    if (!t || isNaN(t) || t === Infinity) return "0:00";
-    return `${Math.floor(t / 60)}:${Math.floor(t % 60)
-      .toString()
-      .padStart(2, "0")}`;
   };
 
   const displayTime = isPlaying || currentTime > 0 ? currentTime : duration;

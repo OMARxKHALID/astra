@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 
 import { LS_KEYS } from "@/constants/config";
 import { ls } from "@/utils/localStorage";
+import { generateId, generateGuestId } from "@/utils/id";
 
 export default function useUser(sendRef) {
   const { data: session, status } = useSession();
@@ -30,10 +31,7 @@ export default function useUser(sendRef) {
       setUserId(stored);
       return;
     }
-    const id = 
-      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-        ? crypto.randomUUID()
-        : `guest-${Math.random().toString(36).slice(2, 11)}-${Date.now().toString(36)}`;
+    const id = generateGuestId();
     ls.set(key, id);
     setUserId(id);
   }, [session?.user?.id, status]);
@@ -46,7 +44,7 @@ export default function useUser(sendRef) {
     const name =
       sessionName || 
       stored || 
-      `Guest-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+      `Guest-${generateId(4).toUpperCase()}`;
     
     if (!stored && !sessionName) ls.set(LS_KEYS.displayName, name);
     setDisplayName(name);

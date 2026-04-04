@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { memo, useEffect } from "react";
+import { memo } from "react";
 import { classifyUrl } from "@/lib/videoResolver";
 
 const NativeVideoPlayer = dynamic(() => import("./players/NativeVideoPlayer"), {
@@ -41,15 +41,6 @@ function VideoPlayer({
   onToggleTheatre,
 }) {
   const source = classifyUrl(videoUrl);
-
-  useEffect(() => {
-    if (
-      (source.type === "embed" || source.type === "unsupported") &&
-      videoRef?.current
-    ) {
-      videoRef.current = null;
-    }
-  }, [source.type, videoRef]);
 
   if (
     source.type === "mp4" ||

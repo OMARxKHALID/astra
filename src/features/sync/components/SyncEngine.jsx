@@ -22,7 +22,6 @@ export default function SyncEngine(props) {
         speed: () => send("CMD:playbackRate", { rate: msg.rate, videoTS: msg.currentTime }),
         change_video: () => send("CMD:host", {
           video: msg.videoUrl,
-          videoUrl: msg.videoUrl,
           subtitleUrl: msg.subtitleUrl,
           paused: false,
           token: props.hostToken,

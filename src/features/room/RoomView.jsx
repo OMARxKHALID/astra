@@ -131,13 +131,6 @@ export default function RoomView({ roomId, initialMeta }) {
 
   const { rootAmbiRef, bentoVideoRef, handleAmbiColors } =
     useAmbilight(settings);
-  const videoState = useVideoState({
-    videoUrl: room.serverState?.videoUrl || initialMeta?.videoUrl || "",
-    params,
-    roomId,
-    router,
-    sendRef,
-  });
 
   const hostToken = mounted ? ls.get(`host_${roomId}`) || "" : "";
   const isHost = room.serverState?.hostId
@@ -145,6 +138,15 @@ export default function RoomView({ roomId, initialMeta }) {
       ? room.serverState.hostId === identity.userId
       : false
     : room.serverState?.isHostHint || (mounted && !!hostToken);
+
+  const videoState = useVideoState({
+    videoUrl: room.serverState?.videoUrl || initialMeta?.videoUrl || "",
+    params,
+    roomId,
+    router,
+    sendRef,
+    isHost,
+  });
   useMediaHistory({
     roomId,
     videoUrl: videoState.videoUrl,

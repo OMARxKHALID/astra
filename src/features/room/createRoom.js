@@ -1,5 +1,6 @@
 import { LS_KEYS } from "@/constants/config";
 import { ls } from "@/utils/localStorage";
+import { generateId, generateGuestId } from "@/utils/id";
 
 export function createRoom(videoUrl, session = null) {
   let userId;
@@ -7,15 +8,11 @@ export function createRoom(videoUrl, session = null) {
     userId = session.user.id;
   } else {
     const storedId = ls.get(LS_KEYS.userId);
-    userId =
-      storedId ||
-      (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-        ? crypto.randomUUID()
-        : `guest-${Math.random().toString(36).slice(2, 11)}-${Date.now().toString(36)}`);
+    userId = storedId || generateGuestId();
     if (!storedId) ls.set(LS_KEYS.userId, userId);
   }
 
-  const roomId = randomId();
+  const roomId = generateId(8);
 
   // Fire-and-forget (mostly): Background registration
   const createPromise = fetch("/api/rooms", {
@@ -23,18 +20,12 @@ export function createRoom(videoUrl, session = null) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ videoUrl, userId, roomId }),
   }).then(async (res) => {
+    if (!res.ok) throw new Error(res.status === 400 ? "Invalid video URL" : "Server error");
     const data = await res.json();
-    if (data.hostToken) {
-      ls.set(`host_${roomId}`, data.hostToken);
-      return data;
-    }
+    if (!data.hostToken) throw new Error("No host token returned");
+    ls.set(`host_${roomId}`, data.hostToken);
+    return data;
   });
 
   return { roomId, createPromise };
-}
-
-function randomId() {
-  return typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-    ? crypto.randomUUID().slice(0, 8)
-    : Math.random().toString(36).slice(2, 10);
 }
