@@ -1,7 +1,7 @@
 import RoomView from "@/features/room/RoomView";
 import { roomStore } from "@/lib/roomStore";
 
-// [Note] Local Networking: Use 127.0.0.1 instead of localhost for Node environment compatibility (avoids IPv6 resolution lag)
+// Use 127.0.0.1 instead of localhost to avoid IPv6 resolution lag in Node
 const WS_HTTP_URL = process.env.WS_HTTP_URL || "http://127.0.0.1:3001";
 
 async function getRoomMeta(id, skipFetch = false) {
@@ -21,14 +21,14 @@ async function getRoomMeta(id, skipFetch = false) {
   try {
     const res = await fetch(`${WS_HTTP_URL}/rooms/${id}`, {
       cache: "no-store",
-      signal: AbortSignal.timeout(600), // [Note] Fast Fail: Reduce timeout to 600ms for quicker waterfall fallback
+      signal: AbortSignal.timeout(600),
     });
     if (!res.ok) return null;
     const data = await res.json();
     if (!data || !Object.keys(data).length) return null;
     return {
       roomId: data.roomId ?? id,
-      videoUrl: data.videoUrl || data.video || "", // [Note] Robustness: support both server (video) and store (videoUrl) keys
+      videoUrl: data.videoUrl || data.video || "",
       subtitleUrl: data.subtitleUrl || "",
       hasPassword: Boolean(data.hasPassword || data.passwordHash),
       createdAt: data.lastUpdated ?? Date.now(),
@@ -51,8 +51,7 @@ export default async function RoomPage({ params, searchParams }) {
   const { id } = await params;
   const sp = await searchParams;
   
-  // [Note] URL Reconstruction: Handles cases where valid video URLs with query 
-  // params were passed un-encoded, causing browsers to split them into separate props.
+  // Reconstruct URLs split by un-encoded query params into separate searchParams props
   let urlParam = sp?.url ? decodeURIComponent(sp.url) : null;
   if (urlParam && (urlParam.includes("vidsrc") || urlParam.includes("vidlink") || urlParam.includes("youtube"))) {
     const APP_PARAMS = new Set(["url", "tmdb", "type", "s", "e", "h"]);
@@ -63,9 +62,7 @@ export default async function RoomPage({ params, searchParams }) {
     }
   }
 
-  // [Note] Absolute Fast-Path: If the client already provides a video URL via searchParams,
-  // we bypass all server-side awaits (Redis & Fetch) to ensure an instant render.
-  // The RoomView client component will then reconcile real-time state via Socket.io.
+  // Fast-path: bypass server-side awaits when client provides video URL via searchParams
   if (urlParam !== null && urlParam.trim() !== "") {
     const room = {
       roomId: id,

@@ -88,7 +88,7 @@ export function classifyUrl(raw) {
         const proxiedUrl = `${appUrl}/api/proxy?url=${encodeURIComponent(decodedInnerUrl)}`;
         return { type: "mp4", url: proxiedUrl };
       } catch (e) {
-        // [Note] Fail silently — URL will fall through to default classification
+        // fail silently — will fall through to default classification
       }
     }
   }
@@ -108,8 +108,7 @@ export function classifyUrl(raw) {
     if (KNOWN_VIDEO_EXTENSIONS.test(decoded)) return { type: "mp4", url: t };
   } catch {}
 
-  // [Note] Valid http/https URL with no recognized pattern: send to native player
-  // for a direct src attempt. Browser will negotiate content-type via response headers.
+  // unrecognized http/https URL — send to native player for direct src attempt
   return { type: "direct", url: t };
 }
 
@@ -163,7 +162,7 @@ export function buildEmbedUrl(server, tmdbId, type, season = 1, episode = 1) {
   }
 }
 
-// [Note] Reverse-lookup: hostname split fails for www./player./embed. prefixes; match against known server URL patterns instead
+// Reverse-lookup: match against known embed URL patterns (hostname split fails for www./player./embed. prefixes)
 export function detectServer(url) {
   if (!url) return null;
   let urlHost;

@@ -1,7 +1,6 @@
 import { ls } from "./localStorage";
 import { LS_KEYS } from "@/constants/config";
 
-// [Note] Unified Persistence: Centralizes Favorites & Watched list management to prevent logic duplication across views
 export const persistence = {
   getWatched: () => {
     try {

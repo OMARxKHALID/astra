@@ -3,7 +3,7 @@ import { roomStore } from "@/lib/roomStore";
 
 const WS_HTTP_URL = process.env.WS_HTTP_URL || "http://localhost:3001";
 
-// [Note] queryWsSidecar: synchronizes the Next.js API with the live Socket.IO server's in-memory room state
+// Synchronize Next.js API with the live Socket.IO server's in-memory room state
 async function queryWsSidecar(id) {
   try {
     const res = await fetch(`${WS_HTTP_URL}/rooms/${id}`, {

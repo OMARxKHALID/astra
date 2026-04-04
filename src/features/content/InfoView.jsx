@@ -20,7 +20,6 @@ import { createRoom } from "@/features/room/createRoom";
 import { persistence } from "@/utils/persistence";
 import YoutubeIcon from "@/components/icons/YoutubeIcon";
 
-// [Note] Custom Select: Logic to override native <select> UI which breaks premium dark mode immersion
 function CustomSelect({
   label,
   value,

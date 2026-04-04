@@ -57,7 +57,6 @@ export default function YouTubePlayer({
     ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
     : null;
 
-  // [Note] Static Ambilight: cross-origin blocks canvas reads; sample thumbnail once for themed glow
   useEffect(() => {
     if (!onAmbiColors || !thumbnailUrl || !ambilightEnabled) return;
     const img = new Image();

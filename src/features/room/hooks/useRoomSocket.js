@@ -353,7 +353,7 @@ export function useRoomSocket(props) {
           try {
             decodedUrl = decodeURIComponent(decodedUrl);
           } catch (e) {
-            // [Note] Decode failed — use raw string
+            // use raw string on decode failure
           }
         }
         
@@ -425,7 +425,6 @@ export function useRoomSocket(props) {
     };
   }, [connect, props.userId, props.roomId]);
 
-  // [Note] Periodic pos report
   useEffect(() => {
     const int = setInterval(() => {
       const v = p.current.videoRef?.current;

@@ -87,7 +87,7 @@ export function RoomNavbar({
             }
             if (navigator?.clipboard?.writeText) {
               navigator.clipboard.writeText(videoUrl);
-              addToast("Video URL copied!", "success");
+              addToast("Video URL copied", "success");
             }
           }}
           title="Copy video URL"
@@ -119,7 +119,7 @@ export function RoomNavbar({
             const url = window.location.href;
             if (navigator?.clipboard?.writeText) {
               navigator.clipboard.writeText(url);
-              addToast("Room link copied!", "success");
+              addToast("Room link copied", "success");
             }
           }}
           title="Copy room link"

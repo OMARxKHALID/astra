@@ -1,6 +1,5 @@
 "use client";
 
-// [Note] Blurred thumbnail placeholder shown while the player connects/buffers
 export default function VideoPoster({
   visible,
   thumbnailUrl = null,

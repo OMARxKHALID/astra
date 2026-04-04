@@ -19,7 +19,6 @@ export default function YouTubeSearch({ onLoad }) {
   const scrollRef = useRef(null);
   const bottomTriggerRef = useRef(null);
 
-  // [Note] checks both input bar AND portal modal
   useEffect(() => {
     if (!open) return;
     const onMouse = (e) => {

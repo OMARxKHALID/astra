@@ -36,7 +36,6 @@ export default function VimeoPlayer({
   const [volume, setVolume] = useState(1);
   const [thumbnailUrl, setThumbnailUrl] = useState(null);
 
-  // [Note] Fetch thumbnail via server proxy (avoids CORS)
   useEffect(() => {
     if (!videoId) return;
     setThumbnailUrl(null);
@@ -49,7 +48,6 @@ export default function VimeoPlayer({
       .catch(() => {});
   }, [videoId]);
 
-  // [Note] Sample thumbnail for static room glow (cross-origin limitation)
   useEffect(() => {
     if (!onAmbiColors || !thumbnailUrl || !ambilightEnabled) return;
     const img = new Image();
@@ -72,7 +70,7 @@ export default function VimeoPlayer({
     return () => onAmbiColors(null);
   }, [thumbnailUrl, onAmbiColors]);
 
-  // [Note] read by SyncEngine to suppress rate corrections while stalled
+  // read by SyncEngine to suppress rate corrections while stalled
   const isBufferingRef = useRef(false);
 
   useEffect(() => {

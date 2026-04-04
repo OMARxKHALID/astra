@@ -25,7 +25,7 @@ export default function HomeView({ initialData }) {
   const [data, setData] = useState(initialData);
   useEffect(() => {
     if (searchParams.get("kicked")) {
-      addToast("You were removed or the session ended.", "error", 5000);
+      addToast("You were removed or the session ended", "error", 5000);
       router.replace("/");
     }
   }, [searchParams, addToast, router]);

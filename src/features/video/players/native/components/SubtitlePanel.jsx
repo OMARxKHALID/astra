@@ -99,8 +99,6 @@ export default function SubtitlePanel({
     } else {
       onLoad?.(videoUrl, fileId);
     }
-
-    addToast?.(`Subtitles loaded: ${sub.label}`, "success");
   }
 
   if (!activePanel) return null;
@@ -261,7 +259,6 @@ export default function SubtitlePanel({
                           if (setShowSubtitles) setShowSubtitles(true);
                           if (onSubtitleChange) onSubtitleChange(fileId);
                           else onLoad?.(videoUrl, fileId);
-                          addToast?.(`Subtitles loaded: ${sub.label}`, "success");
                         }}
                         className={`flex-1 min-w-0 text-left px-3 py-1.5 rounded-xl transition-all border flex items-center gap-1.5 overflow-hidden
                           ${

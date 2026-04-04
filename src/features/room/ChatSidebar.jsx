@@ -40,7 +40,6 @@ export default function ChatSidebar({
   const waveformCanvasRef = useRef(null);
   const animFrameRef = useRef(null);
 
-  // [Note] Waveform live preview: draw real-time audio waveform on canvas during recording
   useEffect(() => {
     if (!isRecording || !analyserRef?.current || !waveformCanvasRef.current) {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
@@ -123,7 +122,6 @@ export default function ChatSidebar({
       const newVal = `${textBefore.slice(0, lastAt)}@${user.name} ${textAfter}`;
       setInput(newVal);
       setShowMentions(false);
-      // [Note] Focus preservation: timeout ensures cursor update after React render
       setTimeout(() => {
         inputRef.current?.focus();
         const newPos = lastAt + user.name.length + 2;

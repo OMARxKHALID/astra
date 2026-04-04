@@ -22,7 +22,6 @@ import { MobileRoomNav } from "./components/MobileRoomNav";
 import { MobileRoomSheets } from "./components/MobileRoomSheets";
 import { IncomingCallBanner } from "./components/IncomingCallBanner";
 
-// [Note] Optimization: Lazy load heavy overlays to shrink initial bundle
 const SettingsPanel = dynamic(() => import("./SettingsPanel"), { ssr: false });
 const ShortcutsModal = dynamic(() => import("@/components/ShortcutsModal"), {
   ssr: false,
@@ -207,7 +206,7 @@ export default function RoomView({ roomId, initialMeta }) {
           onTsMapUpdate={room.handleTsMapUpdate}
           onLateJoin={room.setLateJoinTime}
           onReconnected={() => {
-            addToast("Reconnected!", "success");
+            addToast("Reconnected", "success");
             if (typeof document !== "undefined" && document.pictureInPictureElement) {
               document.exitPictureInPicture().catch(() => {});
             }

@@ -57,7 +57,6 @@ export function VoiceNote({ src, isOwn }) {
     seekFromClientX(e.clientX);
   };
 
-  // [Note] Touch seek: clientX doesn't exist on touch events — read from changedTouches instead
   const handleSeekTouch = (e) => {
     e.preventDefault();
     const touch = e.changedTouches[0];
@@ -71,7 +70,6 @@ export function VoiceNote({ src, isOwn }) {
       .padStart(2, "0")}`;
   };
 
-  // [Note] Show current time while playing, total duration when idle — mirrors native voice note UX
   const displayTime = isPlaying || currentTime > 0 ? currentTime : duration;
 
   return (

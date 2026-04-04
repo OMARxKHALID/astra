@@ -17,7 +17,6 @@ export default function useSettings() {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const settingsLoadedRef = useRef(false);
 
-  // [Note] Load settings from localStorage on mount — includes sidebar open state
   useEffect(() => {
     setScreenshotEnabled(ls.get(LS_KEYS.screenshot) !== "false");
     setHlsQualityEnabled(ls.get(LS_KEYS.hlsQuality) !== "false");
@@ -30,7 +29,6 @@ export default function useSettings() {
     settingsLoadedRef.current = true;
   }, []);
 
-  // [Note] Persist settings changes to localStorage
   useEffect(() => {
     if (!settingsLoadedRef.current) return;
     ls.set(LS_KEYS.screenshot, screenshotEnabled ? "true" : "false");

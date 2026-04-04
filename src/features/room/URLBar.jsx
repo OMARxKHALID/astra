@@ -64,13 +64,11 @@ export default function URLBar({
     }
     setStrictError("");
     setLoading(true);
-    setLocalFileName(""); // Clear local file name when loading URL
-    ls.set(LS_KEYS.localFileName, ""); // Also clear from localStorage
-    const label = SOURCE_LABELS[inputSource.type] || "Video";
-    addToast(`${label} URL synced to room`, "success");
+    setLocalFileName("");
+    ls.set(LS_KEYS.localFileName, "");
     onLoad(input.trim(), "");
     setInput("");
-    setTimeout(() => setLoading(false), 2000);
+    setTimeout(() => setLoading(false), 3000);
   }
 
   function handleFileSelect(file) {
@@ -81,12 +79,16 @@ export default function URLBar({
       return;
     }
     
-    const blobUrl = URL.createObjectURL(file);
-    setLocalFileName(file.name);
-    ls.set(LS_KEYS.localFileName, file.name);
-    addToast(`Local video loaded: ${file.name}`, "success");
-    onLoad(blobUrl, "");
-    setInput("");
+    try {
+      const blobUrl = URL.createObjectURL(file);
+      setLocalFileName(file.name);
+      ls.set(LS_KEYS.localFileName, file.name);
+      addToast(`Local video loaded: ${file.name}`, "success");
+      onLoad(blobUrl, "");
+      setInput("");
+    } catch {
+      addToast("Failed to load video file", "error");
+    }
   }
 
   function handleDrop(e) {
@@ -98,12 +100,16 @@ export default function URLBar({
         addToast("Please drop a video file", "error");
         return;
       }
-      const blobUrl = URL.createObjectURL(file);
-      setLocalFileName(file.name);
-      ls.set(LS_KEYS.localFileName, file.name);
-      addToast(`Local video loaded: ${file.name}`, "success");
-      onLoad(blobUrl, "");
-      setInput("");
+      try {
+        const blobUrl = URL.createObjectURL(file);
+        setLocalFileName(file.name);
+        ls.set(LS_KEYS.localFileName, file.name);
+        addToast(`Local video loaded: ${file.name}`, "success");
+        onLoad(blobUrl, "");
+        setInput("");
+      } catch {
+      addToast("Failed to load video file", "error");
+      }
     }
   }
 

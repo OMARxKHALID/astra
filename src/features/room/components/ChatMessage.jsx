@@ -33,7 +33,6 @@ function ChatMessageInner({
     }, delay);
   };
 
-  // [Note] Global pointerdown to close picker when tapping anywhere outside it.
   useEffect(() => {
     if (!isHovered) return;
     const close = (e) => {
@@ -45,7 +44,6 @@ function ChatMessageInner({
     return () => document.removeEventListener("pointerdown", close, true);
   }, [isHovered]);
 
-  // [Note] Hide picker on scroll
   useEffect(() => {
     if (!isHovered) return;
     const hide = () => setIsHovered(false);
@@ -201,8 +199,7 @@ function ChatMessageInner({
               <button
                 key={emoji}
                 type="button"
-                // [Note] onPointerDown fires immediately on both mouse click and touch tap,
-                // before any browser synthetic event delay — ensures emoji registers on mobile.
+                // onPointerDown fires immediately on mouse click and touch tap, avoiding synthetic event delay on mobile
                 onPointerDown={(e) => {
                   e.preventDefault();
                   e.stopPropagation();

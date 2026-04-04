@@ -15,7 +15,6 @@ import {
   List as EpisodesIcon,
 } from "lucide-react";
 
-// [Note] Theatre icon inlined to avoid circular dependencies
 function TheatreIconInline({ className }) {
   return (
     <svg

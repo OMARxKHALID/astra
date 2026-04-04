@@ -15,7 +15,6 @@ export function createRoom(videoUrl, session = null) {
     if (!storedId) ls.set(LS_KEYS.userId, userId);
   }
 
-  // [Note] Instant Identity: Generate roomId on client to allow immediate navigation
   const roomId = randomId();
 
   // Fire-and-forget (mostly): Background registration

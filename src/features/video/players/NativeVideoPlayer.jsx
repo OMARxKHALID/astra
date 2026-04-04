@@ -132,7 +132,6 @@ export default function NativeVideoPlayer({
     subtitleUrl,
     onSubtitleChange,
     setShowSubtitles,
-    addToast,
   });
   const { preview, handleMouseMove, handleMouseLeave } = useScrubPreview(
     videoUrl,
@@ -310,15 +309,11 @@ export default function NativeVideoPlayer({
       canvas.width = Math.min(w, 1920);
       canvas.height = Math.round(h * (canvas.width / w));
       const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        addToast?.("Screenshot blocked: Canvas context unavailable.", "error");
-        return;
-      }
+      if (!ctx) return;
       ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
       onSendScreenshot(canvas.toDataURL("image/jpeg", 0.75));
-      addToast?.("Screenshot sent to chat!", "success");
     } catch {
-      addToast?.("Screenshot blocked: Cross-origin security.", "error");
+      // cross-origin blocked — silently skip
     }
   };
 
@@ -356,7 +351,6 @@ export default function NativeVideoPlayer({
     return () => document.removeEventListener("visibilitychange", h);
   }, [videoRef]);
 
-  // [Note] Debug Stats: triggered by 'D' hotkey
   useEffect(() => {
     const h = (e) => {
       if (

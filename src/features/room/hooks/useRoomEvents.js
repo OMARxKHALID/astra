@@ -59,7 +59,6 @@ export default function useRoomEvents({
         return [...prev, msg].slice(-MAX_CHAT_MESSAGES);
       });
 
-      // [Note] Mentions: trigger synthetic notification sound if user is targeted by name or @everyone
       if (msg.senderId !== userId && msg.text) {
         const text = msg.text.toLowerCase();
         const myName = displayNamesRef.current[userId];
@@ -120,14 +119,11 @@ export default function useRoomEvents({
               ...prev,
               [event.userId]: event.username,
             }));
-            if (event.userId !== userId)
-              addToast(`${event.username} joined!`, "info");
           }
           break;
         case "user_left": {
           const name = displayNamesRef.current[event.userId] || "Someone";
           setParticipants((prev) => prev.filter((id) => id !== event.userId));
-          addToast(`${name} left.`, "info");
           break;
         }
         case "name_changed":

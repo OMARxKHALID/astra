@@ -46,7 +46,6 @@ export async function getBrowseData() {
     fetchTMDB("discover/movie", "&with_genres=16&with_keywords=210024&sort_by=popularity.desc"),
   ]);
 
-  // [Note] Anime merge: combines TV and movie results, deduped by ID, to include films like Spirited Away
   const animeAll = [
     ...(animeTV?.results || []).map((i) => ({ ...normalizeTMDB(i, "tv"), isAnime: true })),
     ...(animeMovies?.results || []).map((i) => ({ ...normalizeTMDB(i, "movie"), isAnime: true })),

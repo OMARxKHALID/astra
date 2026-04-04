@@ -39,9 +39,8 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
   const pcRef = useRef({});
   const iceQueuesRef = useRef({});
   const localStreamRef = useRef(null);
-  // [Note] pcRoleRef: 'caller' (sent offer) or 'callee' (received offer) per peer.
   const pcRoleRef = useRef({});
-  // [Note] isNegotiatingRef: per-peer lock that prevents concurrent createOffer() calls.
+  // [Note] Per-peer lock: prevents concurrent createOffer() calls.
   // createOffer() is async — React can flush effects between it and setLocalDescription(),
   // causing two concurrent offers on the same PC which produces the m-line order mismatch.
   const isNegotiatingRef = useRef({});
@@ -465,9 +464,8 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
     }
   }, []);
 
-  // [Note] localStream useEffect: injects tracks into PCs created before media was acquired,
-  // then initiates the offer if no handshake started. The negotiation lock prevents a second
-  // initiateCall from racing a concurrent one triggered by call_user_joined.
+  // Inject tracks into PCs created before media was acquired,
+  // then initiate the offer if no handshake started.
   useEffect(() => {
     if (!localStream) return;
     debug(

@@ -75,8 +75,6 @@ export default function CreateRoomForm({ onResultsChange }) {
   async function handleCreate(e, customUrl) {
     if (e) e.preventDefault();
 
-    // In search mode, a submit with a query triggers a search.
-    // If NO query and NO customUrl, we proceed to create an empty room.
     if (mode === "search" && !customUrl && url.trim().length >= 2) {
       setYtLoading(true);
       setYtResults([]);
@@ -88,6 +86,8 @@ export default function CreateRoomForm({ onResultsChange }) {
         const data = await res.json();
         setYtResults(data.items || []);
         setNextPageToken(data.nextPageToken || null);
+      } catch {
+        setError("YouTube search failed");
       } finally {
         setYtLoading(false);
       }
@@ -95,25 +95,30 @@ export default function CreateRoomForm({ onResultsChange }) {
     }
 
     const targetUrl = customUrl || url;
+    const trimmed = targetUrl.trim();
+
+    if (trimmed && !isValidUrl(trimmed)) {
+      setError("Invalid URL");
+      return;
+    }
 
     setLoading(true);
     setError("");
-    // [Note] Instant Sync: Navigate immediately with a client-generated ID
-    // to eliminate the perceived delay of the API network roundtrip.
-    const { roomId } = createRoom(targetUrl.trim(), session);
+
+    const { roomId, createPromise } = createRoom(trimmed, session);
 
     try {
       const history = JSON.parse(ls.get(LS_KEYS.history) || "[]");
-      const ytMatch = targetUrl.trim().match(
+      const ytMatch = trimmed.match(
         /(?:youtube\.com\/watch\?.*v=|youtu\.be\/)([A-Za-z0-9_-]{11})/,
       );
       const entry = {
         roomId,
-        videoUrl: targetUrl.trim(),
+        videoUrl: trimmed,
         thumbnail: ytMatch
           ? `https://img.youtube.com/vi/${ytMatch[1]}/mqdefault.jpg`
           : null,
-        title: targetUrl.trim().replace(/^https?:\/\//, "").slice(0, 60) || `Room ${roomId.slice(0, 4)}`,
+        title: trimmed.replace(/^https?:\/\//, "").slice(0, 60) || `Room ${roomId.slice(0, 4)}`,
         lastVisited: Date.now(),
       };
       ls.set(
@@ -124,9 +129,26 @@ export default function CreateRoomForm({ onResultsChange }) {
       );
     } catch {}
 
+    try {
+      await createPromise;
+    } catch {
+      setError("Failed to create room");
+      setLoading(false);
+      return;
+    }
+
     router.push(
-      `/room/${roomId}?url=${encodeURIComponent(targetUrl.trim())}&h=1`,
+      `/room/${roomId}?url=${encodeURIComponent(trimmed)}&h=1`,
     );
+  }
+
+  function isValidUrl(str) {
+    try {
+      new URL(str);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   function switchMode(next) {

@@ -117,10 +117,9 @@ export default function SettingsPanel({
     identity?.setDisplayName?.(name);
     identity?.commitName?.(name);
     setEditingName(false);
-    addToast("Name updated!", "success");
+    addToast("Name updated", "success");
   };
 
-  // [Note] small delay so the open-click doesn't immediately re-close
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e) => {

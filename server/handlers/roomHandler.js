@@ -75,7 +75,7 @@ export default function registerRoomHandlers(
           room.startBroadcast(io);
         }
       } catch (err) {
-        // [Note] Silent fail on read: fall back to volatile room creation
+        // silent fail — fall back to volatile room creation
       }
     }
 

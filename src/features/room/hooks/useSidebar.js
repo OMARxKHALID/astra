@@ -42,8 +42,7 @@ export default function useSidebar() {
       Math.min(dragStartW.current + delta, MAX_WIDTH)
     );
 
-    // [Note] Butter Smooth Resizing: directly update the DOM property 
-    // to bypass the React re-render cycle during rapid mouse moves.
+    // Bypass React re-render cycle during rapid mouse moves
     if (containerRef.current) {
       containerRef.current.style.setProperty("--sidebar-width", `${next}px`);
     }

@@ -17,8 +17,6 @@ export default function RecentRooms() {
   useEffect(() => {
     try {
       const stored = JSON.parse(ls.get(LS_KEYS.history) || "[]");
-      // [Note] Sanitization: De-duplicate results to prevent React 'unique key' warnings 
-      // if multiple sync events accidentally double-recorded a visit.
       const unique = Array.from(new Map(stored.filter(r => r.roomId).map(r => [r.roomId, r])).values());
       setRecentRooms(unique.slice(0, 10));
     } catch {

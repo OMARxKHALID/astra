@@ -1,4 +1,3 @@
-// [Note] YouTube service: Handles API requests and response normalization for the YouTube search engine
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 
 const decodeHtmlEntities = (str) =>

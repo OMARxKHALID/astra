@@ -10,7 +10,6 @@ import {
   useRef,
 } from "react";
 
-// [Note] Optimization: Lazy load heavy interactive components
 const VideoPlayer = dynamic(() => import("@/features/video"), { ssr: false });
 const EpisodeSelector = dynamic(
   () => import("@/features/content/EpisodeSelector"),
@@ -236,8 +235,6 @@ function WatchContent() {
           <button
             disabled={creating}
             onClick={() => {
-              // [Note] Instant Sync: Navigate immediately with a client-generated ID
-              // to eliminate the perceived delay of the API network roundtrip.
               const { roomId } = createRoom(url);
               router.push(
                 `/room/${roomId}?url=${encodeURIComponent(url)}&tmdb=${tmdbId}&type=${type}`,

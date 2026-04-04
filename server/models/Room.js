@@ -165,7 +165,6 @@ export class Room {
   }
 }
 
-// [Note] Redis persistence: debounces room saves to avoid write amplification
 const debouncedSave = new Map();
 
 export function saveRoom(room) {

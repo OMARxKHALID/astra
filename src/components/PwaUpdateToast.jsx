@@ -11,7 +11,6 @@ export default function PwaUpdateToast() {
     if (typeof window === "undefined" || !("serviceWorker" in navigator))
       return;
 
-    // [Note] SW update logic: check for waiting worker, then listen for state changes
     navigator.serviceWorker.ready.then((registration) => {
       if (registration.waiting) {
         setReg(registration);

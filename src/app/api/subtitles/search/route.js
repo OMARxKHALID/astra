@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 const API_KEY = process.env.OPENSUBTITLES_KEY;
 const API_BASE = "https://api.opensubtitles.com/api/v1";
 
-// [Note] OpenSubtitles Hash: block-checksum of first and last 64KB + file size
+// OpenSubtitles Hash: block-checksum of first and last 64KB + file size
 function computeHash(buffer, size) {
     let hash = BigInt(size);
     const view = new DataView(buffer);
@@ -68,7 +68,7 @@ export async function GET(request) {
                 }
             }
         } catch (err) {
-            // [Note] Hash search failed — proceed to fallback
+          // hash search failed — proceed to fallback
         }
     }
 

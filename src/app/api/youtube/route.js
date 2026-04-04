@@ -8,7 +8,6 @@ export async function GET(req) {
 
   if (!q) return NextResponse.json({ items: [], nextPageToken: null });
 
-  // [Note] Delegate to centralized service for consistent normalization and error handling
   const results = await searchYouTube(q, pageToken);
   return NextResponse.json(results);
 }

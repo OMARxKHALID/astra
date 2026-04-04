@@ -61,7 +61,7 @@ export async function GET(request) {
       try {
         rawData = gunzipSync(rawData);
       } catch (e) {
-        // [Note] Gzip decompression failed — proceed with raw data
+        // gzip decompression failed — proceed with raw data
       }
     }
 

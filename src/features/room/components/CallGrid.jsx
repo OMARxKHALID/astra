@@ -175,7 +175,6 @@ function VideoCircle({ stream, name, isLocal, micActive, camActive, mirrorCamera
     }
   }, [stream]);
 
-  // [Note] Mobile hold-to-expand: 400ms touchstart timer mirrors desktop hover intent on touch devices
   const handleTouchStart = () => {
     holdTimerRef.current = setTimeout(() => setIsExpanded((v) => !v), 400);
   };

@@ -76,7 +76,7 @@ export default function useSubtitleStyle(
         try {
           video.removeTextTrack(currentTrackRef.current);
         } catch (e) {
-          // [Note] Old track removal may fail — proceed regardless
+          // old track removal may fail — proceed regardless
         }
         currentTrackRef.current = null;
       }
@@ -90,7 +90,7 @@ export default function useSubtitleStyle(
         track.addCue(vttCue);
       }
     } catch (e) {
-      // [Note] Subtitle loading is non-critical
+      // non-critical — subtitle loading failure should not crash the player
     } finally {
       loadingRef.current = false;
     }

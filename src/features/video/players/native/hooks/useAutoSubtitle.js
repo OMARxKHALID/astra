@@ -7,16 +7,13 @@ export default function useAutoSubtitle({
   subtitleUrl,
   onSubtitleChange,
   setShowSubtitles,
-  addToast,
 }) {
   const lastVideoUrlRef = useRef("");
   const setShowSubtitlesRef = useRef(setShowSubtitles);
-  const addToastRef = useRef(addToast);
   const onSubtitleChangeRef = useRef(onSubtitleChange);
 
   useEffect(() => {
     setShowSubtitlesRef.current = setShowSubtitles;
-    addToastRef.current = addToast;
     onSubtitleChangeRef.current = onSubtitleChange;
   });
 
@@ -100,12 +97,9 @@ export default function useAutoSubtitle({
             ...recentSubs.filter((s) => s.url !== dlUrl),
           ].slice(0, 5);
           ls.set(LS_KEYS.recentSubs, JSON.stringify(updated));
-          addToastRef.current?.(`Subtitles loaded: ${sub.label}`, "success");
         }
       } catch (e) {
-        if (e.name !== "AbortError") {
-          // [Note] Fail silently — auto-subtitle is non-critical
-        }
+        // non-critical — auto-subtitle failure should not crash the player
       }
     })();
     return () => {

@@ -54,8 +54,7 @@ export default function useHLS(videoRef, videoUrl, sourceType, setVideoError) {
             return;
           }
         } catch {
-          // [Note] HEAD may fail on servers that don't support it (405) or CORS-restricted URLs;
-          // proceed to hls.js setup regardless — the existing manifest error fallback handles misclassified URLs
+          // proceed to hls.js setup regardless — manifest error fallback handles misclassified URLs
         }
 
         hls = new Hls({
