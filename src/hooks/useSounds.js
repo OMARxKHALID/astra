@@ -36,7 +36,7 @@ export function useSounds() {
       osc.start();
       osc.stop(ctx.currentTime + 0.6);
     } catch (err) {
-      console.warn("[SoundEngine] Failed to play ping:", err.message);
+      console.error(`[sounds] Failed to play ping: ${err.message}`);
     }
   }, []);
 

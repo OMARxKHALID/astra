@@ -41,7 +41,7 @@ export async function GET(request) {
 
     return NextResponse.json({ thumbnailUrl: null });
   } catch (err) {
-    console.error("[thumbnail] Error:", err.message);
+    console.error(`[thumbnail] Error: ${err.message}`);
     return NextResponse.json({ thumbnailUrl: null });
   }
 }

@@ -37,4 +37,7 @@ export const LS_KEYS = {
   favorites: "as_favorites",
   watched: "as_watched",
   mirrorCamera: "as_mirrorcamera",
+  subStyle: "as_subStyle",
+  subtitleOffset: "as_subtitleOffset",
+  localFileName: "as_localFileName",
 };

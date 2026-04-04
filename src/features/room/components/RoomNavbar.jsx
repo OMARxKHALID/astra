@@ -5,6 +5,7 @@ import {
   Keyboard as KeyboardIcon,
   Link as LinkIcon,
   Video as VideoIcon,
+  PanelRight as PanelIcon,
 } from "lucide-react";
 
 export function RoomNavbar({
@@ -18,6 +19,8 @@ export function RoomNavbar({
   isCalling,
   onToggleCall,
   debugMode = false,
+  showSidebar,
+  onToggleSidebar,
 }) {
   return (
     <nav className="room-navbar relative z-30 shrink-0 px-2 sm:px-4 py-2 flex items-center justify-between gap-1 sm:gap-2">
@@ -49,23 +52,10 @@ export function RoomNavbar({
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 shrink-0">
-        <button
-          onClick={() => settings.setShowShortcuts(true)}
-          className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full glass-card text-muted hover:text-white transition-all shrink-0"
-        >
-          <KeyboardIcon className="w-4 h-4" />
-        </button>
-
-        <button
-          onClick={() => settings.setShowSettings(true)}
-          className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full glass-card text-muted hover:text-white shrink-0"
-        >
-          <SettingsIcon className="w-3.5 h-3.5 sm:w-4 h-4" />
-        </button>
-
+      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
         <button
           onClick={onToggleCall}
+          title="Toggle video call"
           className={`relative w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full glass-card transition-all shrink-0
             ${isCallJoined ? "text-amber border-amber/30 bg-amber/10 shadow-[0_0_15px_rgba(var(--color-amber-rgb),0.2)]" : isCalling ? "text-amber/70 border-amber/20" : "text-muted hover:text-white"}`}
         >
@@ -76,6 +66,18 @@ export function RoomNavbar({
             <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-amber/60 rounded-full animate-pulse" />
           ) : null}
         </button>
+
+        {onToggleSidebar && (
+          <button
+            onClick={onToggleSidebar}
+            title={showSidebar ? "Hide sidebar" : "Show sidebar"}
+            className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full glass-card transition-all shrink-0 ${
+              showSidebar ? "text-amber" : "text-muted hover:text-white"
+            }`}
+          >
+            <PanelIcon className="w-3.5 h-3.5 sm:w-4 h-4" />
+          </button>
+        )}
 
         <button
           onClick={() => {
@@ -88,9 +90,28 @@ export function RoomNavbar({
               addToast("Video URL copied!", "success");
             }
           }}
+          title="Copy video URL"
           className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full glass-card text-muted hover:text-white transition-all shrink-0"
         >
           <LinkIcon className="w-3.5 h-3.5 sm:w-4 h-4" />
+        </button>
+
+        <div className="w-px h-5 bg-white/10 mx-0.5 hidden sm:block" />
+
+        <button
+          onClick={() => settings.setShowShortcuts(true)}
+          title="Keyboard shortcuts"
+          className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full glass-card text-muted hover:text-white transition-all shrink-0"
+        >
+          <KeyboardIcon className="w-4 h-4" />
+        </button>
+
+        <button
+          onClick={() => settings.setShowSettings(true)}
+          title="Settings"
+          className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full glass-card text-muted hover:text-white shrink-0"
+        >
+          <SettingsIcon className="w-3.5 h-3.5 sm:w-4 h-4" />
         </button>
 
         <button
@@ -101,7 +122,8 @@ export function RoomNavbar({
               addToast("Room link copied!", "success");
             }
           }}
-          className="h-8 sm:h-9 pl-2 pr-2 sm:pl-3 sm:pr-4 rounded-full bg-amber text-void font-black text-[10px] sm:text-[11.5px] uppercase tracking-widest hover:bg-amber transition-all shadow-lg flex items-center gap-1.5 ring-1 ring-amber/40 shrink-0"
+          title="Copy room link"
+          className="h-8 sm:h-9 px-2.5 sm:px-4 rounded-full bg-amber text-void font-black text-[10px] sm:text-[11.5px] uppercase tracking-widest hover:brightness-110 transition-all shadow-lg flex items-center gap-1.5 ring-1 ring-amber/40 shrink-0"
         >
           <ShareIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
           <span className="hidden sm:inline">Invite</span>

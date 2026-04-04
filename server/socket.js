@@ -101,5 +101,5 @@ function electNewHost(room) {
 }
 
 httpServer.listen(PORT, "0.0.0.0", () => {
-  if (DEBUG) console.log(`\n🚀 [socket.io] ONLINE: 0.0.0.0:${PORT}\n`);
+  if (DEBUG) console.log(`[socket] ONLINE: 0.0.0.0:${PORT}`);
 });

@@ -69,14 +69,45 @@ export default function NativeVideoPlayer({
       return [];
     }
   });
-  const [subStyle, setSubStyle] = useState({
-    fontSize: 100,
-    color: "#ffffff",
-    background: "rgba(0,0,0,0)",
-    position: "bottom",
-    shadow: "soft",
+  const [subStyle, setSubStyle] = useState(() => {
+    try {
+      const saved = ls.get(LS_KEYS.subStyle);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          fontSize: parsed.fontSize || 100,
+          color: parsed.color || "#ffffff",
+          background: parsed.background || "rgba(0,0,0,0)",
+          position: parsed.position || "bottom",
+          shadow: parsed.shadow || "soft",
+        };
+      }
+    } catch {}
+    return {
+      fontSize: 100,
+      color: "#ffffff",
+      background: "rgba(0,0,0,0)",
+      position: "bottom",
+      shadow: "soft",
+    };
   });
-  const [subtitleOffset, setSubtitleOffset] = useState(0);
+  const [subtitleOffset, setSubtitleOffset] = useState(() => {
+    try {
+      return parseFloat(ls.get(LS_KEYS.subtitleOffset) || "0");
+    } catch {
+      return 0;
+    }
+  });
+
+  // Persist subStyle to localStorage
+  useEffect(() => {
+    ls.set(LS_KEYS.subStyle, JSON.stringify(subStyle));
+  }, [subStyle]);
+
+  // Persist subtitleOffset to localStorage
+  useEffect(() => {
+    ls.set(LS_KEYS.subtitleOffset, String(subtitleOffset));
+  }, [subtitleOffset]);
 
   const containerRef = useRef(null);
   const volumeOsdTimer = useRef(null);
@@ -278,7 +309,12 @@ export default function NativeVideoPlayer({
       const canvas = document.createElement("canvas");
       canvas.width = Math.min(w, 1920);
       canvas.height = Math.round(h * (canvas.width / w));
-      canvas.getContext("2d").drawImage(v, 0, 0, canvas.width, canvas.height);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        addToast?.("Screenshot blocked: Canvas context unavailable.", "error");
+        return;
+      }
+      ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
       onSendScreenshot(canvas.toDataURL("image/jpeg", 0.75));
       addToast?.("Screenshot sent to chat!", "success");
     } catch {

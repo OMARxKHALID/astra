@@ -1,11 +1,14 @@
 import { SYNC_CHECK_INTERVAL, SYNC_TOLERANCE_S } from "@/constants/config";
 export { SYNC_CHECK_INTERVAL, SYNC_TOLERANCE_S };
 
+const DBG = false;
+
 // [Note] project video position forward via server state + wall-clock elapsed
 export function expectedTime(serverState, clockOffset = 0) {
   if (!serverState?.isPlaying) return serverState?.currentTime ?? 0;
   const elapsed = (Date.now() + clockOffset - serverState.lastUpdated) / 1000;
-  return serverState.currentTime + elapsed * (serverState.playbackRate || 1);
+  const result = serverState.currentTime + elapsed * (serverState.playbackRate || 1);
+  return result;
 }
 
 let _cachedLeader = 0;

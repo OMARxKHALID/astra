@@ -3,10 +3,6 @@ import { NextResponse } from "next/server";
 const API_KEY = process.env.OPENSUBTITLES_KEY;
 const API_BASE = "https://api.opensubtitles.com/api/v1";
 
-if (!API_KEY) {
-  console.warn("[subtitles] OPENSUBTITLES_KEY not set - subtitle search disabled");
-}
-
 // [Note] OpenSubtitles Hash: block-checksum of first and last 64KB + file size
 function computeHash(buffer, size) {
     let hash = BigInt(size);
@@ -29,11 +25,11 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get("q");
     const videoUrl = searchParams.get("url");
+    const hashParam = searchParams.get("hash");
 
     let results = [];
     let movieTitle = "Unknown";
 
-    // Common headers for OpenSubtitles API v1
     const headers = {
         "Api-Key": API_KEY,
         "User-Agent": "Astra v1",
@@ -41,9 +37,9 @@ export async function GET(request) {
     };
 
     if (videoUrl) {
-        // [Note] Hash search: highest accuracy, depends on file size header availability
         try {
-            const headResp = await fetch(videoUrl, { method: "HEAD" });
+            const headResp = await fetch(videoUrl, { method: "HEAD", signal: AbortSignal.timeout(10000) });
+            if (!headResp.ok) throw new Error(`HEAD request failed: ${headResp.status}`);
             const size = parseInt(headResp.headers.get("content-length") || "0");
             
             if (size > 131072) {
@@ -57,6 +53,7 @@ export async function GET(request) {
                 combined.set(new Uint8Array(endBuf), 65536);
                 
                 const hash = computeHash(combined.buffer, size);
+                
                 const searchRes = await fetch(`${API_BASE}/subtitles?moviehash=${hash}&languages=en`, { headers });
                 const data = await searchRes.json();
                 
@@ -71,12 +68,11 @@ export async function GET(request) {
                 }
             }
         } catch (err) {
-            // [Note] Hash Fail: likely due to CORS or missing Content-Length header
+            // [Note] Hash search failed — proceed to fallback
         }
     }
 
     if (results.length === 0 && query) {
-        // [Note] Query fallback: uses search/subtitle API when hash fails or URL is local
         const searchRes = await fetch(`${API_BASE}/subtitles?query=${encodeURIComponent(query)}&languages=en`, { headers });
         const data = await searchRes.json();
         
@@ -92,7 +88,6 @@ export async function GET(request) {
     }
 
     if (results.length === 0 && query) {
-        // [Note] Legacy Proxy: uses Stremio-OpenSubtitles bridge as secondary fallback
         const cinemetaUrl = `https://v3-cinemeta.strem.io/catalog/movie/top/search=${encodeURIComponent(query)}.json`;
         const cRes = await fetch(cinemetaUrl);
         const cData = await cRes.json();
@@ -111,7 +106,7 @@ export async function GET(request) {
                 results = engSubs.slice(0, 10).map((s, index) => ({
                     id: s.id || `strem_${index}`,
                     label: `${movieTitle} - Track ${index + 1} (Proxy)`,
-                    url: s.url // This returns a direct download URL
+                    url: s.url
                 }));
             }
         }

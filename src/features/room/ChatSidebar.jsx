@@ -213,11 +213,7 @@ export default function ChatSidebar({
             description="Start the conversation!"
           />
         )}
-        {messages.map((msg, i) => {
-          if (process.env.NODE_ENV === "development") {
-            console.log("[Chat] message", i, msg);
-          }
-          return (
+        {messages.map((msg, i) => (
             <ChatMessage
               key={`${msg.ts ?? i}-${i}`}
               msg={msg}
@@ -226,8 +222,7 @@ export default function ChatSidebar({
               onReaction={(emoji) => onReaction?.(msg.ts, emoji)}
               currentUserId={userId}
             />
-          );
-        })}
+        ))}
 
         {activeTypers.length > 0 && (
           <div className="flex items-center gap-2.5 px-2 py-1 animate-[slideUp_0.3s_ease-out]">
@@ -254,7 +249,11 @@ export default function ChatSidebar({
         <div className="relative">
           {/* [Note] Mention Picker: Tactical drop-up with refined 2xl curvature for high-density UI */}
           {showMentions && mentionList.length > 0 && (
-            <div className="absolute bottom-full mb-2 left-0 w-full max-w-[210px] overflow-y-auto glass-card rounded-2xl p-1 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200 thin-scrollbar shadow-2xl border-white/10">
+            <div
+              role="listbox"
+              aria-label="Mention participant"
+              className="absolute bottom-full mb-2 left-0 w-full max-w-[210px] overflow-y-auto glass-card rounded-2xl p-1 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200 thin-scrollbar shadow-2xl border-white/10"
+            >
               <div className="px-2 py-0.5 mb-1 border-b border-white/5">
                 <span className="text-[10px] font-black text-amber uppercase tracking-[0.25em]">
                   Mention Participant
@@ -263,6 +262,8 @@ export default function ChatSidebar({
               <div className="space-y-0.5">
                 {mentionList.map((user, i) => (
                   <button
+                    role="option"
+                    aria-selected={i === mentionIndex}
                     key={user.id}
                     onClick={() => selectMention(user)}
                     onMouseEnter={() => setMentionIndex(i)}

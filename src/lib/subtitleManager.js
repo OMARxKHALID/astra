@@ -17,7 +17,7 @@ export async function computeOpenSubtitlesHash(videoUrl) {
     const endBuffer = await endResponse.arrayBuffer();
     const hash = openSubtitlesHash(startBuffer, endBuffer, fileSize);
     return hash;
-  } catch {
+  } catch (e) {
     return null;
   }
 }
@@ -41,10 +41,11 @@ function openSubtitlesHash(startBuffer, endBuffer, fileSize) {
 export async function searchSubtitles(hash) {
   try {
     const response = await fetch(`/api/subtitles/search?hash=${hash}&lang=en`);
-    if (!response.ok) throw new Error();
+    if (!response.ok) throw new Error(`Search API returned ${response.status}`);
     const data = await response.json();
-    return data.results || [];
-  } catch {
+    const results = data.results || [];
+    return results;
+  } catch (e) {
     return [];
   }
 }
@@ -56,9 +57,10 @@ export async function downloadSubtitle(fileId) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ file_id: fileId }),
     });
-    if (!response.ok) throw new Error();
-    return await response.text();
-  } catch {
+    if (!response.ok) throw new Error(`Download API returned ${response.status}`);
+    const text = await response.text();
+    return text;
+  } catch (e) {
     return "";
   }
 }

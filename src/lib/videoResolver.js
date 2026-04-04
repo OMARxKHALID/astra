@@ -34,10 +34,23 @@ const EMBED_DOMAINS = [
 
 export { isStrictVideoUrl };
 
+const PROXY_DOMAINS = [
+  "proxy.valhallastream.dpdns.org",
+  "proxy.valhallastream",
+  "proxy.",
+  "cdn.proxy",
+  "streamproxy",
+];
+
 export function classifyUrl(raw) {
   if (!raw || typeof raw !== "string")
     return { type: "unsupported", url: raw || "" };
   const t = raw.trim();
+
+  // Handle blob: URLs (local file uploads)
+  if (t.startsWith("blob:")) {
+    return { type: "mp4", url: t };
+  }
 
   for (const p of YT_PATTERNS) {
     const m = t.match(p);
@@ -56,6 +69,30 @@ export function classifyUrl(raw) {
   }
 
   const hostname = parsed.hostname.replace(/^www\./, "");
+  
+  // Check if it's a proxy URL that needs to be converted
+  const isProxyUrl = PROXY_DOMAINS.some(d => hostname.includes(d));
+  const proxyParams = ["url", "video", "src", "file", "path"];
+  const hasProxyParam = proxyParams.some(p => parsed.searchParams.has(p));
+  
+  if (isProxyUrl && hasProxyParam) {
+    // Extract the inner URL from the proxy and route through our internal proxy
+    const innerUrlParam = proxyParams.find(p => parsed.searchParams.get(p));
+    const innerUrl = parsed.searchParams.get(innerUrlParam);
+    if (innerUrl) {
+      try {
+        const decodedInnerUrl = decodeURIComponent(innerUrl);
+        const appUrl = typeof window !== "undefined" 
+          ? window.location.origin 
+          : "http://localhost:3000";
+        const proxiedUrl = `${appUrl}/api/proxy?url=${encodeURIComponent(decodedInnerUrl)}`;
+        return { type: "mp4", url: proxiedUrl };
+      } catch (e) {
+        // [Note] Fail silently — URL will fall through to default classification
+      }
+    }
+  }
+
   if (hostname.endsWith(".workers.dev") && parsed.pathname.startsWith("/vid/"))
     return { type: "hls", url: t };
   if (EMBED_DOMAINS.some((d) => d.replace(/^www\./, "") === hostname))

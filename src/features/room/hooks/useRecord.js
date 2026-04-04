@@ -128,7 +128,7 @@ export function useRecord(onSend, onError) {
         });
       }, 1000);
     } catch (err) {
-      console.error("Microphone access denied:", err);
+      console.error(`[record] Microphone access denied: ${err.message}`);
       onError?.(
         "Microphone access denied. Please check your browser permissions.",
       );

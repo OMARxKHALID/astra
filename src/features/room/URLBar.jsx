@@ -1,15 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   classifyUrl,
   isStrictVideoUrl,
   SOURCE_LABELS,
 } from "@/lib/videoResolver";
-import { Link2 as LinkIcon, Shield as ShieldIcon } from "lucide-react";
+import { Link2 as LinkIcon, Shield as ShieldIcon, Upload as UploadIcon } from "lucide-react";
 import YouTubeSearch from "./YouTubeSearch";
 import { useToast } from "@/components/Toast";
 import YoutubeIcon from "@/components/icons/YoutubeIcon";
+import { ls } from "@/utils/localStorage";
+import { LS_KEYS } from "@/constants/config";
 
 export default function URLBar({
   isHost,
@@ -24,10 +26,20 @@ export default function URLBar({
   const [strictError, setStrictError] = useState("");
   const [mode, setMode] = useState("url");
   const [loading, setLoading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [localFileName, setLocalFileName] = useState("");
+  const fileInputRef = useRef(null);
 
   const source = classifyUrl(currentUrl);
   const inputSource = classifyUrl(input);
   const showDetected = input.trim() && inputSource.type !== "unsupported";
+  
+  // Check if current URL is a blob (local file)
+  const isLocalFile = currentUrl?.startsWith("blob:");
+  
+  // Display name - always use currentUrl to avoid hydration mismatch
+  // localFileName is only used when syncing new uploads
+  const displayUrl = currentUrl;
 
   function handleChange(e) {
     const val = e.target.value;
@@ -36,7 +48,7 @@ export default function URLBar({
       setStrictError(
         isStrictVideoUrl(val.trim())
           ? ""
-          : "Only direct video file links are allowed in this room.",
+          : "Only direct video file links are allowed in this room."
       );
     } else {
       setStrictError("");
@@ -52,11 +64,62 @@ export default function URLBar({
     }
     setStrictError("");
     setLoading(true);
-    addToast("Synchronizing video...", "success");
+    setLocalFileName(""); // Clear local file name when loading URL
+    ls.set(LS_KEYS.localFileName, ""); // Also clear from localStorage
+    const label = SOURCE_LABELS[inputSource.type] || "Video";
+    addToast(`${label} URL synced to room`, "success");
     onLoad(input.trim(), "");
     setInput("");
-    // [Note] Visual feedback: 2s spinner lock prevents accidental double-submit
     setTimeout(() => setLoading(false), 2000);
+  }
+
+  function handleFileSelect(file) {
+    if (!isHost) return;
+    if (!file) return;
+    if (!file.type.startsWith("video/")) {
+      addToast("Please select a video file", "error");
+      return;
+    }
+    
+    const blobUrl = URL.createObjectURL(file);
+    setLocalFileName(file.name);
+    ls.set(LS_KEYS.localFileName, file.name);
+    addToast(`Local video loaded: ${file.name}`, "success");
+    onLoad(blobUrl, "");
+    setInput("");
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      if (!file.type.startsWith("video/")) {
+        addToast("Please drop a video file", "error");
+        return;
+      }
+      const blobUrl = URL.createObjectURL(file);
+      setLocalFileName(file.name);
+      ls.set(LS_KEYS.localFileName, file.name);
+      addToast(`Local video loaded: ${file.name}`, "success");
+      onLoad(blobUrl, "");
+      setInput("");
+    }
+  }
+
+  function handleDragOver(e) {
+    e.preventDefault();
+    setIsDragging(true);
+  }
+
+  function handleDragLeave(e) {
+    e.preventDefault();
+    setIsDragging(false);
+  }
+
+  function handleFileInput(e) {
+    const file = e.target.files[0];
+    handleFileSelect(file);
   }
 
   if (!isHost) {
@@ -73,7 +136,7 @@ export default function URLBar({
               </span>
               <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full uppercase tracking-tight flex items-center gap-1.5 border border-jade/20 bg-jade/10 text-jade">
                 <span className="w-1 h-1 rounded-full bg-jade animate-pulse" />
-                {SOURCE_LABELS[source.type] || "Video"}
+                {isLocalFile ? "Local" : SOURCE_LABELS[source.type] || "Video"}
               </span>
               {strictVideoUrlMode && (
                 <span className="flex items-center gap-1 text-[10px] font-black text-jade/70 uppercase tracking-tight">
@@ -83,10 +146,13 @@ export default function URLBar({
               )}
             </div>
           )}
-          <div
-            className="text-[13.5px] font-mono truncate max-w-full text-muted"
-          >
-            {currentUrl || "No video loaded"}
+          <div className="text-[13.5px] font-mono truncate max-w-full text-muted">
+            {displayUrl || "No video loaded"}
+            {isLocalFile && (
+              <span className="ml-2 text-[10px] text-jade/80 bg-jade/10 px-2 py-0.5 rounded-[var(--radius-pill)]">
+                LOCAL
+              </span>
+            )}
             {currentSubtitleUrl && (
               <span className="ml-2 text-[11px] text-amber/80 bg-amber/10 px-2 py-0.5 rounded-[var(--radius-pill)]">
                 CC ACTIVE
@@ -100,9 +166,7 @@ export default function URLBar({
 
   return (
     <div className="flex items-center gap-3 w-full h-full min-w-0 px-4 relative">
-      <div
-        className="flex items-center gap-0.5 shrink-0 p-0.5 rounded-[var(--radius-pill)] border border-border bg-surface shadow-sm"
-      >
+      <div className="flex items-center gap-0.5 shrink-0 p-0.5 rounded-[var(--radius-pill)] border border-border bg-surface shadow-sm">
         <button
           onClick={() => setMode("url")}
           title="Paste video URL"
@@ -119,57 +183,116 @@ export default function URLBar({
         >
           <YoutubeIcon size={16} />
         </button>
+        <button
+          onClick={() => setMode("upload")}
+          title="Upload local video"
+          className={`w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] transition-all duration-300
+            ${mode === "upload" ? "bg-amber text-void shadow-lg shadow-amber/20" : "text-white/20 hover:text-white/60"}`}
+        >
+          <UploadIcon className="w-4 h-4" />
+        </button>
       </div>
 
       {mode === "url" && (
-        <form onSubmit={handleSubmit} className="flex-1 min-w-0 flex items-center gap-3 relative">
-          <div
-            className={`flex-1 min-w-0 h-10 relative flex items-center gap-3 px-4 rounded-[var(--radius-pill)] border transition-all duration-500 bg-surface/50 backdrop-blur-sm ${focused ? "ring-2 ring-amber/20 shadow-2xl border-amber/50" : "border-border"}`}
+        <div className="relative flex-1 min-w-0">
+          {isDragging && (
+            <div className="absolute inset-0 rounded-[var(--radius-pill)] bg-amber/10 border-2 border-dashed border-amber/50 flex items-center justify-center z-10 backdrop-blur-sm">
+              <div className="flex items-center gap-2 text-amber text-[12px] font-bold uppercase tracking-wider">
+                <UploadIcon className="w-4 h-4" />
+                Drop video file
+              </div>
+            </div>
+          )}
+          <form 
+            onSubmit={handleSubmit} 
+            className="flex items-center gap-3 relative"
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
           >
-            <div className="flex-1 min-w-0 flex flex-col justify-center">
-              <input
-                ref={null}
-                id="video-url"
-                type="text"
-                value={input}
-                onChange={handleChange}
-                onFocus={() => setFocused(true)}
-                onBlur={() => setFocused(false)}
+            <div
+              className={`flex-1 min-w-0 h-10 relative flex items-center gap-3 px-4 rounded-[var(--radius-pill)] border transition-all duration-500 bg-surface/50 backdrop-blur-sm ${focused ? "ring-2 ring-amber/20 shadow-2xl border-amber/50" : "border-border"} ${isDragging ? "border-amber bg-amber/5" : ""}`}
+            >
+              <div className="flex-1 min-w-0 flex flex-col justify-center">
+                <input
+                  id="video-url"
+                  type="text"
+                  value={input}
+                  onChange={handleChange}
+                  onFocus={() => setFocused(true)}
+                  onBlur={() => setFocused(false)}
                 placeholder={
-                  currentUrl
-                    ? `Current: ${currentUrl.slice(0, 48)}…`
+                  displayUrl
+                    ? `Current: ${displayUrl.slice(0, 48)}…`
                     : "Paste a video URL to sync…"
                 }
-                className="flex-1 bg-transparent text-[12px] font-mono outline-none truncate text-white/90 placeholder:text-white/20"
-                autoComplete="off"
-              />
+                  className="flex-1 bg-transparent text-[12px] font-mono outline-none truncate text-white/90 placeholder:text-white/20"
+                  autoComplete="off"
+                />
+              </div>
+
+              {showDetected && !strictError && (
+                <span className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-[var(--radius-pill)] text-[9px] font-black uppercase tracking-tighter border border-jade/20 bg-jade/10 text-jade animate-in fade-in zoom-in-95">
+                  <span className="w-1 h-1 rounded-full bg-jade animate-pulse" />
+                  {SOURCE_LABELS[inputSource.type]}
+                </span>
+              )}
+
+              {strictError && (
+                <div className="absolute top-full left-4 bg-danger text-void text-[9px] font-black uppercase px-2 py-0.5 rounded-b-md shadow-lg animate-in slide-in-from-top-1">
+                  {strictError}
+                </div>
+              )}
             </div>
 
-            {showDetected && !strictError && (
-              <span className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-[var(--radius-pill)] text-[9px] font-black uppercase tracking-tighter border border-jade/20 bg-jade/10 text-jade animate-in fade-in zoom-in-95">
-                <span className="w-1 h-1 rounded-full bg-jade animate-pulse" />
-                {SOURCE_LABELS[inputSource.type]}
-              </span>
-            )}
-
-            {strictError && (
-              <div className="absolute top-full left-4 bg-danger text-void text-[9px] font-black uppercase px-2 py-0.5 rounded-b-md shadow-lg animate-in slide-in-from-top-1">
-                {strictError}
-              </div>
-            )}
-          </div>
-
-          <button
-            type="submit"
-            disabled={!input.trim() || Boolean(strictError) || loading}
-            className="h-10 px-6 rounded-[var(--radius-pill)] bg-amber text-void text-[12px] font-black uppercase tracking-[0.1em] hover:brightness-110 active:scale-95 disabled:opacity-20 transition-all shadow-lg shadow-amber/20 border border-amber/50 shrink-0"
-          >
-            {loading ? <div className="w-3.5 h-3.5 border-2 border-void/30 border-t-void rounded-full animate-spin" /> : "Sync"}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={!input.trim() || Boolean(strictError) || loading}
+              className="h-10 px-6 rounded-[var(--radius-pill)] bg-amber text-void text-[12px] font-black uppercase tracking-[0.1em] hover:brightness-110 active:scale-95 disabled:opacity-20 transition-all shadow-lg shadow-amber/20 border border-amber/50 shrink-0"
+            >
+              {loading ? <div className="w-3.5 h-3.5 border-2 border-void/30 border-t-void rounded-full animate-spin" /> : "Sync"}
+            </button>
+          </form>
+        </div>
       )}
 
       {mode === "youtube" && <YouTubeSearch onLoad={onLoad} />}
+      
+      {mode === "upload" && (
+        <div 
+          className="flex-1 min-w-0 flex items-center gap-3"
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+        >
+          {isLocalFile ? (
+            <div className="flex-1 h-10 flex items-center gap-3 px-4 rounded-[var(--radius-pill)] border border-amber/30 bg-amber/5">
+              <UploadIcon className="w-4 h-4 text-amber shrink-0" />
+              <span className="text-[12px] font-mono text-white truncate">
+                {localFileName || "Local Video"}
+              </span>
+              <span className="text-[10px] text-amber/60 bg-amber/10 px-2 py-0.5 rounded-full shrink-0">
+                LOCAL
+              </span>
+            </div>
+          ) : (
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              className="flex-1 h-10 flex items-center justify-center gap-2 px-4 rounded-[var(--radius-pill)] border border-dashed border-amber/30 bg-amber/5 cursor-pointer hover:bg-amber/10 transition-all"
+            >
+              <UploadIcon className="w-4 h-4 text-amber" />
+              <span className="text-[12px] font-mono text-white/60">Click to upload or drag video</span>
+            </div>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="video/*"
+            onChange={handleFileInput}
+            className="hidden"
+          />
+        </div>
+      )}
     </div>
   );
 }

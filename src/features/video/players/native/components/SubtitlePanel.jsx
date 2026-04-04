@@ -29,9 +29,16 @@ export default function SubtitlePanel({
   const getSubSrc = (u) => {
     if (!u) return "";
     try {
+      // Extract file_id from full URLs like http://localhost:3000/api/subtitles/download?url=12463977
       const parsed = new URL(u, "http://localhost");
-      return parsed.searchParams.get("url") || u;
-    } catch { return u; }
+      const fileId = parsed.searchParams.get("url");
+      if (fileId) return fileId;
+      // For blob URLs, return as-is
+      return u;
+    } catch { 
+      // If not a valid URL (could be a raw file_id), return as-is
+      return u; 
+    }
   };
 
   const [selectingId, setSelectingId] = useState(null);
@@ -47,9 +54,13 @@ export default function SubtitlePanel({
         `/api/subtitles/search?q=${encodeURIComponent(searchQuery.trim())}&url=${encodeURIComponent(videoUrl)}`,
       );
       const data = await res.json();
-      if (data.subtitles) setSubOptions(data.subtitles);
-      else setSearchStatus(data.error || "No results found.");
-    } catch {
+      if (data.subtitles) {
+        setSubOptions(data.subtitles);
+      }
+      else {
+        setSearchStatus(data.error || "No results found.");
+      }
+    } catch (e) {
       setSearchStatus("Connection failed. Try again.");
     } finally {
       setSearching(false);
@@ -67,27 +78,29 @@ export default function SubtitlePanel({
       return;
     }
 
-    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-    const url = `${baseUrl}/api/subtitles/download?url=${encodeURIComponent(sub.url)}`;
-
-    if (setShowSubtitles) setShowSubtitles(true);
-    if (onSubtitleChange) onSubtitleChange(url);
-    else onLoad?.(videoUrl, url);
+    const fileId = String(sub.url);
 
     const updated = [
-      { label: sub.label, url },
-      ...recentSubs.filter((s) => s.url !== url),
+      { label: sub.label, url: fileId },
+      ...recentSubs.filter((s) => s.url !== fileId),
     ].slice(0, MAX_RECENT_SUBS);
 
     setRecentSubs(updated);
     ls.set(LS_KEYS.recentSubs, JSON.stringify(updated));
 
-    await new Promise((r) => setTimeout(r, 600));
-
     setActivePanel(null);
     setSubOptions(null);
     setSearchQuery("");
     setSelectingId(null);
+
+    if (setShowSubtitles) setShowSubtitles(true);
+    if (onSubtitleChange) {
+      onSubtitleChange(fileId);
+    } else {
+      onLoad?.(videoUrl, fileId);
+    }
+
+    addToast?.(`Subtitles loaded: ${sub.label}`, "success");
   }
 
   if (!activePanel) return null;
@@ -230,12 +243,25 @@ export default function SubtitlePanel({
                         onClick={async () => {
                           if (selectingId) return;
                           setSelectingId(sub.url);
-                          if (setShowSubtitles) setShowSubtitles(true);
-                          if (onSubtitleChange) onSubtitleChange(sub.url);
-                          else onLoad?.(videoUrl, sub.url);
-                          await new Promise(r => setTimeout(r, 600));
+                          
+                          // [Fix] Extract just the file_id from the stored URL
+                          const fileId = String(sub.url).replace(/.*download\?url=/, '').split('&')[0];
+                          
+                          // Keep the URL as-is in recent (so it displays properly)
+                          const updated = [
+                            { label: sub.label, url: sub.url },
+                            ...recentSubs.filter((s) => s.url !== sub.url),
+                          ].slice(0, MAX_RECENT_SUBS);
+                          setRecentSubs(updated);
+                          ls.set(LS_KEYS.recentSubs, JSON.stringify(updated));
+                          
                           setSelectingId(null);
                           setActivePanel(null);
+                          
+                          if (setShowSubtitles) setShowSubtitles(true);
+                          if (onSubtitleChange) onSubtitleChange(fileId);
+                          else onLoad?.(videoUrl, fileId);
+                          addToast?.(`Subtitles loaded: ${sub.label}`, "success");
                         }}
                         className={`flex-1 min-w-0 text-left px-3 py-1.5 rounded-xl transition-all border flex items-center gap-1.5 overflow-hidden
                           ${

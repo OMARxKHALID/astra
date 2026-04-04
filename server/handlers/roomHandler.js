@@ -61,6 +61,16 @@ export default function registerRoomHandlers(
             (m) => m.text || (m.dataUrl && m.dataUrl.startsWith("data:audio/")),
           );
           room.lastUpdated = stored.lastUpdated ?? Date.now();
+          // [Fix] When restoring from Redis, lastUpdated is stale. Recalculate it
+          // so expectedTime() on clients doesn't produce massive drift.
+          // If the video was playing, compute what lastUpdated should be now.
+          if (!room.paused && room.videoTS > 0) {
+            const rate = room.playbackRate || 1;
+            // lastUpdated = now - (videoTS / rate) * 1000 would give us "started at"
+            // But we need lastUpdated to reflect the current videoTS position.
+            // Set lastUpdated to now so expectedTime = videoTS + 0 = videoTS on join.
+            room.lastUpdated = Date.now();
+          }
           rooms.set(roomId, room);
           room.startBroadcast(io);
         }
@@ -69,38 +79,36 @@ export default function registerRoomHandlers(
       }
     }
 
-    const isHost = Boolean(token);
-    const jwtPayload = isHost ? verifyHostToken(token, roomId) : false;
+    const jwtPayload = token ? verifyHostToken(token, roomId) : false;
+    const isHost = Boolean(jwtPayload);
+
+    if (token && !jwtPayload) {
+      error(
+        `[auth] INVALID host token for room:${roomId} user:${clientId}`,
+      );
+      return socket.emit("REC:error", { message: "Invalid host token" });
+    }
 
     if (isHost) {
-      if (jwtPayload) {
-        log(
-          `[auth] Valid host token for room:${roomId} user:${jwtPayload.hostId}`,
-        );
-      } else {
-        error(
-          `[auth] INVALID host token for room:${roomId} user:${clientId}`,
-        );
-      }
+      log(
+        `[auth] Valid host token for room:${roomId} user:${jwtPayload.hostId}`,
+      );
     }
 
     if (!room) {
       room = new Room(
         roomId,
         videoUrl || "",
-        jwtPayload?.hostId || clientId,
+        jwtPayload ? jwtPayload.hostId : clientId,
         isHost ? token : "",
       );
       rooms.set(roomId, room);
       room.startBroadcast(io);
     } else if (isHost && !room.hostToken && token && jwtPayload) {
-      room.hostId = jwtPayload.hostId || clientId;
+      room.hostId = jwtPayload.hostId;
       room.hostToken = token;
       if (videoUrl) room.video = videoUrl;
     }
-
-    if (isHost && !jwtPayload)
-      return socket.emit("REC:error", { message: "Invalid host token" });
 
     if (room.passwordHash && !isHost) {
       if (!password) {
@@ -138,7 +146,7 @@ export default function registerRoomHandlers(
     clientMeta.set(socket.id, {
       userId: clientId,
       roomId,
-      isHost: Boolean(isHost && jwtPayload),
+      isHost,
       username: displayName,
     });
 

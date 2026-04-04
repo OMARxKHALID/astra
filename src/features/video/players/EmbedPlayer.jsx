@@ -44,17 +44,7 @@ export default function EmbedPlayer({
 }) {
   const containerRef = useRef(null);
 
-  useEffect(() => {
-    const onKD = (e) => {
-      if (["INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
-      if (e.key.toLowerCase() === "c") {
-        e.preventDefault();
-        onToggleChat?.();
-      }
-    };
-    window.addEventListener("keydown", onKD);
-    return () => window.removeEventListener("keydown", onKD);
-  }, [onToggleChat]);
+
 
   useEffect(() => {
     if (!containerRef.current) return;

@@ -29,6 +29,15 @@ export function useRoomSocket(props) {
   const clockOffset = useRef(0);
   const initialSeekDone = useRef(false);
   const suppressNativeRef = useRef(false);
+  const socketHandlersRef = useRef({});
+  const clockTimerRef = useRef(null);
+  const localPlaybackRate = useRef(1);
+
+  const updateServerLine = useCallback((updates) => {
+    if (serverLine.current) {
+      serverLine.current = { ...serverLine.current, ...updates };
+    }
+  }, []);
 
   const suppressNext = useCallback(() => {
     suppressNativeRef.current = true;
@@ -57,17 +66,23 @@ export function useRoomSocket(props) {
       const socket = socketRef.current;
       if (!socket) return;
 
-      if (type.startsWith("CMD:")) {
-        socket.emit(type, p.current.roomId, data);
+      let socketEvent = type;
+      if (type === "speed") {
+        socketEvent = "CMD:playbackRate";
+        if (data?.rate != null) localPlaybackRate.current = data.rate;
+      }
+
+      if (socketEvent.startsWith("CMD:")) {
+        socket.emit(socketEvent, p.current.roomId, data);
       } else {
-        socket.emit(type, data);
+        socket.emit(socketEvent, data);
       }
 
       if (
-        ["CMD:play", "CMD:pause", "CMD:host", "CMD:playbackRate"].includes(type)
+        ["CMD:play", "CMD:pause", "CMD:host", "CMD:playbackRate"].includes(socketEvent)
       )
         preventSync(1000);
-      if (type === "CMD:seek") preventSync(3000);
+      if (socketEvent === "CMD:seek") preventSync(3000);
     },
     [preventSync],
   );
@@ -81,8 +96,9 @@ export function useRoomSocket(props) {
       if (!v || !s) return;
 
       const inPreventWindow = Date.now() < preventUpdateEnd.current;
+      const canControl = p.current.canControl !== false;
 
-      if (!inPreventWindow) {
+      if (!inPreventWindow && canControl) {
         if (s.isPlaying && v.paused && !isBufferingNow(v)) {
           suppressNext();
           v.play().catch(() => {});
@@ -94,8 +110,9 @@ export function useRoomSocket(props) {
 
       const targetRate = s.playbackRate || 1;
       if (v.readyState < 3 || isBufferingNow(v) || inPreventWindow) {
-        if (Math.abs(v.playbackRate - targetRate) > 0.005)
+        if (Math.abs(v.playbackRate - targetRate) > 0.005) {
           v.playbackRate = targetRate;
+        }
         return;
       }
 
@@ -124,21 +141,20 @@ export function useRoomSocket(props) {
       const speedSyncOn = p.current.speedSyncEnabled !== false;
       const commandedRate =
         speedSyncOn || s?.hostId === p.current.userId
-          ? s.playbackRate || 1
+          ? localPlaybackRate.current !== 1
+            ? localPlaybackRate.current
+            : s.playbackRate || 1
           : 1;
 
+      // [Fix] Apply drift correction RELATIVE to commanded rate, not relative to 1x.
+      // correction.playbackRate is a ratio near 1 (e.g., 0.94-1.06).
+      // If commandedRate=2 and correction=0.94, result should be 2*0.94=1.88, not 0.94.
       const correctedRate =
-        correction.action === "soft"
-          ? parseFloat(
-              Math.min(
-                commandedRate + (correction.playbackRate - 1),
-                commandedRate + 0.1,
-              ).toFixed(3),
-            )
-          : commandedRate;
+        correction.action === "soft" ? commandedRate * correction.playbackRate : commandedRate;
 
-      if (Math.abs(v.playbackRate - correctedRate) > 0.005)
+      if (Math.abs(v.playbackRate - correctedRate) > 0.005) {
         v.playbackRate = correctedRate;
+      }
     }, SYNC_CHECK_INTERVAL);
   }, [isBufferingNow, suppressNext]);
 
@@ -192,8 +208,14 @@ export function useRoomSocket(props) {
         });
       };
       calibrateClock();
-      const clockTimer = setInterval(calibrateClock, CLOCK_RECAL_INTERVAL);
-      socket.once("disconnect", () => clearInterval(clockTimer));
+      if (clockTimerRef.current) clearInterval(clockTimerRef.current);
+      clockTimerRef.current = setInterval(calibrateClock, CLOCK_RECAL_INTERVAL);
+      socket.once("disconnect", () => {
+        if (clockTimerRef.current) {
+          clearInterval(clockTimerRef.current);
+          clockTimerRef.current = null;
+        }
+      });
     });
 
     const handlers = {
@@ -205,16 +227,24 @@ export function useRoomSocket(props) {
       },
       "REC:host": (m) => {
         const state = {
-          ...m,
           videoUrl: m.video,
           isPlaying: !m.paused,
           currentTime: m.videoTS,
+          playbackRate: m.playbackRate ?? 1,
+          strictVideoUrlMode: m.strictVideoUrlMode ?? false,
+          hostOnlyControls: m.hostOnlyControls ?? false,
+          hasPassword: m.hasPassword ?? false,
+          subtitleUrl: m.subtitleUrl || "",
         };
         const wasInitial = !serverLine.current;
         const prev = serverLine.current;
+        const videoChanged = prev && prev.videoUrl !== m.video;
         serverLine.current = state;
+        if (m.playbackRate != null) {
+          localPlaybackRate.current = m.playbackRate;
+        }
         p.current.onStateUpdate?.(state);
-        if (wasInitial) initialSeekDone.current = false;
+        if (wasInitial || videoChanged) initialSeekDone.current = false;
         if (Date.now() < preventUpdateEnd.current) return;
         const v = p.current.videoRef?.current;
         if (wasInitial && v && state.currentTime > 0) {
@@ -315,10 +345,25 @@ export function useRoomSocket(props) {
             text: "[HOST] Host role transferred.",
           });
       },
-      "REC:subtitle": (url) =>
-        p.current.onStateUpdate?.((prev) =>
-          prev ? { ...prev, subtitleUrl: url } : prev,
-        ),
+      "REC:subtitle": (url) => {
+        if (url == null) return;
+        
+        let decodedUrl = String(url);
+        if (decodedUrl.includes("%")) {
+          try {
+            decodedUrl = decodeURIComponent(decodedUrl);
+          } catch (e) {
+            // [Note] Decode failed — use raw string
+          }
+        }
+        
+        if (decodedUrl && decodedUrl.length > 0) {
+          p.current.onStateUpdate?.((prev) => {
+            const newState = prev ? { ...prev, subtitleUrl: decodedUrl } : { subtitleUrl: decodedUrl };
+            return newState;
+          });
+        }
+      },
       chat: (m) => p.current.onChatMessage?.(m),
       chat_history: (m) =>
         p.current.onChatMessage?.({ type: "chat_history", ...m }),
@@ -358,12 +403,24 @@ export function useRoomSocket(props) {
     };
 
     Object.entries(handlers).forEach(([ev, fn]) => socket.on(ev, fn));
+    socketHandlersRef.current = handlers;
   }, [loop, suppressNext]);
 
   useEffect(() => {
     connect();
     return () => {
-      if (socketRef.current) socketRef.current.disconnect();
+      const socket = socketRef.current;
+      if (socket && socketHandlersRef.current) {
+        Object.keys(socketHandlersRef.current).forEach((ev) =>
+          socket.off(ev),
+        );
+        socketHandlersRef.current = {};
+      }
+      if (clockTimerRef.current) {
+        clearInterval(clockTimerRef.current);
+        clockTimerRef.current = null;
+      }
+      if (socket) socket.disconnect();
       clearInterval(timer.current);
     };
   }, [connect, props.userId, props.roomId]);
@@ -384,5 +441,5 @@ export function useRoomSocket(props) {
     return () => clearInterval(int);
   }, [isBufferingNow]);
 
-  return { send, socketRef };
+  return { send, socketRef, updateServerLine };
 }

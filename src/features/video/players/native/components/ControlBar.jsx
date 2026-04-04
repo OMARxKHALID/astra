@@ -102,10 +102,6 @@ export default function ControlBar({
             onMuteToggle={onMuteToggle}
           />
 
-          <span className="text-[10px] font-mono text-white/40 tabular-nums shrink-0 hidden xs:inline">
-            {formatTime(localTime)} / {formatTime(duration)}
-          </span>
-
           {hlsQualityEnabled && hlsQuality && sourceType === "hls" && (
             <HlsQualitySelector
               hlsQuality={hlsQuality}
@@ -122,6 +118,10 @@ export default function ControlBar({
             </span>
           )}
 
+          <span className="text-[11px] font-mono text-white/60 tabular-nums shrink-0 hidden sm:inline">
+            {formatTime(localTime)} <span className="text-white/30">/</span> {formatTime(duration)}
+          </span>
+
           <div className="flex-1 min-w-0" />
 
           <div
@@ -134,7 +134,7 @@ export default function ControlBar({
                 else if (subtitleUrl) setShowSubtitles((s) => !s);
               }}
               className={`w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] transition-all shrink-0
-                ${!subtitleUrl ? "text-white/40 hover:text-white" : showSubtitles ? "bg-amber text-void" : "text-white/40 hover:text-white"}`}
+                ${subtitleUrl && showSubtitles ? "bg-amber text-void" : subtitleUrl ? "bg-amber/20 text-amber" : "text-white/40 hover:text-white"}`}
             >
               <CcIcon className="w-3.5 h-3.5" />
             </button>

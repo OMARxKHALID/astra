@@ -24,6 +24,7 @@ export default function useVideoEvents({
     // [Note] "direct" type uses the same native src assignment as "mp4".
     // The browser reads the content-type from response headers to determine playability.
     if (
+      videoUrl &&
       (sourceType === "mp4" || sourceType === "direct") &&
       v.src !== videoUrl
     ) {
@@ -42,8 +43,8 @@ export default function useVideoEvents({
       setPosterVisible(false);
     };
 
-    const onWait = () => setBuffering(true);
-    const onCan = () => setBuffering(false);
+    const onWait = () => {};
+    const onCan = () => {};
 
     const onNativeEnded = () => {
       onPause?.(v.duration);
@@ -73,6 +74,8 @@ export default function useVideoEvents({
     };
 
     const onErr = () => {
+      if (!videoUrl) return;
+
       const isDirectSource = sourceType === "direct";
 
       if (!v.error) {

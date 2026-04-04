@@ -100,8 +100,20 @@ export default function registerVideoHandlers(
   socket.on("CMD:subtitle", (_rId, url) => {
     const ctx = getCtx();
     if (!ctx) return;
-    ctx.room.subtitleUrl = url || "";
-    io.to(ctx.room.roomId).emit("REC:subtitle", ctx.room.subtitleUrl);
+    
+    const inputUrl = url == null ? "" : String(url);
+    
+    let finalUrl = inputUrl;
+    if (/^\d+$/.test(inputUrl.trim())) {
+      const fileId = inputUrl.trim();
+      const serverUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+      finalUrl = `${serverUrl}/api/subtitles/download?url=${fileId}`;
+    } else if (inputUrl.startsWith("blob:")) {
+      finalUrl = inputUrl;
+    }
+    
+    ctx.room.subtitleUrl = finalUrl;
+    io.to(ctx.room.roomId).emit("REC:subtitle", finalUrl);
     saveRoom(ctx.room);
   });
 

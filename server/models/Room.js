@@ -87,6 +87,7 @@ export class Room {
     const canAffectMaster = !this.hostOnlyControls || isHost;
     if (canAffectMaster && normalized > this.videoTS) {
       this.videoTS = normalized;
+      this.lastUpdated = Date.now();
     }
     
     this.tsMap[userId] = normalized;
@@ -123,7 +124,7 @@ export class Room {
 
   // Lightweight fingerprint — only broadcast REC:host when something changed
   _stateFingerprint() {
-    return `${this.video}|${this.videoTS.toFixed(1)}|${this.paused}|${this.playbackRate}|${this.hostId}|${this.hostOnlyControls}|${this.strictVideoUrlMode}|${Boolean(this.passwordHash)}|${this.tmdbMeta?.id || ""}`;
+    return `${this.video}|${this.videoTS.toFixed(1)}|${this.paused}|${this.playbackRate}|${this.hostId}|${this.hostOnlyControls}|${this.strictVideoUrlMode}|${Boolean(this.passwordHash)}|${this.tmdbMeta?.id || ""}|${this.subtitleUrl || ""}`;
   }
 
   startBroadcast(io) {
@@ -201,7 +202,7 @@ export function saveRoom(room) {
             { ex: REDIS_TTL_S },
           );
         } catch (err) {
-          console.error(`[redis] save failed ${r.roomId}: ${err.message}`);
+          console.error(`[redis] Save failed ${r.roomId}: ${err.message}`);
         }
       }, SAVE_DEBOUNCE_MS),
     );

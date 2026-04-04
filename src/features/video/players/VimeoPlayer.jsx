@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState, useEffect, useCallback } from "react";
-import { onVMReady, useVideoHotkeys } from "../utils";
+import { useRef, useState, useEffect } from "react";
+import { onVMReady, useVideoHotkeys, cleanupVimeoAPI } from "../utils";
 import { usePlayerControls } from "./usePlayerControls";
 import EmbedControls from "../controls/EmbedControls";
 import VideoPoster from "../controls/VideoPoster";
@@ -26,7 +26,7 @@ export default function VimeoPlayer({
   const containerRef = useRef(null);
   const iframeRef = useRef(null);
   const playerRef = useRef(null);
-  const { ctrlVis, setCtrlVis, showCtrl, isFullscreen } = usePlayerControls(3000);
+  const { ctrlVis, showCtrl, isFullscreen } = usePlayerControls(3000);
   const [ready, setReady] = useState(false);
   const [localTime, setLocalTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -151,7 +151,6 @@ export default function VimeoPlayer({
           });
           player.on("timeupdate", ({ seconds, duration }) => {
             setLocalTime(seconds);
-            onTimeUpdate?.({ current: seconds, duration });
           });
           player.on("progress", ({ percent }) => setBufferedPct(percent * 100));
           player.on("bufferstart", () => {
@@ -164,9 +163,12 @@ export default function VimeoPlayer({
             isBufferingRef.current = false;
           });
           player.on("ended", () => {
-            player.getDuration().then((d) => {
-              onPause?.(d);
-            }).catch(() => {});
+            player
+              .getDuration()
+              .then((d) => {
+                onPause?.(d);
+              })
+              .catch(() => {});
           });
           setReady(true);
         })
@@ -176,6 +178,7 @@ export default function VimeoPlayer({
       playerRef.current?.destroy?.().catch(() => {});
       playerRef.current = null;
       setReady(false);
+      cleanupVimeoAPI();
     };
   }, [videoId]);
 
@@ -226,7 +229,6 @@ export default function VimeoPlayer({
     handleFullscreen,
     onSeek,
     setMuted,
-    onToggleChat,
   });
 
   return (

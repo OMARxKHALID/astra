@@ -58,6 +58,7 @@ export function useVideoHotkeys({
 
 let ytReady = false,
   ytCbs = [];
+let ytScriptEl = null;
 export function onYTReady(cb) {
   if (ytReady && window.YT?.Player) {
     cb();
@@ -69,6 +70,7 @@ export function onYTReady(cb) {
     t.id = "yt-iframe-api";
     t.src = "https://www.youtube.com/iframe_api";
     document.head.appendChild(t);
+    ytScriptEl = t;
   }
   window.onYouTubeIframeAPIReady = () => {
     ytReady = true;
@@ -77,8 +79,18 @@ export function onYTReady(cb) {
   };
 }
 
+export function cleanupYouTubeAPI() {
+  if (ytScriptEl) {
+    ytScriptEl.remove();
+    ytScriptEl = null;
+  }
+  ytReady = false;
+  delete window.onYouTubeIframeAPIReady;
+}
+
 let vmReady = false,
   vmCbs = [];
+let vmScriptEl = null;
 export function onVMReady(cb) {
   if (vmReady && window.Vimeo?.Player) {
     cb();
@@ -95,5 +107,14 @@ export function onVMReady(cb) {
       vmCbs = [];
     };
     document.head.appendChild(t);
+    vmScriptEl = t;
   }
+}
+
+export function cleanupVimeoAPI() {
+  if (vmScriptEl) {
+    vmScriptEl.remove();
+    vmScriptEl = null;
+  }
+  vmReady = false;
 }

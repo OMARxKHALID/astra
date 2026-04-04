@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback } from "react";
-import { onYTReady, useVideoHotkeys } from "../utils";
+import { onYTReady, useVideoHotkeys, cleanupYouTubeAPI } from "../utils";
 import { YT_AD_POLL_MS as AD_POLL_MS } from "@/constants/config";
 import { usePlayerControls } from "./usePlayerControls";
 import EmbedControls from "../controls/EmbedControls";
@@ -292,6 +292,7 @@ export default function YouTubePlayer({
       div.remove();
       setReady(false);
       setIsAdPlaying(false);
+      cleanupYouTubeAPI();
     };
   }, [videoId]);
 
@@ -348,7 +349,6 @@ export default function YouTubePlayer({
     handleFullscreen,
     onSeek,
     setMuted,
-    onToggleChat,
   });
 
   return (

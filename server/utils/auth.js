@@ -4,9 +4,7 @@ function jwtSecret() {
   const s = process.env.JWT_SECRET;
   if (!s) {
     if (process.env.NODE_ENV === "production") {
-      console.error(
-        "[jwt] JWT_SECRET is not set in production! Verification will use fallback and likely FAIL.",
-      );
+      console.error(`[jwt] JWT_SECRET is not set in production — verification will likely fail`);
     }
     return "dev-fallback-not-secure";
   }

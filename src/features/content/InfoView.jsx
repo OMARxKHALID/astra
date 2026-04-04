@@ -162,7 +162,7 @@ export default function InfoView({ initialData, type, id }) {
   };
 
   const handleWatch = () => {
-    markAsWatched();
+    try { markAsWatched(); } catch {}
     const server = serverOptions[0].value;
     const embedUrl = buildEmbedUrl(server, id, type, 1, 1);
     router.push(
@@ -172,7 +172,7 @@ export default function InfoView({ initialData, type, id }) {
 
   const handleAstraSync = async () => {
     setCreating(true);
-    markAsWatched();
+    try { markAsWatched(); } catch {}
     try {
       const server = serverOptions[0].value;
       const embedUrl = buildEmbedUrl(server, id, type, 1, 1);

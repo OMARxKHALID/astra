@@ -4,10 +4,6 @@ import { gunzipSync } from "zlib";
 const API_KEY = process.env.OPENSUBTITLES_KEY;
 const API_BASE = "https://api.opensubtitles.com/api/v1";
 
-if (!API_KEY) {
-  console.warn("[subtitles] OPENSUBTITLES_KEY not set - subtitle download disabled");
-}
-
 export async function GET(request) {
   try {
     if (!API_KEY) {
@@ -29,7 +25,6 @@ export async function GET(request) {
 
     let finalDownloadUrl = subUrlOrId;
 
-    // [Note] OpenSubtitles: use file_id to request a temporary download link
     const isFileId = /^\d+$/.test(subUrlOrId.trim());
     if (isFileId) {
       const dlRes = await fetch(`${API_BASE}/download`, {
@@ -55,22 +50,21 @@ export async function GET(request) {
 
     const contentType = res.headers.get("content-type") || "";
 
-    // Get raw bytes — needed for gzip detection and proper charset decoding
     const buffer = await res.arrayBuffer();
     let rawData = Buffer.from(buffer);
 
-    // [Note] GZIP detection: OpenSubtitles serves compressed files by default
     const isGzip =
       contentType.includes("gzip") ||
       finalDownloadUrl.endsWith(".gz") ||
-      (rawData[0] === 0x1f && rawData[1] === 0x8b); // magic bytes check
+      (rawData[0] === 0x1f && rawData[1] === 0x8b);
     if (isGzip) {
       try {
         rawData = gunzipSync(rawData);
-      } catch {}
+      } catch (e) {
+        // [Note] Gzip decompression failed — proceed with raw data
+      }
     }
 
-    // Fix 2: Already VTT — return as-is
     if (contentType.includes("vtt") || finalDownloadUrl.endsWith(".vtt")) {
       return new NextResponse(rawData, {
         status: 200,
@@ -82,7 +76,6 @@ export async function GET(request) {
       });
     }
 
-    // [Note] Charset: fall back to windows-1252 for non-UTF8 SRT files
     let text;
     try {
       text = new TextDecoder("utf-8", { fatal: true }).decode(rawData);
@@ -90,10 +83,8 @@ export async function GET(request) {
       text = new TextDecoder("windows-1252").decode(rawData);
     }
 
-    // Strip BOM if present (some encoders add \uFEFF at start)
     text = text.replace(/^\uFEFF/, "");
 
-    // Fix 4: Already WEBVTT — return unchanged
     if (text.trimStart().startsWith("WEBVTT")) {
       return new NextResponse(text, {
         status: 200,
@@ -105,7 +96,6 @@ export async function GET(request) {
       });
     }
 
-    // [Note] SRT to VTT: strip sequence numbers, normalize line endings, convert comma timestamps
     const vtt =
       "WEBVTT\n\n" +
       text

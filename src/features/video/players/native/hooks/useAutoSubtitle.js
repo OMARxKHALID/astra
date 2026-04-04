@@ -21,35 +21,71 @@ export default function useAutoSubtitle({
   });
 
   useEffect(() => {
-    if (!videoUrl || subtitleUrl || videoUrl === lastVideoUrlRef.current) return;
+    if (!videoUrl || subtitleUrl || videoUrl === lastVideoUrlRef.current) {
+      return;
+    }
     lastVideoUrlRef.current = videoUrl;
 
-    let cancelled = false;
+    try {
+      const u = new URL(videoUrl);
+      const proxyParams = ["url", "video", "src", "file", "path"];
+      for (const param of proxyParams) {
+        if (u.searchParams.has(param)) {
+          return;
+        }
+      }
+      const proxyDomains = ["proxy.valhallastream", "proxy.", "cdn.proxy", "streamproxy"];
+      if (proxyDomains.some(d => u.hostname.includes(d))) {
+        return;
+      }
+    } catch {}
+
+    const ac = new AbortController();
     (async () => {
       try {
         let query = null;
         try {
           const u = new URL(videoUrl);
-          query = u.pathname.split("/").filter(Boolean).pop() || "";
+          
+          const proxyParams = ["url", "video", "src", "file"];
+          let innerUrl = null;
+          for (const param of proxyParams) {
+            const val = u.searchParams.get(param);
+            if (val) {
+              try {
+                innerUrl = new URL(decodeURIComponent(val));
+                break;
+              } catch {}
+            }
+          }
+          
+          const targetUrl = innerUrl || u;
+          query = targetUrl.pathname.split("/").filter(Boolean).pop() || "";
           query = decodeURIComponent(query)
             .replace(/\.[a-z0-9]+$/i, "")
             .replace(/[_-]/g, " ")
             .trim();
+          
           if (!query || query.length < 3) {
             const qParam =
-              u.searchParams.get("q") ||
-              u.searchParams.get("title") ||
-              u.searchParams.get("name");
-            if (qParam && qParam.length >= 3)
+              targetUrl.searchParams.get("q") ||
+              targetUrl.searchParams.get("title") ||
+              targetUrl.searchParams.get("name");
+            if (qParam && qParam.length >= 3) {
               query = decodeURIComponent(qParam).replace(/[_-]/g, " ").trim();
+            }
           }
         } catch {}
-        if (!query || query.length < 3) return;
+        if (!query || query.length < 3) {
+          return;
+        }
 
         const res = await fetch(
           `/api/subtitles/search?q=${encodeURIComponent(query)}&url=${encodeURIComponent(videoUrl)}`,
+          { signal: ac.signal },
         );
-        if (cancelled) return;
+        if (ac.signal.aborted) return;
+        if (!res.ok) return;
         const data = await res.json();
         if (data.subtitles?.length > 0 && onSubtitleChangeRef.current) {
           const sub = data.subtitles[0];
@@ -66,10 +102,14 @@ export default function useAutoSubtitle({
           ls.set(LS_KEYS.recentSubs, JSON.stringify(updated));
           addToastRef.current?.(`Subtitles loaded: ${sub.label}`, "success");
         }
-      } catch {}
+      } catch (e) {
+        if (e.name !== "AbortError") {
+          // [Note] Fail silently — auto-subtitle is non-critical
+        }
+      }
     })();
     return () => {
-      cancelled = true;
+      ac.abort();
     };
   }, [videoUrl, subtitleUrl]);
 }

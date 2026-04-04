@@ -59,7 +59,7 @@ function VideoPlayer({
     return (
       <NativeVideoPlayer
         videoRef={videoRef}
-        videoUrl={videoUrl}
+        videoUrl={source.url || videoUrl}
         subtitleUrl={subtitleUrl}
         sourceType={source.type}
         isPlaying={isPlaying}

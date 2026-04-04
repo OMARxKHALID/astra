@@ -240,6 +240,8 @@ export default function RoomView({ roomId, initialMeta }) {
         isCalling={call.isCalling}
         onToggleCall={call.isJoined ? call.leaveCall : call.joinCall}
         debugMode={room.debugMode}
+        showSidebar={settings.showSidebar}
+        onToggleSidebar={() => settings.setShowSidebar(!settings.showSidebar)}
       />
 
       <SplitView
@@ -291,6 +293,16 @@ export default function RoomView({ roomId, initialMeta }) {
                   currentTime: videoRef.current?.currentTime,
                 })
               }
+              onSubtitleChange={(url) => {
+                if (sendRef?.current) {
+                  sendRef.current({ type: "set_subtitle", url });
+                }
+              }}
+              onLoad={(videoUrl, subtitleUrl) => {
+                if (subtitleUrl && sendRef?.current) {
+                  sendRef.current({ type: "set_subtitle", url: subtitleUrl });
+                }
+              }}
               canControl={!room.serverState?.hostOnlyControls || isHost}
               onAmbiColors={handleAmbiColors}
               theatreMode={settings.theatreMode}
@@ -301,6 +313,7 @@ export default function RoomView({ roomId, initialMeta }) {
               onToggleEpisodes={() =>
                 videoState.setEpisodesOpen(!videoState.episodesOpen)
               }
+              addToast={addToast}
             />
             {videoState.episodesOpen && videoState.id && (
               <EpisodeSelector

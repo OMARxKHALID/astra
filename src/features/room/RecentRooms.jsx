@@ -5,10 +5,12 @@ import { History, X as XIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { LS_KEYS } from "@/constants/config";
 import { ls } from "@/utils/localStorage";
+import { useToast } from "@/components/Toast";
 import Image from "next/image";
 
 export default function RecentRooms() {
   const router = useRouter();
+  const { addToast } = useToast();
   const [showRecent, setShowRecent] = useState(false);
   const [recentRooms, setRecentRooms] = useState([]);
 
@@ -47,6 +49,7 @@ export default function RecentRooms() {
     if (!window.confirm("Clear all room history?")) return;
     setRecentRooms([]);
     ls.set(LS_KEYS.history, "[]");
+    addToast("Room history cleared", "success");
     setShowRecent(false);
   };
 

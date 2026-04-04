@@ -15,7 +15,5 @@ export const redis =
     : null;
 
 if (!redis) {
-  console.warn(
-    "[redis] Redis not configured — room state will not persist."
-  );
+  console.warn(`[redis] Not configured — room state will not persist`);
 }

@@ -123,7 +123,7 @@ export default function useHLS(videoRef, videoUrl, sourceType, setVideoError) {
           });
         });
       } catch (err) {
-        console.error("[useHLS] Error loading hls.js:", err);
+        console.error(`[hls] Error loading hls.js: ${err.message}`);
       }
     };
 
@@ -131,7 +131,10 @@ export default function useHLS(videoRef, videoUrl, sourceType, setVideoError) {
 
     return () => {
       cancelled = true;
-      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
       if (hls) {
         hls.destroy();
         hlsRef.current = null;
