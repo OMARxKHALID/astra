@@ -122,7 +122,6 @@ export default function useRoomEvents({
           }
           break;
         case "user_left": {
-          const name = displayNamesRef.current[event.userId] || "Someone";
           setParticipants((prev) => prev.filter((id) => id !== event.userId));
           break;
         }

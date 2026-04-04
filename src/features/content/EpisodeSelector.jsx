@@ -49,6 +49,7 @@ export default function EpisodeSelector({
 
   const [isFs, setIsFs] = useState(false);
   useEffect(() => {
+    if (typeof document === "undefined") return;
     const check = () => setIsFs(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", check);
     check();

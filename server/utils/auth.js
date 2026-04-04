@@ -12,10 +12,8 @@ function jwtSecret() {
 }
 
 export function verifyHostToken(token, expectedRoomId) {
-  // Support legacy UUID tokens during migration
   if (!token) return false;
 
-  // Try JWT first
   if (token.includes(".")) {
     try {
       const [header, claims, sig] = token.split(".");

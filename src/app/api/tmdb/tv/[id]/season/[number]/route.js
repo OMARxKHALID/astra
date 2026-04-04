@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { redisCache } from "@/lib/redis";
 
+const VALID_ID_PATTERN = /^\d+$/;
+
 export async function GET(req, { params }) {
   const key = process.env.TMDB_API_KEY;
   const { id, number } = await params;
 
-  if (!key || !id || !number)
-    return NextResponse.json({ error: "Missing key, id or number" }, { status: 400 });
+  if (!key) return NextResponse.json({ error: "API key not configured" }, { status: 500 });
+  if (!id || !VALID_ID_PATTERN.test(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  if (!number || !VALID_ID_PATTERN.test(number)) return NextResponse.json({ error: "Invalid season number" }, { status: 400 });
 
   const cacheKey = `tmdb:season:${id}:${number}`;
 
@@ -16,12 +19,18 @@ export async function GET(req, { params }) {
       if (cached) return NextResponse.json(cached);
     }
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
     const res = await fetch(
       `https://api.themoviedb.org/3/tv/${id}/season/${number}?api_key=${key}&language=en-US`,
-      { next: { revalidate: 3600 } },
+      { 
+        next: { revalidate: 3600 },
+        signal: controller.signal,
+      },
     );
-    if (!res.ok)
-      return NextResponse.json({ error: "TMDB error" }, { status: 502 });
+    clearTimeout(timeout);
+    
+    if (!res.ok) return NextResponse.json({ error: "TMDB error" }, { status: 502 });
 
     const d = await res.json();
 

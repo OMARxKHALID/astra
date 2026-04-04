@@ -7,6 +7,10 @@ const WS_HTTP_URL = process.env.WS_HTTP_URL || "http://localhost:3001";
 export async function POST(_req, { params }) {
   const { id } = await params;
 
+  if (!id || typeof id !== "string" || id.length > 50) {
+    return NextResponse.json({ error: "Invalid room ID" }, { status: 400 });
+  }
+
   let exists = await roomStore.get(id);
   if (!exists) {
     try {

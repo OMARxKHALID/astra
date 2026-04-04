@@ -119,6 +119,12 @@ export default function useSubtitleStyle(
       }
       ${subStyle.position === "top" ? "video::cue-region { top: 5% !important; }" : ""}
     `;
+
+    return () => {
+      if (el && el.parentNode) {
+        el.parentNode.removeChild(el);
+      }
+    };
   }, [subStyle]);
 
   useEffect(() => {
@@ -166,7 +172,6 @@ export default function useSubtitleStyle(
               end: cue.endTime,
             });
           }
-          log(`📝 Stored original times for ${track.cues.length} cues`);
         }
 
         for (const cue of track.cues) {

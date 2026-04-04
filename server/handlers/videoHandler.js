@@ -63,7 +63,8 @@ export default function registerVideoHandlers(
     const ctx = getCtx();
     if (!ctx) return;
     const rate = Number(msg?.rate);
-    ctx.room.playbackRate = isFinite(rate) && rate > 0 ? rate : 1;
+    const validRate = isFinite(rate) && rate >= 0.25 && rate <= 4 ? rate : 1;
+    ctx.room.playbackRate = validRate;
     if (msg?.videoTS != null) ctx.room.videoTS = Number(msg.videoTS);
     ctx.room.lastUpdated = Date.now();
     io.to(ctx.room.roomId).emit("REC:host", ctx.room.publicState());

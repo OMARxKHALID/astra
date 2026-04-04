@@ -21,13 +21,22 @@ export function normalizeYouTubeVideo(item) {
 }
 
 export async function searchYouTube(query, pageToken = null) {
+  const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
   if (!YOUTUBE_API_KEY) return { items: [], nextPageToken: null };
 
-  let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=5&q=${encodeURIComponent(query)}&key=${YOUTUBE_API_KEY}`;
-  if (pageToken) url += `&pageToken=${pageToken}`;
+  const sanitizedQuery = query?.trim().slice(0, 200) || "";
+  if (!sanitizedQuery) return { items: [], nextPageToken: null };
+
+  let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=5&q=${encodeURIComponent(sanitizedQuery)}&key=${YOUTUBE_API_KEY}`;
+  if (pageToken) url += `&pageToken=${encodeURIComponent(pageToken)}`;
 
   try {
-    const res = await fetch(url);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeout);
+    
     if (!res.ok) return { items: [], nextPageToken: null };
 
     const data = await res.json();

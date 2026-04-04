@@ -30,6 +30,10 @@ async function queryWsSidecar(id) {
 export async function GET(_req, { params }) {
   const { id } = await params;
 
+  if (!id || typeof id !== "string" || id.length > 50) {
+    return NextResponse.json({ error: "Invalid room ID" }, { status: 400 });
+  }
+
   const stored = await roomStore.get(id);
   if (stored) {
     // Prefer live state for time-sensitive fields; fall back to persisted store

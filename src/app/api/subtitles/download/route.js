@@ -3,6 +3,7 @@ import { gunzipSync } from "zlib";
 
 const API_KEY = process.env.OPENSUBTITLES_KEY;
 const API_BASE = "https://api.opensubtitles.com/api/v1";
+const MAX_RESPONSE_SIZE = 2 * 1024 * 1024; // 2MB max
 
 export async function GET(request) {
   try {
@@ -14,7 +15,7 @@ export async function GET(request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const subUrlOrId = searchParams.get("url");
+    const subUrlOrId = searchParams.get("url")?.slice(0, 500) || "";
 
     if (!subUrlOrId) {
       return NextResponse.json(
@@ -27,6 +28,8 @@ export async function GET(request) {
 
     const isFileId = /^\d+$/.test(subUrlOrId.trim());
     if (isFileId) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
       const dlRes = await fetch(`${API_BASE}/download`, {
         method: "POST",
         headers: {
@@ -35,12 +38,25 @@ export async function GET(request) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ file_id: parseInt(subUrlOrId, 10) }),
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
+      
       if (!dlRes.ok)
         throw new Error(`OpenSubtitles download API: ${dlRes.status}`);
       const dlData = await dlRes.json();
       if (!dlData.link) throw new Error("No download link from OpenSubtitles");
       finalDownloadUrl = dlData.link;
+    } else {
+      // Validate external URL
+      try {
+        const url = new URL(finalDownloadUrl);
+        if (url.protocol !== "http:" && url.protocol !== "https:") {
+          throw new Error("Invalid protocol");
+        }
+      } catch {
+        throw new Error("Invalid download URL");
+      }
     }
 
     const res = await fetch(finalDownloadUrl, {
@@ -51,6 +67,11 @@ export async function GET(request) {
     const contentType = res.headers.get("content-type") || "";
 
     const buffer = await res.arrayBuffer();
+    
+    if (buffer.byteLength > MAX_RESPONSE_SIZE) {
+      throw new Error("Subtitle file too large");
+    }
+    
     let rawData = Buffer.from(buffer);
 
     const isGzip =

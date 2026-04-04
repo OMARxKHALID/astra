@@ -3,7 +3,7 @@ import { fetchTMDB, normalizeTMDB } from "@/services/tmdb";
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
-  const q = searchParams.get("q");
+  const q = searchParams.get("q")?.slice(0, 200) || "";
   if (!q) return NextResponse.json({ items: [] });
 
   try {

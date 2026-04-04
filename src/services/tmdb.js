@@ -28,9 +28,16 @@ export function normalizeTMDB(item, forceType) {
 
 export async function fetchTMDB(endpoint, query = "") {
   if (!TMDB_API_KEY) return null;
-  const url = `${TMDB_BASE_URL}/${endpoint}?api_key=${TMDB_API_KEY}${query}`;
+  const sanitizedQuery = query?.slice(0, 500) || "";
+  const url = `${TMDB_BASE_URL}/${endpoint}?api_key=${TMDB_API_KEY}${sanitizedQuery}`;
   try {
-    const res = await fetch(url, { next: { revalidate: 3600 } });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    const res = await fetch(url, { 
+      next: { revalidate: 3600 },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
     if (!res.ok) return null;
     return res.json();
   } catch (e) {

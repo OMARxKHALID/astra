@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
 
+function isValidVimeoUrl(urlStr) {
+  try {
+    const url = new URL(urlStr);
+    return url.hostname === "vimeo.com" || url.hostname.endsWith(".vimeo.com");
+  } catch {
+    return false;
+  }
+}
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const url = searchParams.get("url");
+    const url = searchParams.get("url")?.slice(0, 500) || "";
 
     if (!url) {
       return NextResponse.json(
@@ -13,7 +22,7 @@ export async function GET(request) {
     }
 
     // Vimeo — use oEmbed to get thumbnail_url
-    if (url.includes("vimeo.com")) {
+    if (url.includes("vimeo.com") && isValidVimeoUrl(url)) {
       try {
         const oembedRes = await fetch(
           `https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url)}`,
