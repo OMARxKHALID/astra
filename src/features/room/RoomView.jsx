@@ -133,11 +133,7 @@ export default function RoomView({ roomId, initialMeta }) {
     useAmbilight(settings);
 
   const hostToken = mounted ? ls.get(`host_${roomId}`) || "" : "";
-  const isHost = room.serverState?.hostId
-    ? mounted
-      ? room.serverState.hostId === identity.userId
-      : false
-    : room.serverState?.isHostHint || (mounted && !!hostToken);
+  const isHost = (room.serverState?.hostId === identity.userId) || (!!hostToken && !room.serverState?.hostId);
 
   const videoState = useVideoState({
     videoUrl: room.serverState?.videoUrl || initialMeta?.videoUrl || "",

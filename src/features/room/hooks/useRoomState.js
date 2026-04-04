@@ -12,6 +12,7 @@ export default function useRoomState(initialMeta) {
           currentTime: 0,
           playbackRate: 1,
           isHostHint: initialMeta.isHostHint,
+          hostId: initialMeta.hostId || "",
         }
       : null,
   );

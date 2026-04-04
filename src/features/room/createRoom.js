@@ -27,5 +27,5 @@ export function createRoom(videoUrl, session = null) {
     return data;
   });
 
-  return { roomId, createPromise };
+  return { roomId, userId, createPromise };
 }

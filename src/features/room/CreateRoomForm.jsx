@@ -105,7 +105,11 @@ export default function CreateRoomForm({ onResultsChange }) {
     setLoading(true);
     setError("");
 
-    const { roomId, createPromise } = createRoom(trimmed, session);
+    const { roomId, userId, createPromise } = createRoom(trimmed, session);
+
+    // Save hostId for room page to use
+    const { hostId } = await createPromise;
+    localStorage.setItem(`hostId_${roomId}`, hostId || "");
 
     try {
       const history = JSON.parse(ls.get(LS_KEYS.history) || "[]");

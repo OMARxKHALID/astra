@@ -235,6 +235,7 @@ export function useRoomSocket(props) {
           hostOnlyControls: m.hostOnlyControls ?? false,
           hasPassword: m.hasPassword ?? false,
           subtitleUrl: m.subtitleUrl || "",
+          hostId: m.hostId || "",
         };
         const wasInitial = !serverLine.current;
         const prev = serverLine.current;

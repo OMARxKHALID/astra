@@ -75,11 +75,17 @@ export default async function RoomPage({ params, searchParams }) {
 
   // Fast-path: bypass server-side awaits when client provides video URL via searchParams
   if (urlParam !== null && urlParam.trim() !== "") {
+    const isHostHint = sp?.h === "1";
+    // Client-side check for hostId (set by CreateRoomForm)
+    const hostIdFromStorage = typeof window !== "undefined" 
+      ? window.localStorage.getItem(`hostId_${id}`) 
+      : null;
     const room = {
       roomId: id,
       videoUrl: urlParam,
       hasPassword: false,
-      isHostHint: sp?.h === "1",
+      isHostHint,
+      hostId: hostIdFromStorage || "",
       createdAt: Date.now(),
     };
     return <RoomView roomId={id} initialMeta={room} />;
