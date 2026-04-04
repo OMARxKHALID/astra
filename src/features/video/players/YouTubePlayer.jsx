@@ -22,7 +22,6 @@ export default function YouTubePlayer({
   ambilightEnabled = true,
   theatreMode = false,
   onToggleTheatre,
-  onToggleChat,
   hasEpisodes = false,
   onToggleEpisodes,
 }) {

@@ -1,38 +1,61 @@
 import { useEffect, useRef, useState } from "react";
 
+const MAX_RETRIES = 3;
+const RETRY_DELAYS = [1000, 2000, 4000];
+
 export default function useHLS(videoRef, videoUrl, sourceType, setVideoError) {
   const [hlsQuality, setHlsQuality] = useState(null);
   const hlsRef = useRef(null);
-  // [Note] directFallbackRef: tracks whether we've already fallen back to v.src for this URL,
-  // so we don't re-enter HLS setup after the fallback triggers a re-render.
   const directFallbackRef = useRef(false);
   const lastUrlRef = useRef(null);
+  const retryCountRef = useRef(0);
+  const retryTimerRef = useRef(null);
 
   useEffect(() => {
     const v = videoRef.current;
     if (!v || sourceType !== "hls") return;
 
-    // [Note] Reset fallback flag when URL changes so new URLs always get a fresh HLS attempt
     if (lastUrlRef.current !== videoUrl) {
       directFallbackRef.current = false;
       lastUrlRef.current = videoUrl;
+      retryCountRef.current = 0;
     }
 
-    // Already fell back to direct src for this URL — native video element handles playback
     if (directFallbackRef.current) return;
-
-    // Avoid redundant re-loads if URL hasn't changed
     if (v.dataset.lastHlsUrl === videoUrl) return;
 
     let hls;
-    (async () => {
+    let cancelled = false;
+
+    const setupHLS = async () => {
+      if (cancelled) return;
+
       try {
         const Hls = (await import("hls.js")).default;
         if (!Hls.isSupported()) {
-          // [Note] Safari with native HLS: set src directly, browser handles M3U8 natively
           v.src = videoUrl;
           v.dataset.lastHlsUrl = videoUrl;
           return;
+        }
+
+        try {
+          const headRes = await fetch(videoUrl, {
+            method: "HEAD",
+            signal: AbortSignal.timeout(5000),
+          });
+          if (cancelled) return;
+
+          const ct = headRes.headers.get("content-type") || "";
+          if (ct.includes("video/mp4") || ct.includes("video/webm")) {
+            directFallbackRef.current = true;
+            v.dataset.lastHlsUrl = "";
+            v.src = videoUrl;
+            v.load();
+            return;
+          }
+        } catch {
+          // [Note] HEAD may fail on servers that don't support it (405) or CORS-restricted URLs;
+          // proceed to hls.js setup regardless — the existing manifest error fallback handles misclassified URLs
         }
 
         hls = new Hls({
@@ -63,10 +86,6 @@ export default function useHLS(videoRef, videoUrl, sourceType, setVideoError) {
         hls.on(Hls.Events.ERROR, (_, d) => {
           if (!d.fatal) return;
 
-          // [Note] Manifest errors mean the URL likely serves direct video (not M3U8).
-          // Workers.dev proxy URLs and CDN links often fall into this case.
-          // Destroy hls.js and fall back to native v.src assignment so the browser
-          // can negotiate the content-type from the response headers directly.
           const isManifestError =
             d.details === Hls.ErrorDetails?.MANIFEST_PARSING_ERROR ||
             d.details === Hls.ErrorDetails?.MANIFEST_LOAD_ERROR ||
@@ -78,10 +97,23 @@ export default function useHLS(videoRef, videoUrl, sourceType, setVideoError) {
             hls.destroy();
             hlsRef.current = null;
             directFallbackRef.current = true;
-            // [Note] Clear lastHlsUrl so v.src assignment in useVideoEvents can proceed
             v.dataset.lastHlsUrl = "";
             v.src = videoUrl;
             v.load();
+            return;
+          }
+
+          if (retryCountRef.current < MAX_RETRIES) {
+            const attempt = retryCountRef.current;
+            const delay = RETRY_DELAYS[attempt];
+            retryCountRef.current++;
+            retryTimerRef.current = setTimeout(() => {
+              if (!cancelled) {
+                hls.destroy();
+                hlsRef.current = null;
+                setupHLS();
+              }
+            }, delay);
             return;
           }
 
@@ -93,9 +125,13 @@ export default function useHLS(videoRef, videoUrl, sourceType, setVideoError) {
       } catch (err) {
         console.error("[useHLS] Error loading hls.js:", err);
       }
-    })();
+    };
+
+    setupHLS();
 
     return () => {
+      cancelled = true;
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
       if (hls) {
         hls.destroy();
         hlsRef.current = null;

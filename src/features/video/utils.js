@@ -9,7 +9,6 @@ export function useVideoHotkeys({
   handleFullscreen,
   onSeek,
   setMuted,
-  onToggleChat,
 }) {
   useEffect(() => {
     const onKD = (e) => {
@@ -31,11 +30,6 @@ export function useVideoHotkeys({
         case "m":
           e.preventDefault();
           setMuted?.((m) => !m);
-          break;
-        case "c":
-          e.preventDefault();
-          // [Note] Rationale: Bubble event to RoomView to handle portal rendering
-          onToggleChat?.();
           break;
         case "arrowleft":
         case "j":
@@ -59,7 +53,7 @@ export function useVideoHotkeys({
     };
     window.addEventListener("keydown", onKD);
     return () => window.removeEventListener("keydown", onKD);
-  }, [videoRef, handlePlayPause, handleFullscreen, onSeek, setMuted, onToggleChat]);
+  }, [videoRef, handlePlayPause, handleFullscreen, onSeek, setMuted]);
 }
 
 let ytReady = false,

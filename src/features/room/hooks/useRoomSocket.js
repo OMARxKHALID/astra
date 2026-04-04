@@ -224,7 +224,12 @@ export function useRoomSocket(props) {
             suppressNext();
             v.play().catch(() => {});
           }
-          if (m.reconnected) p.current.onReconnected?.();
+          if (m.reconnected) {
+            p.current.onReconnected?.();
+            if (typeof document !== "undefined" && document.pictureInPictureElement) {
+              document.exitPictureInPicture().catch(() => {});
+            }
+          }
           else if (state.currentTime > 120)
             p.current.onLateJoin?.(state.currentTime);
         }

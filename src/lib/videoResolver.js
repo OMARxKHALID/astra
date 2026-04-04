@@ -1,3 +1,8 @@
+import {
+  KNOWN_VIDEO_EXTENSIONS,
+  isStrictVideoUrl,
+} from "@/utils/videoValidation";
+
 const YT_PATTERNS = [
   /(?:youtube\.com\/watch\?.*v=|youtu\.be\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/,
   /youtube\.com\/shorts\/([A-Za-z0-9_-]{11})/,
@@ -26,11 +31,6 @@ const EMBED_DOMAINS = [
   "player.smashy.stream",
   "cflul.x9l.workers.dev",
 ];
-
-import {
-  KNOWN_VIDEO_EXTENSIONS,
-  isStrictVideoUrl,
-} from "@/utils/videoValidation";
 
 export { isStrictVideoUrl };
 
@@ -71,12 +71,15 @@ export function classifyUrl(raw) {
     if (KNOWN_VIDEO_EXTENSIONS.test(decoded)) return { type: "mp4", url: t };
   } catch {}
 
-  return { type: "unsupported", url: t };
+  // [Note] Valid http/https URL with no recognized pattern: send to native player
+  // for a direct src attempt. Browser will negotiate content-type via response headers.
+  return { type: "direct", url: t };
 }
 
 export const SOURCE_LABELS = {
   mp4: "Direct Video",
   hls: "HLS Stream",
+  direct: "Custom URL",
   youtube: "YouTube",
   vimeo: "Vimeo",
   embed: "Embed Player",
@@ -133,7 +136,6 @@ export function detectServer(url) {
     return null;
   }
   for (const opt of serverOptions) {
-    // Build a test URL for each server and compare hostnames
     const testUrl = buildEmbedUrl(opt.value, "1", "movie");
     if (!testUrl) continue;
     try {

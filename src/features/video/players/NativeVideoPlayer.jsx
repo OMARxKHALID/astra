@@ -11,6 +11,7 @@ import useAmbilight from "./native/hooks/useAmbilight";
 import useScrubPreview from "./native/hooks/useScrubPreview";
 import useVideoEvents from "./native/hooks/useVideoEvents";
 import useSubtitleStyle from "./native/hooks/useSubtitleStyle";
+import useAutoSubtitle from "./native/hooks/useAutoSubtitle";
 
 import SubtitlePanel from "./native/components/SubtitlePanel";
 import TechnicalStats from "./native/components/TechnicalStats";
@@ -41,8 +42,6 @@ export default function NativeVideoPlayer({
   addToast,
   theatreMode = false,
   onToggleTheatre,
-  onToggleChat,
-  unreadCount = 0,
   hasEpisodes = false,
   onToggleEpisodes,
 }) {
@@ -87,7 +86,7 @@ export default function NativeVideoPlayer({
   const lastTapRef = useRef(0);
   const singleTapTimerRef = useRef(null);
 
-  const { hlsQuality } = useHLS(videoRef, videoUrl, sourceType, setVideoError);
+  const { hlsQuality, hlsRef } = useHLS(videoRef, videoUrl, sourceType, setVideoError);
   useAmbilight(videoRef, videoUrl, onAmbiColors, ambilightEnabled);
   useSubtitleStyle(
     videoRef,
@@ -96,6 +95,14 @@ export default function NativeVideoPlayer({
     subtitleOffset,
     subStyle,
   );
+
+  useAutoSubtitle({
+    videoUrl,
+    subtitleUrl,
+    onSubtitleChange,
+    setShowSubtitles,
+    addToast,
+  });
   const { preview, handleMouseMove, handleMouseLeave } = useScrubPreview(
     videoUrl,
     sourceType,
@@ -333,7 +340,6 @@ export default function NativeVideoPlayer({
     handleFullscreen,
     onSeek,
     setMuted,
-    onToggleChat,
   });
 
   return (
@@ -451,6 +457,7 @@ export default function NativeVideoPlayer({
         playbackRate={playbackRate}
         onSpeedChange={(rate) => canControl && onSpeed?.(rate)}
         hlsQuality={hlsQuality}
+        hlsRef={hlsRef}
         sourceType={sourceType}
         hlsQualityEnabled={hlsQualityEnabled}
         pipSupported={pipSupported}
@@ -471,8 +478,6 @@ export default function NativeVideoPlayer({
         handleMouseMove={handleMouseMove}
         handleMouseLeave={handleMouseLeave}
         ctrlVis={ctrlVis}
-        onToggleChat={onToggleChat}
-        unreadCount={unreadCount}
         hasEpisodes={hasEpisodes}
         onToggleEpisodes={onToggleEpisodes}
       />

@@ -34,7 +34,62 @@ export default function ChatSidebar({
     startRecording,
     stopRecording,
     cancelRecording,
+    analyserRef,
   } = useRecord(onSend, (msg) => addToast?.(msg, "error"));
+
+  const waveformCanvasRef = useRef(null);
+  const animFrameRef = useRef(null);
+
+  // [Note] Waveform live preview: draw real-time audio waveform on canvas during recording
+  useEffect(() => {
+    if (!isRecording || !analyserRef?.current || !waveformCanvasRef.current) {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      return;
+    }
+
+    const analyser = analyserRef.current;
+    const canvas = waveformCanvasRef.current;
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+    const draw = () => {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) {
+        animFrameRef.current = requestAnimationFrame(draw);
+        return;
+      }
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      const ctx = canvas.getContext("2d");
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, rect.width, rect.height);
+
+      analyser.getByteFrequencyData(dataArray);
+      const barCount = 24;
+      const gap = 2;
+      const barWidth = (rect.width - gap * (barCount - 1)) / barCount;
+
+      for (let i = 0; i < barCount; i++) {
+        const idx = Math.floor((i / barCount) * dataArray.length);
+        const value = dataArray[idx] / 255;
+        const barHeight = Math.max(2, value * rect.height);
+        const x = i * (barWidth + gap);
+        const y = (rect.height - barHeight) / 2;
+
+        ctx.fillStyle = `rgba(239, 68, 68, ${0.3 + value * 0.7})`;
+        ctx.beginPath();
+        ctx.roundRect(x, y, barWidth, barHeight, 1);
+        ctx.fill();
+      }
+
+      animFrameRef.current = requestAnimationFrame(draw);
+    };
+
+    animFrameRef.current = requestAnimationFrame(draw);
+    return () => {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    };
+  }, [isRecording, analyserRef]);
 
   const bottomRef = useRef(null);
   const atBottomRef = useRef(true);
@@ -158,16 +213,21 @@ export default function ChatSidebar({
             description="Start the conversation!"
           />
         )}
-        {messages.map((msg, i) => (
-          <ChatMessage
-            key={`${msg.ts ?? i}-${i}`}
-            msg={msg}
-            isOwn={msg.senderId === userId}
-            displayNames={displayNames}
-            onReaction={(emoji) => onReaction?.(msg.ts, emoji)}
-            currentUserId={userId}
-          />
-        ))}
+        {messages.map((msg, i) => {
+          if (process.env.NODE_ENV === "development") {
+            console.log("[Chat] message", i, msg);
+          }
+          return (
+            <ChatMessage
+              key={`${msg.ts ?? i}-${i}`}
+              msg={msg}
+              isOwn={msg.senderId === userId}
+              displayNames={displayNames}
+              onReaction={(emoji) => onReaction?.(msg.ts, emoji)}
+              currentUserId={userId}
+            />
+          );
+        })}
 
         {activeTypers.length > 0 && (
           <div className="flex items-center gap-2.5 px-2 py-1 animate-[slideUp_0.3s_ease-out]">
@@ -245,21 +305,11 @@ export default function ChatSidebar({
                 </div>
               </div>
 
-              <div className="flex items-center gap-[1.5px] h-3 mr-4 opacity-50">
-                {[1, 2, 3, 4, 5, 6].map((i) => {
-                  const scale = Math.max(
-                    0.1,
-                    (audioLevel / 255) * (i % 2 === 0 ? 1 : 0.6),
-                  );
-                  return (
-                    <span
-                      key={i}
-                      className="w-[1.5px] bg-danger rounded-full transition-all duration-75"
-                      style={{ height: `${20 + scale * 80}%` }}
-                    />
-                  );
-                })}
-              </div>
+              <canvas
+                ref={waveformCanvasRef}
+                className="h-3 w-16 shrink-0 opacity-70"
+                style={{ width: "64px", height: "12px" }}
+              />
             </div>
           ) : (
             <>

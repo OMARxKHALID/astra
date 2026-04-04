@@ -206,7 +206,12 @@ export default function RoomView({ roomId, initialMeta }) {
           socketRef={socketRef}
           onTsMapUpdate={room.handleTsMapUpdate}
           onLateJoin={room.setLateJoinTime}
-          onReconnected={() => addToast("Reconnected!", "success")}
+          onReconnected={() => {
+            addToast("Reconnected!", "success");
+            if (typeof document !== "undefined" && document.pictureInPictureElement) {
+              document.exitPictureInPicture().catch(() => {});
+            }
+          }}
           roomPassword={room.roomPassword}
           speedSyncEnabled={settings.speedSyncEnabled}
           onCallEvent={call.handleSocketEvent}
@@ -292,12 +297,6 @@ export default function RoomView({ roomId, initialMeta }) {
               onToggleTheatre={() =>
                 settings.setTheatreMode(!settings.theatreMode)
               }
-              onToggleChat={() => {
-                const next = !fsChatOpen;
-                setFsChatOpen(next);
-                if (next) room.setUnreadCount(0);
-              }}
-              unreadCount={room.unreadCount}
               hasEpisodes={videoState.isActiveTv}
               onToggleEpisodes={() =>
                 videoState.setEpisodesOpen(!videoState.episodesOpen)

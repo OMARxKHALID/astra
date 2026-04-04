@@ -13,7 +13,6 @@ import {
   PictureInPicture2 as PipIcon,
   Monitor as TheatreIconSvg,
   List as EpisodesIcon,
-  MessageSquare as ChatIcon,
 } from "lucide-react";
 import { formatTime } from "../../../utils";
 import SpeedPicker from "../../../controls/SpeedPicker";
@@ -38,6 +37,7 @@ export default function ControlBar({
   playbackRate,
   onSpeedChange,
   hlsQuality,
+  hlsRef,
   sourceType,
   hlsQualityEnabled,
   pipSupported,
@@ -58,8 +58,6 @@ export default function ControlBar({
   handleMouseMove,
   handleMouseLeave,
   ctrlVis,
-  onToggleChat,
-  unreadCount,
   hasEpisodes,
   onToggleEpisodes,
 }) {
@@ -109,13 +107,10 @@ export default function ControlBar({
           </span>
 
           {hlsQualityEnabled && hlsQuality && sourceType === "hls" && (
-            <span className="hidden lg:flex items-center h-8 px-3 rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 transition-colors border border-white/10 text-[10px] font-mono font-bold text-white/40 shrink-0 select-none">
-              {hlsQuality.level}
-              {hlsQuality.level && hlsQuality.bitrate && (
-                <span className="text-white/40 mx-1.5">•</span>
-              )}
-              {hlsQuality.bitrate}
-            </span>
+            <HlsQualitySelector
+              hlsQuality={hlsQuality}
+              hlsRef={hlsRef}
+            />
           )}
 
           {!canControl && (
@@ -233,18 +228,6 @@ export default function ControlBar({
                 <TheatreIconSvg className="w-3.5 h-3.5" />
               </button>
             )}
-            {onToggleChat && (
-              <button
-                onClick={onToggleChat}
-                title="Toggle chat (C)"
-                className="relative w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white/40 hover:text-white transition-all active:scale-90"
-              >
-                <ChatIcon className="w-3.5 h-3.5" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber rounded-full border-2 border-void shadow-[0_0_8px_rgba(var(--color-amber-rgb), 0.5)]" />
-                )}
-              </button>
-            )}
           </div>
 
           {hasEpisodes && onToggleEpisodes && (
@@ -268,6 +251,61 @@ export default function ControlBar({
             )}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function HlsQualitySelector({ hlsQuality, hlsRef }) {
+  const levels = hlsRef?.current?.levels || [];
+  const currentLevel = hlsRef?.current?.currentLevel ?? -1;
+
+  if (levels.length <= 1) {
+    return (
+      <span className="hidden lg:flex items-center h-8 px-3 rounded-[var(--radius-pill)] bg-white/10 border border-white/10 text-[10px] font-mono font-bold text-white/40 shrink-0 select-none">
+        {hlsQuality.level}
+        {hlsQuality.level && hlsQuality.bitrate && (
+          <span className="text-white/40 mx-1.5">•</span>
+        )}
+        {hlsQuality.bitrate}
+      </span>
+    );
+  }
+
+  const allLevels = [
+    { level: -1, label: "Auto" },
+    ...levels.map((l, i) => ({
+      level: i,
+      label: l.height ? `${l.height}p` : "Unknown",
+    })),
+  ];
+
+  return (
+    <div className="relative group hidden lg:block">
+      <button
+        className="flex items-center h-8 px-3 rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/15 transition-colors border border-white/10 text-[10px] font-mono font-bold text-white/60 hover:text-white shrink-0 cursor-pointer"
+      >
+        {hlsQuality.level}
+        <svg className="w-3 h-3 ml-1" viewBox="0 0 12 12" fill="currentColor">
+          <path d="M2 4l4 4 4-4" />
+        </svg>
+      </button>
+      <div className="absolute bottom-full right-0 mb-2 glass-card rounded-xl p-1.5 min-w-[120px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+        {allLevels.map(({ level, label }) => (
+          <button
+            key={level}
+            onClick={() => {
+              if (hlsRef?.current) hlsRef.current.currentLevel = level;
+            }}
+            className={`w-full px-3 py-1.5 rounded-lg text-[11px] font-mono font-bold transition-colors text-left ${
+              level === currentLevel
+                ? "bg-amber/20 text-amber"
+                : "text-white/50 hover:text-white hover:bg-white/10"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
     </div>
   );

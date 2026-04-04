@@ -48,7 +48,9 @@ export async function GET(request) {
       finalDownloadUrl = dlData.link;
     }
 
-    const res = await fetch(finalDownloadUrl);
+    const res = await fetch(finalDownloadUrl, {
+      signal: AbortSignal.timeout(15000),
+    });
     if (!res.ok) throw new Error(`Subtitle fetch failed: ${res.status}`);
 
     const contentType = res.headers.get("content-type") || "";
@@ -103,13 +105,16 @@ export async function GET(request) {
       });
     }
 
-    // [Note] SRT to VTT: robust regex handles varied spacing and hours formatting
+    // [Note] SRT to VTT: strip sequence numbers, normalize line endings, convert comma timestamps
     const vtt =
       "WEBVTT\n\n" +
       text
         .trim()
         .replace(/\r\n/g, "\n")
-        .replace(/(\d+:\d{2}:\d{2}),(\d{3})/g, "$1.$2");
+        .replace(/\r/g, "\n")
+        .replace(/\n\n(\d+)\n/g, "\n\n")
+        .replace(/\n(\d+)\n(\d+:\d{2}:\d{2}),(\d{3})/g, "\n$2.$3")
+        .replace(/^(\d+)\n(\d+:\d{2}:\d{2}),(\d{3})/gm, "$2.$3");
 
     return new NextResponse(vtt, {
       status: 200,

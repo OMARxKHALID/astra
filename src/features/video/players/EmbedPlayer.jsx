@@ -39,7 +39,6 @@ export default function EmbedPlayer({
   videoUrl,
   theatreMode,
   onToggleTheatre,
-  onToggleChat,
   hasEpisodes = false,
   onToggleEpisodes,
 }) {

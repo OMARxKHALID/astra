@@ -159,5 +159,6 @@ export function useRecord(onSend, onError) {
     startRecording,
     stopRecording,
     cancelRecording,
+    analyserRef,
   };
 }

@@ -7,7 +7,7 @@ export default function useSubtitleStyle(
   subtitleOffset,
   subStyle,
 ) {
-  const prevOffsetRef = useRef(0);
+  const originalTimesRef = useRef(null);
 
   // Style Injection (::cue)
   useEffect(() => {
@@ -49,20 +49,39 @@ export default function useSubtitleStyle(
     return () => clearTimeout(t);
   }, [subtitleUrl, showSubtitles, videoRef]);
 
-  // Timing Offset (Cues)
+  // Timing Offset (Cues) — [Note] Store originals and recompute from scratch to avoid destructive clamping
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
 
-    const delta = subtitleOffset - prevOffsetRef.current;
-    prevOffsetRef.current = subtitleOffset;
-
-    for (const track of v.textTracks) {
-      if (!track.cues) continue;
-      for (const cue of track.cues) {
-        cue.startTime = Math.max(0, cue.startTime + delta);
-        cue.endTime = Math.max(0, cue.endTime + delta);
-      }
+    if (subtitleUrl) {
+      originalTimesRef.current = null;
     }
-  }, [subtitleOffset, videoRef]);
+
+    const applyOffset = () => {
+      for (const track of v.textTracks) {
+        if (!track.cues || track.cues.length === 0) continue;
+
+        if (!originalTimesRef.current) {
+          originalTimesRef.current = new Map();
+          for (const cue of track.cues) {
+            originalTimesRef.current.set(cue, {
+              start: cue.startTime,
+              end: cue.endTime,
+            });
+          }
+        }
+
+        for (const cue of track.cues) {
+          const orig = originalTimesRef.current.get(cue);
+          if (!orig) continue;
+          cue.startTime = Math.max(0, orig.start + subtitleOffset);
+          cue.endTime = Math.max(0, orig.end + subtitleOffset);
+        }
+      }
+    };
+
+    const t = setTimeout(applyOffset, 150);
+    return () => clearTimeout(t);
+  }, [subtitleOffset, subtitleUrl, videoRef]);
 }

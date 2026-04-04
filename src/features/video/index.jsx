@@ -39,14 +39,9 @@ function VideoPlayer({
   addToast,
   theatreMode = false,
   onToggleTheatre,
-  onToggleChat,
-  unreadCount = 0,
-  hasEpisodes = false,
-  onToggleEpisodes,
 }) {
   const source = classifyUrl(videoUrl);
 
-  // [Note] stale ref guard: clearing videoRef prevents ghosting on provider switch
   useEffect(() => {
     if (
       (source.type === "embed" || source.type === "unsupported") &&
@@ -56,19 +51,6 @@ function VideoPlayer({
     }
   }, [source.type, videoRef]);
 
-  const playerProps = {
-    addToast,
-    theatreMode,
-    onToggleTheatre,
-    onToggleChat,
-    unreadCount,
-    hasEpisodes,
-    onToggleEpisodes,
-  };
-
-  // [Note] "direct" type: valid http/https URL with no recognized extension or pattern.
-  // Sent to NativeVideoPlayer which sets v.src directly — browser negotiates content-type
-  // via response headers. Falls back to the error overlay if the server rejects it.
   if (
     source.type === "mp4" ||
     source.type === "hls" ||
@@ -98,10 +80,6 @@ function VideoPlayer({
         addToast={addToast}
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}
-        onToggleChat={onToggleChat}
-        unreadCount={unreadCount}
-        hasEpisodes={hasEpisodes}
-        onToggleEpisodes={onToggleEpisodes}
       />
     );
 
@@ -122,10 +100,6 @@ function VideoPlayer({
         ambilightEnabled={ambilightEnabled}
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}
-        onToggleChat={onToggleChat}
-        unreadCount={unreadCount}
-        hasEpisodes={hasEpisodes}
-        onToggleEpisodes={onToggleEpisodes}
       />
     );
 
@@ -146,10 +120,6 @@ function VideoPlayer({
         ambilightEnabled={ambilightEnabled}
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}
-        onToggleChat={onToggleChat}
-        unreadCount={unreadCount}
-        hasEpisodes={hasEpisodes}
-        onToggleEpisodes={onToggleEpisodes}
       />
     );
 
@@ -160,10 +130,6 @@ function VideoPlayer({
         canControl={canControl}
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}
-        onToggleChat={onToggleChat}
-        unreadCount={unreadCount}
-        hasEpisodes={hasEpisodes}
-        onToggleEpisodes={onToggleEpisodes}
       />
     );
 

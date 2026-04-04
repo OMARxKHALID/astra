@@ -61,11 +61,13 @@ export async function GET(request) {
                 const data = await searchRes.json();
                 
                 if (data.data) {
-                    results = data.data.map(s => ({
-                        id: s.id,
-                        label: s.attributes.release || s.attributes.feature_details.title,
-                        url: s.attributes.files[0].file_id // Returns file_id for download
-                    }));
+                    results = data.data
+                        .filter(s => s.attributes.files?.[0]?.file_id)
+                        .map(s => ({
+                            id: s.id,
+                            label: s.attributes.release || s.attributes.feature_details?.title || "Unknown",
+                            url: s.attributes.files[0].file_id
+                        }));
                 }
             }
         } catch (err) {
@@ -79,11 +81,13 @@ export async function GET(request) {
         const data = await searchRes.json();
         
         if (data.data) {
-            results = data.data.map(s => ({
-                id: s.id,
-                label: s.attributes.release || s.attributes.feature_details.title,
-                url: s.attributes.files[0].file_id
-            }));
+            results = data.data
+                .filter(s => s.attributes.files?.[0]?.file_id)
+                .map(s => ({
+                    id: s.id,
+                    label: s.attributes.release || s.attributes.feature_details?.title || "Unknown",
+                    url: s.attributes.files[0].file_id
+                }));
         }
     }
 

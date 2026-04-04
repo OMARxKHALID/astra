@@ -182,7 +182,7 @@ export default function CreateRoomForm({ onResultsChange }) {
           <div className="relative group/input">
             <input
               id="videoUrl"
-              type={mode === "url" ? "url" : "text"}
+              type="text"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder={

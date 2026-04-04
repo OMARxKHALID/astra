@@ -17,10 +17,23 @@ function ChatMessageInner({
   const [rect, setRect] = useState(null);
   const longPressTimerRef = useRef(null);
   const isTouchSessionRef = useRef(false);
+  const hideTimerRef = useRef(null);
+
+  const cancelHideTimer = () => {
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
+  };
+
+  const scheduleHide = (delay = 300) => {
+    cancelHideTimer();
+    hideTimerRef.current = setTimeout(() => {
+      setIsHovered(false);
+    }, delay);
+  };
 
   // [Note] Global pointerdown to close picker when tapping anywhere outside it.
-  // This replaces onMouseLeave-based hiding which fires spuriously on mobile Safari
-  // when the finger lifts, dismissing the picker before the emoji tap can register.
   useEffect(() => {
     if (!isHovered) return;
     const close = (e) => {
@@ -32,7 +45,7 @@ function ChatMessageInner({
     return () => document.removeEventListener("pointerdown", close, true);
   }, [isHovered]);
 
-  // [Note] Coordinate Sync: hide picker on scroll to keep it from drifting.
+  // [Note] Hide picker on scroll
   useEffect(() => {
     if (!isHovered) return;
     const hide = () => setIsHovered(false);
@@ -40,42 +53,46 @@ function ChatMessageInner({
     return () => window.removeEventListener("scroll", hide, true);
   }, [isHovered]);
 
+  useEffect(() => {
+    return () => {
+      cancelHideTimer();
+      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    };
+  }, []);
+
   const showPicker = () => {
+    cancelHideTimer();
     if (!msgRef.current) return;
     setRect(msgRef.current.getBoundingClientRect());
     setIsHovered(true);
   };
 
   // Desktop: hover to show
-  const handleMouseEnter = (e) => {
+  const handleMouseEnter = () => {
     if (isTouchSessionRef.current) return;
+    cancelHideTimer();
     showPicker();
   };
-  const handleMouseLeave = (e) => {
-    // [Note] Only hide on mouse events, never on pointer-type touch.
-    // On mobile Safari, mouseleave fires when the finger lifts, which would
-    // immediately dismiss the picker before the user can tap an emoji.
-    if (e.pointerType === "touch") return;
-    if (!e.relatedTarget) return;
-    if (pickerRef.current?.contains(e.relatedTarget)) return;
-    setIsHovered(false);
+  const handleMouseLeave = () => {
+    scheduleHide(400);
   };
 
+  // Picker hover handlers — keep picker open while mouse is over it
+  const handlePickerEnter = () => cancelHideTimer();
+  const handlePickerLeave = () => scheduleHide(200);
+
   // Mobile: long-press to show
-  const handleTouchStart = (e) => {
+  const handleTouchStart = () => {
     isTouchSessionRef.current = true;
     longPressTimerRef.current = setTimeout(() => {
-      // Prevent context menu / selection on long-press
       showPicker();
-    }, 500);
+    }, 400);
   };
   const handleTouchMove = () => {
-    // Cancel long-press if finger moves (user is scrolling)
     clearTimeout(longPressTimerRef.current);
   };
   const handleTouchEnd = () => {
     clearTimeout(longPressTimerRef.current);
-    // Reset touch session flag after a short delay so mouseleave guard works correctly
     setTimeout(() => {
       isTouchSessionRef.current = false;
     }, 300);
@@ -83,19 +100,37 @@ function ChatMessageInner({
 
   const renderTextWithMentions = (text) => {
     if (!text) return null;
-    const parts = text.split(/(@[\w-]+)/g);
+    const combinedRegex = /(https?:\/\/[^\s<>"']+|@[\w-]+)/gi;
+    const parts = text.split(combinedRegex);
     return parts.map((part, i) => {
+      if (part.match(/https?:\/\//i)) {
+        const url = part.trim();
+        return (
+          <a
+            key={i}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="underline break-all cursor-pointer pointer-events-auto font-bold"
+            style={{ color: isOwn ? "#000000" : "#fbbf24" }}
+          >
+            {url}
+          </a>
+        );
+      }
       if (part.startsWith("@")) {
         return (
           <span
             key={i}
-            className="text-amber font-bold drop-shadow-sm brightness-110 px-0.5"
+            className="font-bold"
+            style={{ color: isOwn ? "#000000" : "#fbbf24" }}
           >
             {part}
           </span>
         );
       }
-      return part;
+      return <span key={i}>{part}</span>;
     });
   };
 
@@ -154,6 +189,8 @@ function ChatMessageInner({
         createPortal(
           <div
             ref={pickerRef}
+            onMouseEnter={handlePickerEnter}
+            onMouseLeave={handlePickerLeave}
             className="fixed flex items-center gap-0.5 p-0.5 bg-void/80 backdrop-blur-xl rounded-xl shadow-[0_30px_90px_rgba(0,0,0,0.6)] z-[999] animate-in fade-in zoom-in-95 duration-200 border border-white/10"
             style={{
               top: `${rect.top - 32}px`,
@@ -191,7 +228,7 @@ function ChatMessageInner({
         />
       </div>
       <div
-        className={`flex flex-col gap-0.5 max-w-[90%] sm:max-w-[82%] transition-all duration-300 ${isOwn ? "items-end order-1" : "items-start order-2"}`}
+        className={`flex flex-col gap-0.5 max-w-[85%] sm:max-w-[75%] transition-all duration-300 ${isOwn ? "items-end order-1" : "items-start order-2"}`}
       >
         {!isOwn && (
           <div className="flex items-center gap-1.5 px-0.5 mb-px opacity-50 group-hover:opacity-100 transition-opacity">
@@ -227,7 +264,7 @@ function ChatMessageInner({
                   : "bg-white/5 text-white/90 shadow-sm border-white/10 backdrop-blur-md group-hover:bg-white/10 group-hover:border-white/20"
               }`}
           >
-            {isOwn ? msg.text : renderTextWithMentions(msg.text)}
+            {renderTextWithMentions(msg.text)}
           </div>
         )}
 
