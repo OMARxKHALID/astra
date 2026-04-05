@@ -1,11 +1,11 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
-import { Play, Star } from "lucide-react";
+import { Play, Star, Users } from "lucide-react";
 import { GENRE_MAP } from "@/constants/maps";
 import Button from "@/components/ui/Button";
 
-export default function MediaHero({ items, onPick, onPlay }) {
+export default function MediaHero({ items, onPick, onPlay, onSync, loading }) {
   const [idx, setIdx] = useState(0);
   const [fading, setFading] = useState(false);
   const timer = useRef(null);
@@ -103,6 +103,17 @@ export default function MediaHero({ items, onPick, onPlay }) {
               Play
             </Button>
             <Button
+              size="lg"
+              loading={loading}
+              onClick={() => onSync && onSync(item)}
+              aria-label={`Watch Together ${item.title}`}
+              variant="jade"
+              className="px-7 border-none shadow-lg"
+            >
+              {!loading && <Users className="w-4 h-4 fill-current text-void" />}
+              Together
+            </Button>
+            <Button
               variant="ghost"
               size="lg"
               onClick={() => onPick(item)}
@@ -118,10 +129,11 @@ export default function MediaHero({ items, onPick, onPlay }) {
       {items.length > 1 && (
         <div className="absolute bottom-[100px] right-6 lg:right-12 flex gap-1.5 items-center z-20">
           {items.map((_, i) => (
-            <button
+            <Button
               key={i}
+              variant="custom"
               onClick={() => go(i)}
-              className={`h-1.5 rounded-[var(--radius-pill)] border-none cursor-pointer transition-all duration-300 p-0 ${i === idx ? "w-[22px] bg-amber" : "w-1.5 bg-white/10"}`}
+              className={`!h-1.5 !min-h-0 !min-w-0 !p-0 !rounded-[var(--radius-pill)] !border-none !ring-0 transition-all duration-300 ${i === idx ? "w-[22px] !bg-amber shadow-[0_0_12px_rgba(var(--color-amber-rgb),0.4)]" : "w-1.5 !bg-white/10"}`}
             />
           ))}
         </div>

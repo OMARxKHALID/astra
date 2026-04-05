@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { onVMReady, useVideoHotkeys, cleanupVimeoAPI } from "../utils";
-import { usePlayerControls } from "./usePlayerControls";
+import { onVMReady } from "../utils";
+import { usePlayerControls } from "../hooks/usePlayerControls";
+import { useVideoHotkeys } from "../hooks/useVideoHotkeys";
 import EmbedControls from "../controls/EmbedControls";
 import VideoPoster from "../controls/VideoPoster";
 
@@ -177,7 +178,6 @@ export default function VimeoPlayer({
       playerRef.current?.destroy?.().catch(() => {});
       playerRef.current = null;
       setReady(false);
-      cleanupVimeoAPI();
     };
   }, [videoId]);
 

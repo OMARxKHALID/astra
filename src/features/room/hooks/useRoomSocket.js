@@ -332,6 +332,7 @@ export function useRoomSocket(props) {
 
       // Chat and Participants
       chat: (m) => p.current.onChatMessage?.(m),
+      chat_update: (m) => p.current.onChatUpdate?.(m),
       chat_history: (m) =>
         p.current.onChatMessage?.({ type: "chat_history", ...m }),
       "REC:roster": (users) =>

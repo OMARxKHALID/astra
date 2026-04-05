@@ -160,7 +160,7 @@ export default function SettingsPanel({
 
       <div
         ref={panelRef}
-        className="relative z-10 w-full sm:max-w-[480px] glass-card rounded-[var(--radius-panel)] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 border-none"
+        className="relative z-10 w-full sm:max-w-[520px] glass-card rounded-[var(--radius-panel)] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 border-none"
       >
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border bg-white/[0.03]">
           <div>
@@ -171,15 +171,16 @@ export default function SettingsPanel({
               {isHost ? "You are the host" : "Host controls only"}
             </p>
           </div>
-          <button
+          <Button
+            variant="custom"
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] hover:bg-white/10 transition-colors text-white/60 hover:text-white"
+            className="!w-8 !h-8 flex items-center justify-center !rounded-[var(--radius-pill)] hover:!bg-white/10 transition-colors !text-white/60 hover:!text-white !p-0 !bg-transparent !border-none"
           >
             <XIcon className="w-4 h-4" strokeWidth={2.5} />
-          </button>
+          </Button>
         </div>
 
-        <div className="px-6 pb-6 max-h-[75vh] overflow-y-auto no-scrollbar">
+        <div className="px-6 pb-6 max-h-[85vh] overflow-y-auto no-scrollbar">
           <SectionLabel>Profile</SectionLabel>
           <div className="mb-4">
             <div className="flex items-center gap-3">
@@ -200,12 +201,13 @@ export default function SettingsPanel({
                     autoFocus
                     maxLength={24}
                   />
-                  <button
+                  <Button
+                    variant="custom"
                     onClick={commitName}
-                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-amber/20 text-amber hover:bg-amber/30"
+                    className="!w-8 !h-8 flex items-center justify-center !rounded-lg !bg-amber/20 !text-amber hover:!bg-amber/30 !p-0 !border-none"
                   >
                     <Check className="w-4 h-4" />
-                  </button>
+                  </Button>
                 </>
               ) : (
                 <>
@@ -215,15 +217,16 @@ export default function SettingsPanel({
                       {identity?.displayName || "Guest"}
                     </span>
                   </div>
-                  <button
+                  <Button
+                    variant="custom"
                     onClick={() => {
                       setNameInput(identity?.displayName || "");
                       setEditingName(true);
                     }}
-                    className="w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-amber hover:bg-white/5 transition-colors"
+                    className="!w-8 !h-8 flex items-center justify-center !rounded-lg !text-white/40 hover:!text-amber hover:!bg-white/5 transition-colors !p-0 !bg-transparent !border-none"
                   >
                     <Pencil className="w-3.5 h-3.5" />
-                  </button>
+                  </Button>
                 </>
               )}
             </div>
@@ -319,7 +322,11 @@ export default function SettingsPanel({
             description="Flip local video for selfie view"
             enabled={mirrorCameraEnabled}
             onToggle={() =>
-              toggleAndToast(setMirrorCameraEnabled, "Mirror Camera", mirrorCameraEnabled)
+              toggleAndToast(
+                setMirrorCameraEnabled,
+                "Mirror Camera",
+                mirrorCameraEnabled,
+              )
             }
             icon={<Camera className="w-4 h-4" />}
           />
@@ -364,7 +371,8 @@ export default function SettingsPanel({
                     </p>
                   </div>
                 </div>
-                <button
+                <Button
+                  variant="custom"
                   onClick={() =>
                     setPwMode(
                       pwMode !== "idle"
@@ -374,11 +382,11 @@ export default function SettingsPanel({
                           : "set",
                     )
                   }
-                  className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-[var(--radius-pill)] border transition-all shrink-0
-                    ${hasPassword ? "bg-danger/10 text-danger border-danger/20 hover:bg-danger/20" : "bg-jade/10 text-jade border-jade/20 hover:bg-jade/20"}`}
+                  className={`!text-[10px] !font-black !uppercase !tracking-wider !px-3 !py-1.5 !rounded-[var(--radius-pill)] !border transition-all !shrink-0
+                    ${hasPassword ? "!bg-danger/10 !text-danger border-danger/20 hover:!bg-danger/20" : "!bg-jade/10 !text-jade border-jade/20 hover:!bg-jade/20"}`}
                 >
                   {hasPassword ? "Remove" : "Set"}
-                </button>
+                </Button>
               </div>
 
               {pwMode !== "idle" && (
@@ -397,17 +405,18 @@ export default function SettingsPanel({
                         maxLength={64}
                         className="w-full pr-10 bg-surface/40 border border-border rounded-[var(--radius-pill)] px-4 py-2 text-xs outline-none focus:border-amber/40 font-mono text-white/90 placeholder-white/30 transition-all"
                       />
-                      <button
+                      <Button
+                        variant="custom"
                         type="button"
                         onClick={() => setShowPw((v) => !v)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 !text-white/40 hover:!text-white/80 transition-colors !p-1 !min-h-0 !border-none !bg-transparent"
                       >
                         {showPw ? (
                           <EyeOff className="w-3.5 h-3.5" />
                         ) : (
                           <Eye className="w-3.5 h-3.5" />
                         )}
-                      </button>
+                      </Button>
                     </div>
                   ) : (
                     <p className="flex-1 text-sm font-mono py-2 text-danger">

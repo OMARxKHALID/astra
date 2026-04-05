@@ -41,7 +41,7 @@ export default function Button({
   const content = (
     <>
       {loading && <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />}
-      {!loading && children}
+      {children}
     </>
   );
 

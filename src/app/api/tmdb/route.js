@@ -1,5 +1,5 @@
 import { apiResponse } from "@/utils/apiResponse";
-import { fetchTMDB, normalizeTMDB } from "@/services/tmdb";
+import { fetchTMDB, normalizeTMDB } from "@/features/content/services/tmdb";
 
 export async function GET(req) {
   try {

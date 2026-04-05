@@ -8,8 +8,8 @@ import {
   Square as SquareIcon,
   Trash2,
 } from "lucide-react";
-import { ChatMessage } from "./components/ChatMessage";
-import { useRecord } from "./hooks/useRecord";
+import { ChatMessage } from "./ChatMessage";
+import { useRecord } from "../hooks/useRecord";
 import EmptyState from "@/components/EmptyState";
 
 export default function ChatSidebar({
@@ -30,7 +30,6 @@ export default function ChatSidebar({
   const {
     isRecording,
     recordingTime,
-    audioLevel,
     startRecording,
     stopRecording,
     cancelRecording,
@@ -212,14 +211,14 @@ export default function ChatSidebar({
           />
         )}
         {messages.map((msg, i) => (
-            <ChatMessage
-              key={`${msg.ts ?? i}-${i}`}
-              msg={msg}
-              isOwn={msg.senderId === userId}
-              displayNames={displayNames}
-              onReaction={(emoji) => onReaction?.(msg.ts, emoji)}
-              currentUserId={userId}
-            />
+          <ChatMessage
+            key={`${msg.ts ?? i}-${i}`}
+            msg={msg}
+            isOwn={msg.senderId === userId}
+            displayNames={displayNames}
+            onReaction={(emoji) => onReaction?.(msg.ts, emoji)}
+            currentUserId={userId}
+          />
         ))}
 
         {activeTypers.length > 0 && (

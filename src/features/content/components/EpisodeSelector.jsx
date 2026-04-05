@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, X, Clock } from "lucide-react";
+import Button from "@/components/ui/Button";
 
 export default function EpisodeSelector({
   tmdbId,
@@ -88,24 +89,26 @@ export default function EpisodeSelector({
               >
                 Watch List
               </h2>
-              <button
+              <Button
+                variant="custom"
                 onClick={onClose}
-                className={`${isFs ? "w-14 h-14 rounded-3xl" : "w-6 h-6 rounded-xl"} bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white transition-all border border-white/10 active:scale-95`}
+                className={`${isFs ? "w-14 h-14 !rounded-3xl" : "w-6 h-6 !rounded-xl"} !bg-white/10 hover:!bg-white/20 flex items-center justify-center !text-white/60 hover:!text-white transition-all !border !border-white/10 active:scale-95 !p-0`}
               >
                 <X className={`${isFs ? "w-8 h-8" : "w-3 h-3"}`} />
-              </button>
+              </Button>
             </div>
 
             <div
               className={`${isFs ? "gap-4 p-2 rounded-3xl" : "gap-1 p-0.5 rounded-xl"} flex items-center bg-white/5 border border-white/5 shadow-inner`}
             >
-              <button
+              <Button
+                variant="custom"
                 onClick={handlePrevSeason}
                 disabled={season <= 1}
-                className={`${isFs ? "w-14 h-14 rounded-2xl" : "w-6 h-6 rounded-lg"} hover:bg-white/10 disabled:opacity-0 flex items-center justify-center text-white/50 hover:text-white transition-all`}
+                className={`${isFs ? "w-14 h-14 !rounded-2xl" : "w-6 h-6 !rounded-lg"} hover:!bg-white/10 disabled:!opacity-0 flex items-center justify-center !text-white/50 hover:!text-white transition-all !p-0 !bg-transparent !border-none`}
               >
                 <ChevronLeft className={`${isFs ? "w-6 h-6" : "w-3 h-3"}`} />
-              </button>
+              </Button>
               <div className="flex-1 text-center font-mono">
                 <span
                   className={`font-black text-amber uppercase tracking-[0.3em] ${isFs ? "text-[20px]" : "text-[9px]"}`}
@@ -113,13 +116,14 @@ export default function EpisodeSelector({
                   S{String(season).padStart(2, "0")}
                 </span>
               </div>
-              <button
+              <Button
+                variant="custom"
                 onClick={handleNextSeason}
                 disabled={season >= totalSeasons}
-                className={`${isFs ? "w-14 h-14 rounded-2xl" : "w-6 h-6 rounded-lg"} hover:bg-white/10 disabled:opacity-0 flex items-center justify-center text-white/50 hover:text-white transition-all`}
+                className={`${isFs ? "w-14 h-14 !rounded-2xl" : "w-6 h-6 !rounded-lg"} hover:!bg-white/10 disabled:!opacity-0 flex items-center justify-center !text-white/50 hover:!text-white transition-all !p-0 !bg-transparent !border-none`}
               >
                 <ChevronRight className={`${isFs ? "w-6 h-6" : "w-3 h-3"}`} />
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -140,16 +144,17 @@ export default function EpisodeSelector({
                     ep.number === Number(currentEpisode) &&
                     season === Number(currentSeason);
                   return (
-                    <button
+                    <Button
                       key={ep.id}
+                      variant="custom"
                       ref={isActive ? activeRef : null}
                       onClick={() => onSelectEpisode(season, ep.number)}
-                      className={`w-full group relative flex flex-col text-left transition-all duration-300 rounded-xl overflow-hidden border ${
-                        isFs ? "p-1.5" : ""
+                      className={`!w-full group relative flex flex-col text-left transition-all duration-300 !rounded-xl overflow-hidden !border ${
+                        isFs ? "!p-1.5" : ""
                       } ${
                         isActive
-                          ? "bg-amber/15 border-amber/40 shadow-inner ring-1 ring-amber/30"
-                          : "bg-white/5 border-white/10 hover:bg-white/10"
+                          ? "!bg-amber/15 !border-amber/40 shadow-inner ring-1 ring-amber/30"
+                          : "!bg-white/5 !border-white/10 hover:!bg-white/10"
                       }`}
                     >
                       <div
@@ -218,7 +223,7 @@ export default function EpisodeSelector({
                           </p>
                         </div>
                       )}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>

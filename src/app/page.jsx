@@ -1,4 +1,4 @@
-import { getBrowseData } from "@/services/tmdb";
+import { getBrowseData } from "@/features/content/services/tmdb";
 import HomeView from "@/features/content/HomeView";
 
 export const metadata = {

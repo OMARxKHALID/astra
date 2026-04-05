@@ -1,5 +1,5 @@
 import { apiResponse } from "@/utils/apiResponse";
-import { getBrowseData } from "@/services/tmdb";
+import { getBrowseData } from "@/features/content/services/tmdb";
 
 export async function GET() {
   try {

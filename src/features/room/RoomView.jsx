@@ -13,28 +13,30 @@ import {
 import SyncEngine from "@/features/sync/components/SyncEngine";
 import VideoPlayer from "@/features/video";
 import { getLeaderTime } from "@/lib/syncManager";
-import URLBar from "./URLBar";
-import ReconnectBanner from "@/components/ReconnectBanner";
+import URLBar from "./components/URLBar";
+import ReconnectBanner from "./components/ReconnectBanner";
 import ToastContainer, { useToast } from "@/components/Toast";
 import { SplitView } from "./components/SplitView";
 import { RoomNavbar } from "./components/RoomNavbar";
 import { MobileRoomNav } from "./components/MobileRoomNav";
 import { MobileRoomSheets } from "./components/MobileRoomSheets";
 import { IncomingCallBanner } from "./components/IncomingCallBanner";
+import CatchUpBanner from "./components/CatchUpBanner";
+import Button from "@/components/ui/Button";
 
-const SettingsPanel = dynamic(() => import("./SettingsPanel"), { ssr: false });
-const ShortcutsModal = dynamic(() => import("@/components/ShortcutsModal"), {
+const SettingsPanel = dynamic(() => import("./components/SettingsPanel"), { ssr: false });
+const ShortcutsModal = dynamic(() => import("./components/ShortcutsModal"), {
   ssr: false,
 });
-const PasswordModal = dynamic(() => import("@/components/PasswordModal"), {
+const PasswordModal = dynamic(() => import("./components/PasswordModal"), {
   ssr: false,
 });
 const EpisodeSelector = dynamic(
-  () => import("@/features/content/EpisodeSelector"),
+  () => import("@/features/content/components/EpisodeSelector"),
   { ssr: false },
 );
-const ChatSidebar = dynamic(() => import("./ChatSidebar"), { ssr: false });
-const UserList = dynamic(() => import("./UserList"), { ssr: false });
+const ChatSidebar = dynamic(() => import("./components/ChatSidebar"), { ssr: false });
+const UserList = dynamic(() => import("./components/UserList"), { ssr: false });
 const CallGrid = dynamic(
   () => import("./components/CallGrid").then((mod) => mod.CallGrid),
   { ssr: false },
@@ -522,12 +524,13 @@ export default function RoomView({ roomId, initialMeta }) {
                   FS CHAT
                 </span>
               </div>
-              <button
+              <Button
+                variant="custom"
                 onClick={() => setFsChatOpen(false)}
-                className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/10 text-white/40 font-mono"
+                className="!w-7 !h-7 !p-0 !min-h-0 flex items-center justify-center !rounded-full hover:!bg-white/10 !text-white/40 font-mono !border-none !bg-transparent"
               >
                 ✕
-              </button>
+              </Button>
             </div>
             <ChatSidebar
               messages={room.messages}
@@ -543,38 +546,6 @@ export default function RoomView({ roomId, initialMeta }) {
           </div>,
           document.fullscreenElement,
         )}
-    </div>
-  );
-}
-
-function CatchUpBanner({ videoTS, onSync, onDismiss }) {
-  const h = Math.floor(videoTS / 3600),
-    m = Math.floor((videoTS % 3600) / 60),
-    s = Math.floor(videoTS % 60);
-  const fmt =
-    h > 0
-      ? `${h}h ${String(m).padStart(2, "0")}m`
-      : m > 0
-        ? `${m}m ${String(s).padStart(2, "0")}s`
-        : `${s}s`;
-  return (
-    <div className="relative z-40 flex items-center gap-3 px-4 py-2.5 bg-amber/10 border-b border-amber/20 backdrop-blur-sm">
-      <div className="w-2 h-2 rounded-full bg-amber animate-pulse" />
-      <p className="flex-1 text-sm text-amber-200/90 font-medium">
-        You joined {fmt} in — video synced.
-      </p>
-      <button
-        onClick={onSync}
-        className="px-3 py-1.5 rounded-full bg-amber text-void text-[11px] font-black uppercase"
-      >
-        Sync
-      </button>
-      <button
-        onClick={onDismiss}
-        className="text-amber/50 hover:text-amber px-2"
-      >
-        ✕
-      </button>
     </div>
   );
 }

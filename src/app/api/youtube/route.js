@@ -1,5 +1,5 @@
 import { apiResponse } from "@/utils/apiResponse";
-import { searchYouTube } from "@/services/youtube";
+import { searchYouTube } from "@/features/room/services/youtube";
 import { withRateLimit } from "@/lib/rateLimit";
 
 export async function GET(req) {

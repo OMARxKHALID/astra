@@ -5,6 +5,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { LogOut, LogIn, Settings } from "lucide-react";
+import Button from "@/components/ui/Button";
 
 export default function UserMenu() {
   const { data: session, status } = useSession();
@@ -21,19 +22,27 @@ export default function UserMenu() {
     return () => window.removeEventListener("mousedown", handler);
   }, [open]);
 
+  const [loading, setLoading] = useState(false);
+
   if (status === "loading") {
     return <div className="w-9 h-9 rounded-full bg-white/5 animate-pulse" />;
   }
 
   if (!session) {
     return (
-      <button
-        onClick={() => router.push("/login")}
-        className="flex items-center gap-2 px-5 h-9 rounded-[var(--radius-pill)] glass-card !bg-white/5 text-white/80 text-[13px] font-bold cursor-pointer hover:!bg-white/10 hover:text-bright transition-all active:scale-95 shadow-xl"
+      <Button
+        variant="ghost"
+        loading={loading}
+        disabled={loading}
+        onClick={() => {
+          setLoading(true);
+          router.push("/login");
+        }}
+        className="px-5 h-9 !bg-white/5 text-white/80 !border-white/10"
       >
-        <LogIn className="w-4 h-4" />
+        {!loading && <LogIn className="w-4 h-4" />}
         <span className="hidden sm:inline">Sign In</span>
-      </button>
+      </Button>
     );
   }
 
@@ -41,13 +50,14 @@ export default function UserMenu() {
 
   return (
     <div className="relative" ref={ref}>
-      <button
+      <Button
+        variant="custom"
         onClick={() => setOpen(!open)}
-        className={`w-9 h-9 rounded-full overflow-hidden border transition-all cursor-pointer shadow-lg ${
-          open
-            ? "border-[var(--color-amber)] shadow-[0_0_24px_rgba(var(--color-amber-rgb),0.4)] scale-105"
-            : "border-white/10 hover:border-white/30"
-        }`}
+        className={`w-9 h-9 !p-0 rounded-full overflow-hidden border transition-all cursor-pointer shadow-lg !bg-transparent
+          ${open
+            ? "!border-[var(--color-amber)] shadow-[0_0_24px_rgba(var(--color-amber-rgb),0.4)] scale-105"
+            : "!border-white/10 hover:!border-white/30"
+          }`}
       >
         {user.image ? (
           <Image
@@ -62,7 +72,7 @@ export default function UserMenu() {
             {(user.name || user.email || "U")[0].toUpperCase()}
           </div>
         )}
-      </button>
+      </Button>
 
       {open && (
         <div className="absolute top-full right-0 mt-3 w-60 glass-card rounded-2xl overflow-hidden shadow-2xl z-50 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300 origin-top-right">
@@ -97,20 +107,22 @@ export default function UserMenu() {
           </div>
 
           <div className="p-1.5 flex flex-col gap-0.5">
-            <button
+            <Button
+              variant="custom"
               onClick={() => { setOpen(false); router.push("/profile"); }}
-              className="w-full flex items-center gap-3 px-3 h-10 rounded-xl text-[13px] font-bold text-white/60 hover:bg-white/10 hover:text-bright hover:pl-4 transition-all duration-300 cursor-pointer group"
+              className="w-full flex items-center gap-3 px-3 h-10 !rounded-xl text-[13px] font-bold text-white/60 hover:bg-white/10 hover:text-bright hover:pl-4 transition-all duration-300 !bg-transparent !border-none group"
             >
               <Settings className="w-4 h-4 group-hover:text-amber transition-colors" />
               Profile Settings
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="custom"
               onClick={() => signOut({ callbackUrl: "/" })}
-              className="w-full flex items-center gap-3 px-3 h-10 rounded-xl text-[13px] font-bold text-danger/60 hover:bg-danger/10 hover:text-danger hover:pl-4 transition-all duration-300 cursor-pointer group"
+              className="w-full flex items-center gap-3 px-3 h-10 !rounded-xl text-[13px] font-bold text-danger/60 hover:bg-danger/10 hover:text-danger hover:pl-4 transition-all duration-300 !bg-transparent !border-none group"
             >
               <LogOut className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
               Sign Out
-            </button>
+            </Button>
           </div>
         </div>
       )}

@@ -1,6 +1,6 @@
 import { memo, useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { SYSTEM_ICONS } from "../roomMaps";
+import { SYSTEM_ICONS } from "../constants";
 import { VoiceNote } from "./VoiceNote";
 
 function ChatMessageInner({

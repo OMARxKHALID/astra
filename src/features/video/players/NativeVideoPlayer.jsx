@@ -1,10 +1,10 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback } from "react";
-import { useVideoHotkeys } from "../utils";
 import { LS_KEYS } from "@/constants/config";
 import { ls } from "@/utils/localStorage";
-import { usePlayerControls } from "./usePlayerControls";
+import { usePlayerControls } from "../hooks/usePlayerControls";
+import { useVideoHotkeys } from "../hooks/useVideoHotkeys";
 
 import useHLS from "./native/hooks/useHLS";
 import useAmbilight from "./native/hooks/useAmbilight";

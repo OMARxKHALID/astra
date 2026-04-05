@@ -2,8 +2,8 @@
 
 import { useCallback, useRef } from "react";
 import { MAX_CHAT_MESSAGES } from "@/constants/config";
-import { useSounds } from "@/hooks/useSounds";
-import { SYSTEM_ICONS } from "../roomMaps";
+import { useSounds } from "./useSounds";
+import { SYSTEM_ICONS } from "../constants";
 
 export default function useRoomEvents({
   userId,

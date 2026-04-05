@@ -1,126 +1,44 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import {
   Play,
   Share2,
-  ChevronDown,
-  ChevronLeft,
   Users,
-  Check,
-  Loader2,
   Heart,
 } from "lucide-react";
-import { buildEmbedUrl, serverOptions } from "@/lib/videoResolver";
 import Loading from "@/components/Loading";
-import { createRoom } from "@/features/room/createRoom";
-import { persistence } from "@/utils/persistence";
 import YoutubeIcon from "@/components/icons/YoutubeIcon";
 import BackButton from "@/components/ui/BackButton";
 import Button from "@/components/ui/Button";
 
-function CustomSelect({
-  label,
-  value,
-  options,
-  onChange,
-  icon: Icon = ChevronDown,
-  position = "bottom",
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef(null);
-
-  const selectedOption = options?.find((opt) => opt.value === value) ||
-    options?.[0] || { label: "Select...", value: "" };
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target)
-      ) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  return (
-    <div className="flex flex-col gap-2 w-full" ref={containerRef}>
-      {label && (
-        <label className="text-[9px] font-black text-[var(--color-muted)] uppercase tracking-[0.2em] ml-2">
-          {label}
-        </label>
-      )}
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className={`w-full flex items-center justify-between px-5 h-10 rounded-[var(--radius-pill)] border transition-all duration-300 glass-card shadow-lg bg-[var(--color-surface)] hover:border-white/20 group ${
-            isOpen
-              ? "border-amber ring-2 ring-amber/10 shadow-amber/5 z-[50]"
-              : "border-[var(--color-border)] z-[1]"
-          }`}
-        >
-          <span className="text-[11px] lg:text-[12px] font-bold text-[var(--color-text)] truncate pr-4">
-            {selectedOption.label}
-          </span>
-          <Icon
-            className={`w-3.5 h-3.5 text-[var(--color-muted)] transition-transform duration-300 ${isOpen ? "rotate-180 text-amber" : "group-hover:text-amber"}`}
-          />
-        </button>
-
-        {isOpen && (
-          <div
-            className={`absolute ${position === "top" ? "bottom-full mb-2" : "top-full mt-2"} left-0 right-0 z-[100] glass-card border border-white/10 rounded-[1.25rem] overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 ${position === "top" ? "slide-in-from-bottom-2" : "slide-in-from-top-2"} duration-200 p-1.5 backdrop-blur-2xl bg-[var(--color-surface)]/95`}
-          >
-            <div className="max-h-[240px] overflow-y-auto no-scrollbar flex flex-col gap-0.5">
-              {options.map((opt) => (
-                <button
-                  type="button"
-                  key={opt.value}
-                  onClick={() => {
-                    onChange(opt.value);
-                    setIsOpen(false);
-                  }}
-                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-[0.85rem] text-[11px] lg:text-[12px] font-bold transition-all duration-200 group/item ${
-                    opt.value === value
-                      ? "bg-amber text-void shadow-lg shadow-amber/10"
-                      : "text-[var(--color-muted)] hover:bg-white/10 hover:text-bright"
-                  }`}
-                >
-                  <span className="truncate pr-4">{opt.label}</span>
-                  {opt.value === value && (
-                    <Check className="w-3.5 h-3.5 shrink-0" />
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+import CustomSelect from "./components/CustomSelect";
+import { useMediaActions } from "./hooks/useMediaActions";
 
 export default function InfoView({ initialData, type, id }) {
   const router = useRouter();
   const { data: session } = useSession();
-  const [data, setData] = useState(initialData);
+  const [data] = useState(initialData);
   const [activeTab, setActiveTab] = useState(
     type === "tv" ? "episodes" : "overview",
   );
   const [episodes, setEpisodes] = useState(initialData?.initialEpisodes || []);
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [epLoading, setEpLoading] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [seasonCache, setSeasonCache] = useState({
     1: initialData?.initialEpisodes || [],
   });
+
+  const {
+    isFavorite,
+    creating,
+    toggleFavorite,
+    handleWatch,
+    handleAstraSync
+  } = useMediaActions(data, type);
 
   useEffect(() => {
     if (type !== "tv" || activeTab !== "episodes" || !id) return;
@@ -142,51 +60,11 @@ export default function InfoView({ initialData, type, id }) {
         setEpLoading(false);
       })
       .catch(() => setEpLoading(false));
-  }, [id, activeTab, selectedSeason, type]);
+  }, [id, activeTab, selectedSeason, type, seasonCache]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [id]);
-
-  const [isFavorite, setIsFavorite] = useState(false);
-
-  useEffect(() => {
-    if (!data?.id) return;
-    setIsFavorite(persistence.isFavorite(data.id, type));
-  }, [data?.id, type]);
-
-  const toggleFavorite = () => {
-    const nextFavorite = persistence.toggleFavorite(data, type);
-    setIsFavorite(nextFavorite);
-  };
-
-  const markAsWatched = () => {
-    persistence.markAsWatched(data, type);
-  };
-
-  const handleWatch = () => {
-    try { markAsWatched(); } catch {}
-    const server = serverOptions[0].value;
-    const embedUrl = buildEmbedUrl(server, id, type, 1, 1);
-    router.push(
-      `/watch?url=${encodeURIComponent(embedUrl)}&tmdb=${id}&type=${type}`,
-    );
-  };
-
-  const handleAstraSync = async () => {
-    setCreating(true);
-    try { markAsWatched(); } catch {}
-    try {
-      const server = serverOptions[0].value;
-      const embedUrl = buildEmbedUrl(server, id, type, 1, 1);
-      const { roomId } = await createRoom(embedUrl, session);
-      router.push(
-        `/room/${roomId}?url=${encodeURIComponent(embedUrl)}&tmdb=${id}&type=${type}`,
-      );
-    } catch {
-      setCreating(false);
-    }
-  };
 
   if (!data?.id || data.error) {
     return (
@@ -282,7 +160,7 @@ export default function InfoView({ initialData, type, id }) {
               </div>
 
               <div className="flex flex-wrap items-center justify-center gap-2 w-full relative p-1.5 lg:p-2 lg:pr-[1rem]">
-                <Button onClick={handleWatch} className="flex-1 min-w-[70px] sm:flex-none">
+                <Button onClick={() => handleWatch(1, 1)} className="flex-1 min-w-[70px] sm:flex-none">
                   <Play size={13} fill="currentColor" />
                   Watch
                 </Button>
@@ -291,7 +169,7 @@ export default function InfoView({ initialData, type, id }) {
                   variant="jade"
                   loading={creating}
                   disabled={creating}
-                  onClick={handleAstraSync}
+                  onClick={() => handleAstraSync(1, 1, session)}
                   className="flex-1 min-w-[90px] sm:flex-none"
                 >
                   {!creating && <Users size={13} fill="currentColor" />}
@@ -551,20 +429,7 @@ export default function InfoView({ initialData, type, id }) {
                     <div
                       key={ep.id}
                       className="glass-card flex items-center gap-3 p-2 rounded-[1rem] hover:bg-white/10 cursor-pointer transition-all active:scale-[0.98]"
-                      onClick={() => {
-                        const server = serverOptions[0].value;
-                        let embedUrl = buildEmbedUrl(
-                          server,
-                          id,
-                          "tv",
-                          selectedSeason,
-                          ep.number,
-                        );
-
-                        router.push(
-                          `/watch?url=${encodeURIComponent(embedUrl)}&tmdb=${id}&type=tv&s=${selectedSeason}&e=${ep.number}`,
-                        );
-                      }}
+                      onClick={() => handleWatch(selectedSeason, ep.number)}
                     >
                       <div className="w-20 h-12 bg-void rounded-lg overflow-hidden shrink-0 relative border border-white/10">
                         <Image

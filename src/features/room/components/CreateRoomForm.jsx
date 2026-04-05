@@ -14,7 +14,7 @@ import {
 import YoutubeIcon from "@/components/icons/YoutubeIcon";
 import Button from "@/components/ui/Button";
 import { useSession } from "next-auth/react";
-import { createRoom } from "@/features/room/createRoom";
+import { createRoom } from "../services/createRoom";
 import { ls } from "@/utils/localStorage";
 import { LS_KEYS, MAX_HISTORY_ENTRIES } from "@/constants/config";
 
@@ -388,11 +388,11 @@ export default function CreateRoomForm({ onResultsChange }) {
             loading={loading}
             className="w-full mt-2 !font-bold uppercase tracking-widest"
           >
-            {mode === "url" ? (
+            {!loading && (mode === "url" ? (
               <PlusIcon className="w-4 h-4" />
             ) : (
               <Search className="w-4 h-4" />
-            )}
+            ))}
             {mode === "url"
               ? url.trim()
                 ? "Create Room"

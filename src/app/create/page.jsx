@@ -1,9 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
 import BackButton from "@/components/ui/BackButton";
-import CreateRoomForm from "@/features/room/CreateRoomForm";
+import CreateRoomForm from "@/features/room/components/CreateRoomForm";
 
 export default function CreateRoomPage() {
   const router = useRouter();
@@ -16,7 +15,9 @@ export default function CreateRoomPage() {
 
       <nav className="relative z-10 flex items-center gap-4 px-6 lg:px-12 h-[72px] bg-gradient-to-b from-black/60 to-transparent">
         <BackButton href="/" aria-label="Go back home" />
-        <h1 className="text-lg font-bold text-bright font-display">Create Room</h1>
+        <h1 className="text-lg font-bold text-bright font-display">
+          Create Room
+        </h1>
       </nav>
 
       <div className="relative z-10 w-full max-w-[600px] mx-auto px-6 pt-8 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">

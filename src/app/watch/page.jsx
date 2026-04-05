@@ -5,21 +5,22 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 
 const VideoPlayer = dynamic(() => import("@/features/video"), { ssr: false });
 const EpisodeSelector = dynamic(
-  () => import("@/features/content/EpisodeSelector"),
+  () => import("@/features/content/components/EpisodeSelector"),
+  { ssr: false },
+);
+const WatchHeader = dynamic(
+  () => import("@/features/content/components/WatchHeader"),
   { ssr: false },
 );
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { Star, Users, Loader2, Cloud, List as ListIcon } from "lucide-react";
-import BackButton from "@/components/ui/BackButton";
-import Image from "next/image";
+import Button from "@/components/ui/Button";
 import {
-  serverOptions,
   buildEmbedUrl,
   detectServer,
   extractMeta,
 } from "@/lib/videoResolver";
-import { createRoom } from "@/features/room/createRoom";
+import { createRoom } from "@/features/room/services/createRoom";
 
 function WatchContent() {
   const params = useSearchParams();
@@ -40,11 +41,8 @@ function WatchContent() {
   const [seasonCache, setSeasonCache] = useState({});
 
   const derivedMeta = useMemo(() => {
-    // 1. Try to extract metadata from the current URL format
     const meta = extractMeta(url);
     if (meta.id) return meta;
-
-    // 2. Fallback to search parameters (useful for initial deep links)
     return { id: tmdbId, s, e, type };
   }, [url, tmdbId, s, e, type]);
 
@@ -89,9 +87,7 @@ function WatchContent() {
     )
       .then((r) => r.json())
       .then((res) => {
-        if (res.success) {
-          setMeta(res.data);
-        }
+        if (res.success) setMeta(res.data);
       })
       .catch(() => {});
   }, [activeTmdbId, derivedMeta.type, type]);
@@ -130,23 +126,48 @@ function WatchContent() {
     [navigateToEpisode],
   );
 
+  const handleCreateRoom = async () => {
+    setCreating(true);
+    try {
+      const { roomId, createPromise } = createRoom(url);
+      await createPromise;
+      router.push(
+        `/room/${roomId}?url=${encodeURIComponent(url)}&tmdb=${tmdbId}&type=${type}&h=1`,
+      );
+    } catch (err) {
+      console.error("Failed to sync room", err);
+      setCreating(false);
+    }
+  };
+
+  const handleServerChange = (newServerValue) => {
+    const newUrl = buildEmbedUrl(
+      newServerValue,
+      activeTmdbId,
+      isActiveTv ? "tv" : "movie",
+      activeS,
+      activeE,
+    );
+    setCloudOpen(false);
+    if (newUrl) {
+      router.replace(
+        `/watch?url=${encodeURIComponent(newUrl)}&tmdb=${activeTmdbId}&type=${isActiveTv ? "tv" : "movie"}&s=${activeS}&e=${activeE}`,
+      );
+    }
+  };
+
   if (!url) {
     return (
-      <div className="h-dvh bg-[var(--color-void)] flex flex-col items-center justify-center gap-4">
+      <div className="h-dvh bg-void flex flex-col items-center justify-center gap-4">
         <p className="text-white/60 font-mono text-sm">
           No video URL provided.
         </p>
-        <button
-          onClick={() => router.push("/")}
-          className="px-6 py-2.5 rounded-full bg-amber text-[var(--color-void)] font-bold text-sm cursor-pointer hover:bg-amber transition-all font-body active:scale-95"
-        >
+        <Button onClick={() => router.push("/")} className="px-7 rounded-full">
           Go Home
-        </button>
+        </Button>
       </div>
     );
   }
-
-  const genres = (meta?.genres || []).slice(0, 3);
 
   return (
     <div className="h-dvh bg-void flex flex-col overflow-hidden relative">
@@ -155,157 +176,20 @@ function WatchContent() {
         className="fixed top-0 left-0 right-0 h-16 z-[60] pointer-events-auto"
       />
 
-      <div
-        className={`fixed top-0 left-0 right-0 z-[70] px-3 sm:px-5 py-3 sm:py-4 bg-gradient-to-b from-black/95 via-black/50 to-transparent flex items-center gap-2 sm:gap-3 transition-all duration-500 transform ${
-          showBar
-            ? "translate-y-0 opacity-100"
-            : "-translate-y-full opacity-0 pointer-events-none"
-        }`}
-      >
-        <BackButton href="/" />
-
-        {meta && (
-          <div className="flex items-center gap-2.5 sm:gap-3 ml-1 sm:ml-2 animate-in fade-in slide-in-from-top-2 duration-700 min-w-0">
-            {meta.poster && (
-              <Image
-                src={meta.poster}
-                alt=""
-                width={28}
-                height={40}
-                className="w-7 sm:w-8 h-10 sm:h-11 object-cover rounded-md shadow-2xl border border-white/10 shrink-0"
-              />
-            )}
-            <div className="flex flex-col justify-center min-w-0">
-              <p className="text-[13px] sm:text-[14px] font-black text-bright font-display leading-tight tracking-tight truncate">
-                {meta.title}
-              </p>
-              <div className="hidden sm:flex gap-2 items-center mt-0.5">
-                {meta.rating && (
-                  <span className="text-[10px] text-amber font-mono flex items-center gap-1 font-black">
-                    <Star className="w-2.5 h-2.5 fill-amber" /> {meta.rating}
-                  </span>
-                )}
-                {meta.year && (
-                  <span className="text-[10px] text-white/40 font-mono font-bold">
-                    {meta.year}
-                  </span>
-                )}
-                <div className="flex gap-2">
-                  {genres.map((g) => (
-                    <span
-                      key={g}
-                      className="text-[9px] text-white/30 font-mono uppercase tracking-[0.1em] font-black"
-                    >
-                      {g}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="flex-1" />
-
-        <div className="flex items-stretch border border-amber/20 rounded-[var(--radius-pill)] bg-amber/5 backdrop-blur-xl transition-all shadow-2xl hover:border-amber/40 hover:bg-amber/10 shrink-0">
-          <button
-            disabled={creating}
-            onClick={() => {
-              const { roomId } = createRoom(url);
-              router.push(
-                `/room/${roomId}?url=${encodeURIComponent(url)}&tmdb=${tmdbId}&type=${type}`,
-              );
-            }}
-            className="flex items-center justify-center gap-2 px-3 sm:px-5 h-9 text-amber cursor-pointer font-body text-[12px] font-black transition-all active:scale-[0.98] disabled:opacity-50 rounded-l-[var(--radius-pill)]"
-          >
-            {creating ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Users className="w-4 h-4" />
-            )}
-            <span className="hidden sm:inline">Astra Sync</span>
-          </button>
-
-          <div
-            className="relative flex items-stretch pointer-events-auto border-l border-amber/10"
-            ref={cloudRef}
-          >
-            <button
-              onClick={() => setCloudOpen(!cloudOpen)}
-              className={`px-3 sm:px-3.5 h-9 text-amber cursor-pointer font-body hover:bg-white/10 transition-all active:scale-[0.98] flex items-center justify-center ${
-                !isActiveTv
-                  ? "rounded-r-[var(--radius-pill)]"
-                  : "border-r border-amber/10"
-              }`}
-              title="Change Server"
-            >
-              <Cloud className="w-4 h-4" strokeWidth={2.5} />
-            </button>
-
-            {isActiveTv && (
-              <button
-                onClick={() => setEpisodesOpen(!episodesOpen)}
-                className={`px-3 sm:px-3.5 h-9 cursor-pointer font-body transition-all active:scale-[0.98] flex items-center justify-center rounded-r-[var(--radius-pill)] ${
-                  episodesOpen
-                    ? "bg-amber/20 text-amber"
-                    : "text-amber hover:bg-white/10"
-                }`}
-                title="Episodes"
-              >
-                <ListIcon className="w-4 h-4" strokeWidth={2.5} />
-              </button>
-            )}
-
-            {cloudOpen && (
-              <div className="absolute top-full right-0 mt-3 w-52 p-2 flex flex-col gap-1 rounded-2xl border border-white/5 glass-card bg-void/90 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
-                <div className="px-3 py-2 border-b border-white/5 mb-1 flex items-center justify-between">
-                  <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] font-mono">
-                    Select Server
-                  </span>
-                  <div className="w-1.5 h-1.5 rounded-full bg-amber/20" />
-                </div>
-
-                <div className="flex flex-col gap-0.5">
-                  {serverOptions.map((opt) => {
-                    const isActive = opt.value === detectServer(url);
-                    return (
-                      <button
-                        key={opt.value}
-                        onClick={() => {
-                          const newUrl = buildEmbedUrl(
-                            opt.value,
-                            activeTmdbId,
-                            isActiveTv ? "tv" : "movie",
-                            activeS,
-                            activeE,
-                          );
-                          setCloudOpen(false);
-                          if (newUrl) {
-                            router.replace(
-                              `/watch?url=${encodeURIComponent(newUrl)}&tmdb=${activeTmdbId}&type=${isActiveTv ? "tv" : "movie"}&s=${activeS}&e=${activeE}`,
-                            );
-                          }
-                        }}
-                        className={`w-full text-left px-3 py-2.5 rounded-xl text-[10px] font-bold tracking-wide transition-all flex items-center justify-between group ${
-                          isActive
-                            ? "bg-amber/15 text-white border border-amber/20 shadow-inner ring-1 ring-amber/10"
-                            : "text-white/60 hover:bg-white/10 hover:text-white border border-transparent"
-                        }`}
-                      >
-                        <span className="truncate">{opt.label}</span>
-                        {isActive ? (
-                          <div className="w-1.5 h-1.5 rounded-full bg-amber shadow-[0_0_8px_rgba(245,158,11,0.8)] animate-pulse" />
-                        ) : (
-                          <div className="w-1 h-1 rounded-full bg-white/5 group-hover:bg-white/20 transition-colors" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+      <div ref={cloudRef}>
+        <WatchHeader
+          visible={showBar}
+          meta={meta}
+          creating={creating}
+          onSync={handleCreateRoom}
+          cloudOpen={cloudOpen}
+          setCloudOpen={setCloudOpen}
+          episodesOpen={episodesOpen}
+          onToggleEpisodes={() => setEpisodesOpen(!episodesOpen)}
+          isActiveTv={isActiveTv}
+          url={url}
+          onServerChange={handleServerChange}
+        />
       </div>
 
       <div className="flex-1 relative bg-void">
