@@ -19,6 +19,7 @@ import {
   Pencil,
 } from "lucide-react";
 import { useToast } from "@/components/Toast";
+import Button from "@/components/ui/Button";
 
 function Toggle({ enabled, onToggle, disabled = false }) {
   return (
@@ -401,13 +402,13 @@ export default function SettingsPanel({
                       Remove room password?
                     </p>
                   )}
-                  <button
+                  <Button
                     type="submit"
                     disabled={pwMode === "set" && !pwInput.trim()}
-                    className="px-4 py-2 rounded-[var(--radius-pill)] bg-amber text-void text-[11px] font-black uppercase tracking-wider hover:bg-amber active:scale-95 disabled:opacity-30 transition-all shrink-0"
+                    className="shrink-0 uppercase tracking-wider"
                   >
                     Confirm
-                  </button>
+                  </Button>
                 </form>
               )}
             </div>

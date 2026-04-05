@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { History, X as XIcon } from "lucide-react";
+import Button from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
 import { LS_KEYS } from "@/constants/config";
 import { ls } from "@/utils/localStorage";
@@ -55,31 +56,30 @@ export default function RecentRooms() {
 
   return (
     <div className="relative recent-rooms-container">
-      <button
+      <Button
         onClick={() => setShowRecent(!showRecent)}
-        className={`w-9 h-9 flex items-center justify-center rounded-full transition-all border backdrop-blur-xl
-          ${
-            showRecent
-              ? "bg-[var(--color-amber)] text-void border-[var(--color-amber)] shadow-[0_0_20px_rgba(var(--color-amber-rgb),_0.3)]"
-              : "text-white/40 hover:text-white bg-white/5 border-white/10 hover:bg-white/10"
-          }`}
+        variant={showRecent ? "primary" : "ghost"}
+        className={`!w-9 !h-9 !p-0 !rounded-full shrink-0 ${
+          showRecent ? "" : "!border-white/10 !bg-white/5 hover:!bg-white/10 !text-white/40 hover:!text-white"
+        }`}
       >
         <History className="w-4 h-4" />
-      </button>
+      </Button>
 
       {showRecent && (
         <div className="absolute top-full right-0 mt-3 w-72 glass-card rounded-2xl overflow-hidden shadow-2xl animate-in slide-in-from-top-2 fade-in duration-300 z-50">
           <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
             <div className="flex flex-col">
-              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/60">
+              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/60 mb-0.5">
                 Room History
               </span>
-              <button
+              <Button
+                variant="custom"
                 onClick={clearAll}
-                className="text-[9px] font-bold text-danger hover:text-danger-bright uppercase tracking-wider text-left transition-colors"
+                className="w-fit !p-0 text-[10px] font-bold text-danger hover:text-danger-bright uppercase tracking-wider text-left !bg-transparent !border-none !rounded-none !h-auto !scale-none active:!scale-95"
               >
                 Clear All
-              </button>
+              </Button>
             </div>
             <button
               onClick={() => setShowRecent(false)}
@@ -95,42 +95,45 @@ export default function RecentRooms() {
                 key={r.roomId}
                 className="relative group border-b last:border-0 border-white/10"
               >
-                <button
+                <Button
+                  variant="custom"
                   onClick={() => {
                     const urlStr = r.videoUrl ? `?url=${encodeURIComponent(r.videoUrl)}` : "";
                     router.push(`/room/${r.roomId}${urlStr}`);
                   }}
-                  className="w-full flex items-center gap-3 p-3 hover:bg-white/10 transition-all text-left group-hover:pl-4 duration-300"
+                  className="w-full flex items-center gap-3 p-3 hover:bg-white/5 transition-all text-left group-hover:pl-4 duration-300 !h-auto !rounded-none !border-none !bg-transparent !font-body shrink-0 pl-3"
                 >
                   {r.thumbnail ? (
-                    <Image
-                      src={r.thumbnail}
-                      alt=""
-                      width={48}
-                      height={32}
-                      className="w-12 h-8 rounded-lg object-cover brightness-75 shrink-0"
-                    />
+                    <div className="relative w-12 h-8 rounded-lg overflow-hidden shrink-0">
+                      <Image
+                        src={r.thumbnail}
+                        alt=""
+                        fill
+                        className="object-cover brightness-75 transition-all group-hover:brightness-100"
+                      />
+                    </div>
                   ) : (
                     <div className="w-12 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
                       <History className="w-4 h-4 text-white/60" />
                     </div>
                   )}
-                  <div className="flex flex-col min-w-0 pr-4">
-                    <span className="text-xs font-bold truncate">
+                  <div className="flex-1 min-w-0 pr-4">
+                    <p className="text-[12px] font-bold truncate text-bright">
                       {r.title || `Room ${r.roomId.slice(0, 4)}`}
-                    </span>
-                    <span className="text-[10px] font-mono text-white/60 truncate">
+                    </p>
+                    <p className="text-[9px] font-mono text-white/40 mt-0.5 uppercase tracking-tighter">
                       {new Date(r.lastVisited).toLocaleDateString()}
-                    </span>
+                    </p>
                   </div>
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="custom"
                   onClick={(e) => removeRoom(r.roomId, e)}
                   title="Remove"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-danger/70 hover:text-danger hover:bg-danger/10 transition-all opacity-0 group-hover:opacity-100"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-danger/70 hover:text-danger hover:bg-danger/10 transition-all opacity-0 group-hover:opacity-100 !p-0 !bg-transparent !border-none !h-6"
                 >
                   <XIcon className="w-3 h-3" />
-                </button>
+                </Button>
               </div>
             ))}
           </div>

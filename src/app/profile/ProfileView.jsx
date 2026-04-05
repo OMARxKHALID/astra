@@ -3,16 +3,9 @@
 import { signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import {
-  LogOut,
-  ChevronLeft,
-  Shield,
-  Mail,
-  User,
-  Trash2,
-  Database,
-} from "lucide-react";
+import { LogOut, Shield, Mail, User, Trash2, Database } from "lucide-react";
 import BackButton from "@/components/ui/BackButton";
+import Button from "@/components/ui/Button";
 import { LS_KEYS } from "@/constants/config";
 
 export default function ProfileView({ user }) {
@@ -157,13 +150,15 @@ export default function ProfileView({ user }) {
           </div>
 
           <div className="p-5 pt-0 mt-2">
-            <button
+            <Button
+              variant="alert"
+              size="lg"
+              className="w-full"
               onClick={() => signOut({ callbackUrl: "/" })}
-              className="w-full flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-[var(--radius-pill)] bg-danger/10 border border-danger/20 text-danger font-bold text-[13px] hover:bg-danger/20 transition-all active:scale-[0.98] cursor-pointer"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-4 h-4 shrink-0 transition-transform group-hover:-translate-x-0.5" />
               Sign Out
-            </button>
+            </Button>
           </div>
         </div>
       </div>

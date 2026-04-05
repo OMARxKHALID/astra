@@ -19,6 +19,7 @@ import {
   Zap,
 } from "lucide-react";
 import BackButton from "@/components/ui/BackButton";
+import Button from "@/components/ui/Button";
 
 function AdminContent() {
   const router = useRouter();
@@ -492,16 +493,17 @@ function AdminContent() {
                       ))}
                     </div>
                   </div>
-                  <button
+                  <Button
+                    variant="danger"
                     onClick={() => {
                       localStorage.removeItem("astra_admin_secret");
                       setIsAuthorized(false);
                     }}
-                    className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-[var(--radius-pill)] glass-card border-white/5 hover:border-danger/20 hover:bg-danger/5 text-white/30 hover:text-danger text-[12px] font-bold transition-all active:scale-95"
+                    className="w-full flex items-center justify-center gap-2 py-3"
                   >
                     <ShieldCheck className="w-4 h-4" />
                     Revoke Access
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>

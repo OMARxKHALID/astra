@@ -20,6 +20,7 @@ import { createRoom } from "@/features/room/createRoom";
 import { persistence } from "@/utils/persistence";
 import YoutubeIcon from "@/components/icons/YoutubeIcon";
 import BackButton from "@/components/ui/BackButton";
+import Button from "@/components/ui/Button";
 
 function CustomSelect({
   label,
@@ -281,28 +282,25 @@ export default function InfoView({ initialData, type, id }) {
               </div>
 
               <div className="flex flex-wrap items-center justify-center gap-2 w-full relative p-1.5 lg:p-2 lg:pr-[1rem]">
-                <button
-                  onClick={handleWatch}
-                  className="bg-amber text-void flex-1 min-w-[70px] sm:flex-none h-9 px-4 rounded-[var(--radius-pill)] text-[12px] font-black flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-[0_4px_12px_rgba(var(--color-amber-rgb),0.3)] hover:brightness-110 active:scale-95"
-                >
+                <Button onClick={handleWatch} className="flex-1 min-w-[70px] sm:flex-none">
                   <Play size={13} fill="currentColor" />
                   Watch
-                </button>
+                </Button>
 
-                <button
+                <Button
+                  variant="jade"
+                  loading={creating}
                   disabled={creating}
                   onClick={handleAstraSync}
-                  className="bg-jade text-void flex-1 min-w-[90px] sm:flex-none h-9 px-4 rounded-[var(--radius-pill)] text-[12px] font-black flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-[0_4px_12px_rgba(var(--color-jade-rgb),0.3)] hover:brightness-110 active:scale-95 disabled:opacity-50"
+                  className="flex-1 min-w-[90px] sm:flex-none"
                 >
-                  {creating ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Users size={13} fill="currentColor" />
-                  )}
+                  {!creating && <Users size={13} fill="currentColor" />}
                   Together
-                </button>
+                </Button>
 
-                <button
+                <Button
+                  variant="ghost"
+                  disabled={!data.trailer}
                   onClick={() =>
                     data.trailer &&
                     window.open(
@@ -310,15 +308,16 @@ export default function InfoView({ initialData, type, id }) {
                       "_blank",
                     )
                   }
-                  className={`bg-white/5 text-white/80 border border-white/10 flex-1 min-w-[80px] sm:flex-none h-9 px-4 rounded-[var(--radius-pill)] text-[12px] font-black flex items-center justify-center gap-1.5 cursor-pointer transition-all hover:bg-white/10 hover:text-white active:scale-95 ${!data.trailer ? "opacity-30 pointer-events-none" : ""}`}
+                  className="flex-1 min-w-[80px] sm:flex-none"
                 >
                   <YoutubeIcon size={16} />
                   Trailers
-                </button>
+                </Button>
 
-                <button
+                <Button
+                  variant={isFavorite ? "ghostActive" : "ghost"}
                   onClick={toggleFavorite}
-                  className={`flex-1 min-w-[50px] sm:flex-none h-9 px-4 rounded-[var(--radius-pill)] text-[12px] font-black flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95 border ${isFavorite ? "bg-amber text-void border-amber shadow-[0_4px_12px_rgba(var(--color-amber-rgb),0.3)] hover:brightness-110" : "bg-white/5 border-white/10 text-white hover:bg-white/10"}`}
+                  className="flex-1 min-w-[50px] sm:flex-none"
                 >
                   <Heart
                     size={13}
@@ -328,7 +327,7 @@ export default function InfoView({ initialData, type, id }) {
                   <span className="hidden sm:inline">
                     {isFavorite ? "Saved" : "My List"}
                   </span>
-                </button>
+                </Button>
               </div>
             </div>
           </div>

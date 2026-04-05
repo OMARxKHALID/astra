@@ -9,8 +9,10 @@ import {
   AlertCircle as ExclamationIcon,
   ChevronRight,
   Sparkles,
+  Upload as UploadIcon,
 } from "lucide-react";
 import YoutubeIcon from "@/components/icons/YoutubeIcon";
+import Button from "@/components/ui/Button";
 import { useSession } from "next-auth/react";
 import { createRoom } from "@/features/room/createRoom";
 import { ls } from "@/utils/localStorage";
@@ -26,6 +28,7 @@ export default function CreateRoomForm({ onResultsChange }) {
   const [ytResults, setYtResults] = useState([]);
   const [ytLoading, setYtLoading] = useState(false);
   const [ytLoadingMore, setYtLoadingMore] = useState(false);
+  const [localFileName, setLocalFileName] = useState("");
   const [nextPageToken, setNextPageToken] = useState(null);
 
   const scrollRef = useRef(null);
@@ -44,13 +47,16 @@ export default function CreateRoomForm({ onResultsChange }) {
       const res = await fetch(
         `/api/youtube?q=${encodeURIComponent(url.trim())}&pageToken=${nextPageToken}`,
       );
-      const data = await res.json();
-      if (data.items) {
+      const resJson = await res.json();
+      if (resJson.success && resJson.data.items) {
         setYtResults((prev) => {
           const seen = new Set(prev.map((i) => i.id));
-          return [...prev, ...data.items.filter((i) => !seen.has(i.id))];
+          return [
+            ...prev,
+            ...resJson.data.items.filter((i) => !seen.has(i.id)),
+          ];
         });
-        setNextPageToken(data.nextPageToken || null);
+        setNextPageToken(resJson.data.nextPageToken || null);
       }
     } catch {
       // silent — user can scroll again
@@ -83,9 +89,14 @@ export default function CreateRoomForm({ onResultsChange }) {
         const res = await fetch(
           `/api/youtube?q=${encodeURIComponent(url.trim())}`,
         );
-        const data = await res.json();
-        setYtResults(data.items || []);
-        setNextPageToken(data.nextPageToken || null);
+        const resJson = await res.json();
+        if (resJson.success) {
+          setYtResults(resJson.data.items || []);
+          setNextPageToken(resJson.data.nextPageToken || null);
+        } else {
+          setYtResults([]);
+          setNextPageToken(null);
+        }
       } catch {
         setError("YouTube search failed");
       } finally {
@@ -122,13 +133,18 @@ export default function CreateRoomForm({ onResultsChange }) {
         thumbnail: ytMatch
           ? `https://img.youtube.com/vi/${ytMatch[1]}/mqdefault.jpg`
           : null,
-        title: trimmed.replace(/^https?:\/\//, "").slice(0, 60) || `Room ${roomId.slice(0, 4)}`,
+        title:
+          trimmed.replace(/^https?:\/\//, "").slice(0, 60) ||
+          `Room ${roomId.slice(0, 4)}`,
         lastVisited: Date.now(),
       };
       ls.set(
         LS_KEYS.history,
         JSON.stringify(
-          [entry, ...history.filter((h) => h.roomId !== roomId)].slice(0, MAX_HISTORY_ENTRIES),
+          [entry, ...history.filter((h) => h.roomId !== roomId)].slice(
+            0,
+            MAX_HISTORY_ENTRIES,
+          ),
         ),
       );
     } catch {}
@@ -141,9 +157,7 @@ export default function CreateRoomForm({ onResultsChange }) {
       return;
     }
 
-    router.push(
-      `/room/${roomId}?url=${encodeURIComponent(trimmed)}&h=1`,
-    );
+    router.push(`/room/${roomId}?url=${encodeURIComponent(trimmed)}&h=1`);
   }
 
   function isValidUrl(str) {
@@ -162,10 +176,28 @@ export default function CreateRoomForm({ onResultsChange }) {
     setNextPageToken(null);
   }
 
+  async function handleFileChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("video/")) {
+      setError("Please select a valid video file");
+      return;
+    }
+
+    try {
+      const blobUrl = URL.createObjectURL(file);
+      setLocalFileName(file.name);
+      ls.set(LS_KEYS.localFileName, file.name);
+      await handleCreate(null, blobUrl);
+    } catch {
+      setError("Failed to create room with local file");
+    }
+  }
+
   return (
     <div className="glass-card p-7 relative rounded-[var(--radius-panel)] shadow-2xl border-border bg-white/[0.03]">
       {/* Header + mode toggle */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="mb-6 flex flex-col gap-4">
         <div>
           <h2
             className="font-display text-xl font-semibold mb-1"
@@ -178,7 +210,7 @@ export default function CreateRoomForm({ onResultsChange }) {
           </p>
         </div>
 
-        <div className="flex p-1 rounded-[var(--radius-pill)] border shadow-inner bg-surface/50 border-border overflow-hidden w-max mx-auto sm:mx-0">
+        <div className="flex p-1 rounded-[var(--radius-pill)] border shadow-inner bg-surface/50 border-border overflow-hidden w-full sm:w-max mt-1 self-center">
           <ModeBtn
             active={mode === "url"}
             onClick={() => switchMode("url")}
@@ -193,6 +225,13 @@ export default function CreateRoomForm({ onResultsChange }) {
           >
             Search
           </ModeBtn>
+          <ModeBtn
+            active={mode === "upload"}
+            onClick={() => switchMode("upload")}
+            icon={<UploadIcon className="w-3 h-3" />}
+          >
+            Upload
+          </ModeBtn>
         </div>
       </div>
 
@@ -202,38 +241,61 @@ export default function CreateRoomForm({ onResultsChange }) {
             htmlFor="videoUrl"
             className="block text-[10px] font-mono font-black text-amber-500/80 uppercase tracking-[0.2em] mb-3 ml-2"
           >
-            {mode === "url" ? "Direct Video Link" : "YouTube Search"}
+            {mode === "url"
+              ? "Direct Video Link"
+              : mode === "search"
+                ? "YouTube Search"
+                : "Local File"}
           </label>
 
           <div className="relative group/input">
-            <input
-              id="videoUrl"
-              type="text"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder={
-                mode === "url"
-                  ? "https://youtube.com/watch?v=…"
-                  : "Search for a movie, trailer…"
-              }
-              className="w-full h-14 border rounded-[2rem] pl-12 pr-4 text-sm font-sans outline-none transition-all focus:border-[var(--color-amber)] focus:shadow-[0_0_20px_rgba(var(--color-amber-rgb),0.1)]"
-              style={{
-                backgroundColor: "var(--color-surface)",
-                borderColor: "var(--color-border)",
-                color: "var(--color-text)",
-              }}
-            />
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40 group-focus-within/input:text-[var(--color-amber)] group-focus-within/input:opacity-100 transition-all">
-              {mode === "url" ? (
-                <LinkIcon className="w-4 h-4 ml-1" />
-              ) : (
-                <Search className="w-4 h-4 ml-1" />
-              )}
-            </div>
-            {ytLoading && (
-              <div className="absolute right-5 top-1/2 -translate-y-1/2">
-                <div className="w-3.5 h-3.5 border-2 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
-              </div>
+            {mode === "upload" ? (
+              <label className="w-full h-14 border rounded-[2rem] flex items-center pl-12 pr-4 text-sm font-sans outline-none transition-all cursor-pointer hover:border-white/20 border-border bg-surface text-white/60 group/upload relative shadow-sm">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40 group-hover/upload:text-amber group-hover/upload:opacity-100 transition-all pointer-events-none">
+                  <UploadIcon className="w-4 h-4 ml-1" />
+                </div>
+                <span className="truncate">
+                  {localFileName || "Click to browse local video file"}
+                </span>
+                <input
+                  type="file"
+                  accept="video/*"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+              </label>
+            ) : (
+              <>
+                <input
+                  id="videoUrl"
+                  type="text"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder={
+                    mode === "url"
+                      ? "https://youtube.com/watch?v=…"
+                      : "Search for a movie, trailer…"
+                  }
+                  className="w-full h-14 border rounded-[2rem] pl-12 pr-4 text-sm font-sans outline-none transition-all focus:border-[var(--color-amber)] focus:shadow-[0_0_20px_rgba(var(--color-amber-rgb),0.1)]"
+                  style={{
+                    backgroundColor: "var(--color-surface)",
+                    borderColor: "var(--color-border)",
+                    color: "var(--color-text)",
+                  }}
+                />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40 group-focus-within/input:text-[var(--color-amber)] group-focus-within/input:opacity-100 transition-all pointer-events-none">
+                  {mode === "url" ? (
+                    <LinkIcon className="w-4 h-4 ml-1" />
+                  ) : (
+                    <Search className="w-4 h-4 ml-1" />
+                  )}
+                </div>
+                {ytLoading && (
+                  <div className="absolute right-5 top-1/2 -translate-y-1/2">
+                    <div className="w-3.5 h-3.5 border-2 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -254,11 +316,11 @@ export default function CreateRoomForm({ onResultsChange }) {
                 style={{ maxHeight: "50vh" }}
               >
                 {ytResults.map((item) => (
-                  <button
+                  <Button
                     key={item.id}
-                    type="button"
+                    variant="custom"
                     onClick={() => handleCreate(null, item.url)}
-                    className="flex items-start gap-4 p-2.5 rounded-[1.5rem] hover:bg-white/5 active:bg-white/10 transition-all text-left group border border-transparent"
+                    className="flex items-start gap-4 p-2.5 rounded-[1.5rem] hover:bg-white/5 active:bg-white/10 transition-all text-left group border border-transparent !h-auto !bg-transparent !p-2.5 !active:scale-[0.98] outline-none"
                   >
                     {item.thumb && (
                       <div className="w-24 aspect-video rounded-xl overflow-hidden border border-white/5 shrink-0 bg-black/40 mt-1">
@@ -286,7 +348,7 @@ export default function CreateRoomForm({ onResultsChange }) {
                     <div className="shrink-0 w-8 h-8 rounded-full border border-white/10 mt-1 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0">
                       <ChevronRight className="w-4 h-4 text-amber" />
                     </div>
-                  </button>
+                  </Button>
                 ))}
 
                 {/* Infinite scroll sentinel */}
@@ -318,34 +380,27 @@ export default function CreateRoomForm({ onResultsChange }) {
           </div>
         )}
 
-        {/* Submit button — hidden while search results are showing */}
-        {(!ytResults.length || mode === "url") && (
-          <button
+        {/* Submit button — hidden while search results are showing, or if in upload mode */}
+        {((!ytResults.length && mode !== "upload") || mode === "url") && (
+          <Button
             type="submit"
-            disabled={loading}
-            className="w-full h-12 rounded-[2rem] bg-amber text-void font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all duration-300 disabled:opacity-40 disabled:pointer-events-none shadow-[0_10px_30px_rgba(var(--color-amber-rgb),0.2)] mt-2"
+            size="lg"
+            loading={loading}
+            className="w-full mt-2 !font-bold uppercase tracking-widest"
           >
-            {loading ? (
-              <>
-                <Spinner /> Creating room…
-              </>
+            {mode === "url" ? (
+              <PlusIcon className="w-4 h-4" />
             ) : (
-              <>
-                {mode === "url" ? (
-                  <PlusIcon className="w-4 h-4" />
-                ) : (
-                  <Search className="w-4 h-4" />
-                )}
-                {mode === "url"
-                  ? url.trim()
-                    ? "Create Room"
-                    : "Create Empty Room"
-                  : url.trim()
-                    ? "Search YouTube"
-                    : "Create Empty Room"}
-              </>
+              <Search className="w-4 h-4" />
             )}
-          </button>
+            {mode === "url"
+              ? url.trim()
+                ? "Create Room"
+                : "Create Empty Room"
+              : url.trim()
+                ? "Search YouTube"
+                : "Create Empty Room"}
+          </Button>
         )}
       </form>
 
@@ -361,15 +416,15 @@ export default function CreateRoomForm({ onResultsChange }) {
 
 function ModeBtn({ active, onClick, icon, children }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="custom"
       onClick={onClick}
-      className={`px-5 py-2 rounded-[var(--radius-pill)] text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 flex items-center gap-2 border-none min-w-[90px] justify-center
-        ${active ? "bg-amber text-void shadow-lg ring-1 ring-amber/20" : "text-white/40 hover:text-white/60 bg-transparent hover:bg-white/5 active:scale-95"}`}
+      className={`flex-1 sm:flex-none px-3 sm:px-6 py-2 rounded-[var(--radius-pill)] text-[9px] sm:text-[10px] font-black uppercase tracking-[0.1em] sm:tracking-[0.15em] transition-all duration-300 flex items-center gap-1.5 sm:gap-2 border-none justify-center h-auto !p-2 !md:p-2 !lg:p-2 !scale-none active:!scale-95
+        ${active ? "bg-amber text-void shadow-lg ring-1 ring-amber/20" : "text-white/40 hover:text-white/60 bg-transparent hover:bg-white/5"}`}
     >
       {icon}
-      {children}
-    </button>
+      <span>{children}</span>
+    </Button>
   );
 }
 

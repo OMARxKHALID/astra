@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Download, X } from "lucide-react";
+import Button from "@/components/ui/Button";
 import { ls } from "@/utils/localStorage";
 
 export default function PwaOnboarding() {
@@ -63,12 +64,12 @@ export default function PwaOnboarding() {
           </button>
         </div>
 
-        <button
+        <Button
           onClick={handleInstall}
-          className="mt-4 w-full h-10 rounded-[var(--radius-pill)] bg-amber text-void text-[11px] font-black uppercase tracking-[0.1em] hover:brightness-110 active:scale-95 transition-all"
+          className="mt-4 w-full h-10 uppercase tracking-[0.1em]"
         >
           Install Now
-        </button>
+        </Button>
       </div>
     </div>
   );

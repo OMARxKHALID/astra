@@ -7,6 +7,7 @@ import { GoogleIcon } from "@/components/icons/GoogleIcon";
 import { DiscordIcon } from "@/components/icons/DiscordIcon";
 import { GithubIcon } from "@/components/icons/GithubIcon";
 import BackButton from "@/components/ui/BackButton";
+import Button from "@/components/ui/Button";
 
 const providers = [
   {
@@ -66,16 +67,18 @@ function LoginContent() {
 
         <div className="flex flex-col gap-2.5">
           {providers.map((p) => (
-            <button
+            <Button
               key={p.id}
+              variant="custom"
+              size="lg"
               onClick={() => signIn(p.id, { callbackUrl })}
-              className={`group w-full flex items-center justify-center gap-3 px-5 h-[48px] rounded-[var(--radius-pill)] ${p.style} font-bold text-[14px] transition-all active:scale-[0.98] shadow-lg cursor-pointer`}
+              className={`group w-full ${p.style} shadow-lg`}
             >
               <div className="transition-transform group-hover:scale-110 duration-200">
                 {p.icon}
               </div>
               Continue with {p.name}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -85,12 +88,14 @@ function LoginContent() {
           <div className="flex-1 h-px bg-white/5" />
         </div>
 
-        <a
+        <Button
           href="/"
-          className="block w-full text-center px-4 h-[48px] flex items-center justify-center rounded-[var(--radius-pill)] glass-card !bg-white/[0.03] text-white/60 font-bold text-[14px] hover:text-bright hover:!bg-white/5 transition-all no-underline active:scale-[0.98]"
+          variant="ghost"
+          size="lg"
+          className="w-full"
         >
           Explore as Guest
-        </a>
+        </Button>
 
         <p className="text-[10px] text-white/10 text-center mt-12 leading-relaxed font-mono uppercase tracking-widest font-bold">
           Astra Global Protocol

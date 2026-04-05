@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   classifyUrl,
   isStrictVideoUrl,
@@ -12,6 +12,7 @@ import { useToast } from "@/components/Toast";
 import YoutubeIcon from "@/components/icons/YoutubeIcon";
 import { ls } from "@/utils/localStorage";
 import { LS_KEYS } from "@/constants/config";
+import Button from "@/components/ui/Button";
 
 export default function URLBar({
   isHost,
@@ -29,6 +30,10 @@ export default function URLBar({
   const [isDragging, setIsDragging] = useState(false);
   const [localFileName, setLocalFileName] = useState("");
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    setLocalFileName(ls.get(LS_KEYS.localFileName) || "");
+  }, []);
 
   const source = classifyUrl(currentUrl);
   const inputSource = classifyUrl(input);
@@ -251,13 +256,14 @@ export default function URLBar({
               )}
             </div>
 
-            <button
+            <Button
               type="submit"
+              loading={loading}
               disabled={!input.trim() || Boolean(strictError) || loading}
-              className="h-10 px-6 rounded-[var(--radius-pill)] bg-amber text-void text-[12px] font-black uppercase tracking-[0.1em] hover:brightness-110 active:scale-95 disabled:opacity-20 transition-all shadow-lg shadow-amber/20 border border-amber/50 shrink-0"
+              className="!h-10 px-6 uppercase tracking-[0.1em] shrink-0"
             >
-              {loading ? <div className="w-3.5 h-3.5 border-2 border-void/30 border-t-void rounded-full animate-spin" /> : "Sync"}
-            </button>
+              {!loading && "Sync"}
+            </Button>
           </form>
         </div>
       )}
@@ -272,10 +278,13 @@ export default function URLBar({
           onDragLeave={handleDragLeave}
         >
           {isLocalFile ? (
-            <div className="flex-1 h-10 flex items-center gap-3 px-4 rounded-[var(--radius-pill)] border border-amber/30 bg-amber/5">
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              className="flex-1 h-10 flex items-center gap-3 px-4 rounded-[var(--radius-pill)] border border-amber/30 bg-amber/5 cursor-pointer hover:bg-amber/10 transition-all"
+            >
               <UploadIcon className="w-4 h-4 text-amber shrink-0" />
-              <span className="text-[12px] font-mono text-white truncate">
-                {localFileName || "Local Video"}
+              <span className="text-[12px] font-mono text-white truncate flex-1">
+                {localFileName || "Local Video (Click to replace)"}
               </span>
               <span className="text-[10px] text-amber/60 bg-amber/10 px-2 py-0.5 rounded-full shrink-0">
                 LOCAL

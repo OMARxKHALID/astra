@@ -46,10 +46,15 @@ export default function YouTubeSearch({ onLoad }) {
     setOpen(true);
     try {
       const res = await fetch(`/api/youtube?q=${encodeURIComponent(q.trim())}`);
-      const data = await res.json();
-      setResults(data.items || []);
-      setNextPageToken(data.nextPageToken || null);
-      if (!data.items?.length) setOpen(false);
+      const resJson = await res.json();
+      if (resJson.success) {
+        setResults(resJson.data.items || []);
+        setNextPageToken(resJson.data.nextPageToken || null);
+        if (!resJson.data.items?.length) setOpen(false);
+      } else {
+        setResults([]);
+        setNextPageToken(null);
+      }
     } catch {
       setResults([]);
       setNextPageToken(null);
@@ -65,13 +70,13 @@ export default function YouTubeSearch({ onLoad }) {
       const res = await fetch(
         `/api/youtube?q=${encodeURIComponent(query.trim())}&pageToken=${nextPageToken}`,
       );
-      const data = await res.json();
-      if (data.items) {
+      const resJson = await res.json();
+      if (resJson.success && resJson.data.items) {
         setResults((prev) => {
           const seen = new Set(prev.map((i) => i.id));
-          return [...prev, ...data.items.filter((i) => !seen.has(i.id))];
+          return [...prev, ...resJson.data.items.filter((i) => !seen.has(i.id))];
         });
-        setNextPageToken(data.nextPageToken || null);
+        setNextPageToken(resJson.data.nextPageToken || null);
       }
     } catch {
     } finally {

@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { Play, Star } from "lucide-react";
 import { GENRE_MAP } from "@/constants/maps";
+import Button from "@/components/ui/Button";
 
 export default function MediaHero({ items, onPick, onPlay }) {
   const [idx, setIdx] = useState(0);
@@ -92,21 +93,24 @@ export default function MediaHero({ items, onPick, onPlay }) {
           </p>
 
           <div className="flex gap-3">
-            <button
+            <Button
+              size="lg"
               onClick={() => onPlay && onPlay(item)}
               aria-label={`Watch ${item.title}`}
-              className="flex items-center gap-2 px-7 py-3 rounded-[var(--radius-pill)] bg-amber text-void font-bold text-sm border-none cursor-pointer hover:bg-amber transition-all font-body shadow-lg active:scale-95"
+              className="px-7 border-none shadow-lg"
             >
               <Play className="w-4 h-4 fill-current" />
               Play
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              size="lg"
               onClick={() => onPick(item)}
               aria-label={`View details for ${item.title}`}
-              className="flex items-center gap-2 px-6 py-3 rounded-[var(--radius-pill)] bg-white/5 backdrop-blur-xl text-white/80 font-bold text-sm cursor-pointer border border-white/10 hover:bg-white/10 hover:text-white transition-all font-body active:scale-95"
+              className="px-6"
             >
               See More
-            </button>
+            </Button>
           </div>
         </div>
       </div>

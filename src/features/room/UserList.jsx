@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Crown, Mic, MicOff } from "lucide-react";
+import { Crown, Mic, MicOff, X as XIcon } from "lucide-react";
 import Image from "next/image";
+import Button from "@/components/ui/Button";
 
 function QualityDot({ deviation }) {
   const base = "w-2 h-2 rounded-full shrink-0 flex-none";
@@ -179,25 +180,30 @@ export default function UserList({
 
               <div className="flex items-center gap-1 shrink-0">
                 {canTransfer && (
-                  <button
+                  <Button
+                    variant="custom"
+                    size="sm"
                     onClick={() => handleTransfer(uid)}
-                    onTouchEnd={(e) => { e.preventDefault(); handleTransfer(uid); }}
                     title={confirming ? "Confirm: make host?" : "Transfer host"}
-                    className={`active:scale-95 transition-all min-w-[32px] h-8 px-2 flex items-center justify-center rounded-[var(--radius-pill)] touch-manipulation
-                      ${confirming ? "bg-amber/20 border border-amber/40 text-amber animate-pulse" : "bg-amber/10 hover:bg-amber/20 border border-amber/20 text-amber/70 hover:text-amber"}`}
+                    className={`shrink-0 !w-8 !p-0 !min-w-0 ${
+                      confirming 
+                        ? "bg-amber/20 border-amber/40 text-amber animate-pulse" 
+                        : "bg-amber/10 hover:bg-amber/20 border-amber/20 text-amber/70 hover:text-amber"
+                    }`}
                   >
                     <Crown className="w-3.5 h-3.5" strokeWidth={2} />
-                  </button>
+                  </Button>
                 )}
                 {canKick && (
-                  <button
+                  <Button
+                    variant="custom"
+                    size="sm"
                     onClick={() => onKick?.(uid)}
-                    onTouchEnd={(e) => { e.preventDefault(); onKick?.(uid); }}
                     title={`Kick ${name}`}
-                    className="active:scale-95 transition-all min-w-[32px] h-8 px-2 flex items-center justify-center rounded-[var(--radius-pill)] bg-danger/10 hover:bg-danger/20 border border-danger/20 text-danger/70 hover:text-danger touch-manipulation"
+                    className="shrink-0 !w-8 !p-0 !min-w-0 bg-danger/10 hover:bg-danger/20 border-danger/20 text-danger/70 hover:text-danger"
                   >
-                    <span className="text-sm">✕</span>
-                  </button>
+                    <XIcon className="w-3.5 h-3.5" />
+                  </Button>
                 )}
                 {!canKick && !canTransfer && (
                   <QualityDot deviation={deviation} />
