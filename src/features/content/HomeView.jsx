@@ -28,6 +28,9 @@ export default function HomeView({ initialData }) {
     if (searchParams.get("kicked")) {
       addToast("You were removed or the session ended", "error", 5000);
       router.replace("/");
+    } else if (searchParams.get("expired")) {
+      addToast("This room does not exist or has expired.", "error", 5000);
+      router.replace("/");
     }
   }, [searchParams, addToast, router]);
   const [loading, setLoading] = useState(!initialData);

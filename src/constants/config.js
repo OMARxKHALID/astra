@@ -40,4 +40,5 @@ export const LS_KEYS = {
   subStyle: "as_subStyle",
   subtitleOffset: "as_subtitleOffset",
   localFileName: "as_localFileName",
+  syncHub: "as_synchub",
 };

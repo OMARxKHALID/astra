@@ -3,7 +3,12 @@ import { useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import MediaCard from "./MediaCard";
 
-export default function MediaRow({ title, items, onPick, accent = "var(--color-amber)" }) {
+export default function MediaRow({
+  title,
+  items,
+  onPick,
+  accent = "var(--color-amber)",
+}) {
   const ref = useRef(null);
   const scroll = (d) =>
     ref.current?.scrollBy({ left: d * 680, behavior: "smooth" });

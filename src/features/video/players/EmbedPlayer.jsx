@@ -50,6 +50,8 @@ export default function EmbedPlayer({
   onServerChange,
   onLoad,
   isHost = true,
+  isRoom = false,
+  syncHubEnabled = false,
   canControl = true,
   isPlaying,
   onPlay,
@@ -57,7 +59,6 @@ export default function EmbedPlayer({
 }) {
   const containerRef = useRef(null);
   const [showServers, setShowServers] = useState(false);
-  const [lastSyncTs, setLastSyncTs] = useState(0);
 
   const toggleSync = () => {
     if (!canControl) return;
@@ -150,9 +151,9 @@ export default function EmbedPlayer({
       </div>
 
       {/* 2. MINIMAL SYNC HUB (Host Only) */}
-      {isHost && (
-        <div className="absolute top-6 left-6 z-[30] transition-all duration-500 translate-y-2 opacity-0 group-hover/embed:translate-y-0 group-hover/embed:opacity-100 pointer-events-none group-hover/embed:pointer-events-auto">
-          <div className="flex items-center gap-3 px-1.5 py-1.5 rounded-[var(--radius-pill)] bg-white/[0.03] backdrop-blur-3xl border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.4)] hover:bg-white/[0.05] transition-colors duration-500">
+      {isHost && isRoom && syncHubEnabled && (
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[30] transition-all duration-500 translate-y-2 opacity-0 group-hover/embed:translate-y-0 group-hover/embed:opacity-100 pointer-events-none group-hover/embed:pointer-events-auto">
+          <div className="flex items-center gap-3 px-1.5 py-1.5 rounded-[var(--radius-pill)] bg-void/80 text-white/40 hover:text-white hover:bg-void border border-white/10 backdrop-blur-md shadow-2xl transition-all duration-500">
             <button
               onClick={toggleSync}
               className={`w-9 h-9 flex items-center justify-center rounded-full transition-all active:scale-90 ${

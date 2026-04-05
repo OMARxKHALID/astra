@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { LogOut, User, LogIn, Settings, Gauge } from "lucide-react";
+import { LogOut, LogIn, Settings } from "lucide-react";
 
 export default function UserMenu() {
   const { data: session, status } = useSession();
@@ -97,13 +97,6 @@ export default function UserMenu() {
           </div>
 
           <div className="p-1.5 flex flex-col gap-0.5">
-            <button
-              onClick={() => { setOpen(false); router.push("/admin"); }}
-              className="w-full flex items-center gap-3 px-3 h-10 rounded-xl text-[13px] font-bold text-white/60 hover:bg-white/10 hover:text-bright hover:pl-4 transition-all duration-300 cursor-pointer group"
-            >
-              <Gauge className="w-4 h-4 group-hover:text-amber transition-colors" />
-              Admin Dashboard
-            </button>
             <button
               onClick={() => { setOpen(false); router.push("/profile"); }}
               className="w-full flex items-center gap-3 px-3 h-10 rounded-xl text-[13px] font-bold text-white/60 hover:bg-white/10 hover:text-bright hover:pl-4 transition-all duration-300 cursor-pointer group"

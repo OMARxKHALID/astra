@@ -44,6 +44,8 @@ function VideoPlayer({
   onToggleEpisodes,
   onServerChange,
   isHost = true,
+  isRoom = false,
+  syncHubEnabled = false,
 }) {
   const source = classifyUrl(videoUrl);
 
@@ -137,6 +139,8 @@ function VideoPlayer({
         onServerChange={onServerChange}
         onLoad={onLoad}
         isHost={isHost}
+        isRoom={isRoom}
+        syncHubEnabled={syncHubEnabled}
       />
     );
 

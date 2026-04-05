@@ -41,12 +41,19 @@ export default function useUser(sendRef) {
 
     const stored = ls.get(LS_KEYS.displayName);
     const sessionName = session?.user?.name;
-    const name =
-      sessionName || 
-      stored || 
-      `Guest-${generateId(4).toUpperCase()}`;
-    
-    if (!stored && !sessionName) ls.set(LS_KEYS.displayName, name);
+    let name = stored;
+
+    if (sessionName) {
+      if (!stored || stored.startsWith("Guest-")) {
+        name = sessionName;
+        ls.set(LS_KEYS.displayName, name);
+      }
+    } else {
+      if (!stored) {
+        name = `Guest-${generateId(4).toUpperCase()}`;
+        ls.set(LS_KEYS.displayName, name);
+      }
+    }
     setDisplayName(name);
     setNameReady(true);
     setNameInput(name);

@@ -210,27 +210,27 @@ export default function CreateRoomForm({ onResultsChange }) {
           </p>
         </div>
 
-        <div className="flex p-1 rounded-[var(--radius-pill)] border shadow-inner bg-surface/50 border-border overflow-hidden w-full sm:w-max mt-1 self-center">
+        <div className="flex p-1 rounded-[var(--radius-pill)] border shadow-inner bg-surface/50 border-border overflow-hidden w-full mt-1">
           <ModeBtn
             active={mode === "url"}
             onClick={() => switchMode("url")}
-            icon={<LinkIcon className="w-3 h-3" />}
+            icon={<LinkIcon className="w-4 h-4" />}
           >
-            Link
+            LINK
           </ModeBtn>
           <ModeBtn
             active={mode === "search"}
             onClick={() => switchMode("search")}
-            icon={<YoutubeIcon size={14} />}
+            icon={<YoutubeIcon size={16} />}
           >
-            Search
+            SEARCH
           </ModeBtn>
           <ModeBtn
             active={mode === "upload"}
             onClick={() => switchMode("upload")}
-            icon={<UploadIcon className="w-3 h-3" />}
+            icon={<UploadIcon className="w-4 h-4" />}
           >
-            Upload
+            UPLOAD
           </ModeBtn>
         </div>
       </div>
@@ -419,7 +419,7 @@ function ModeBtn({ active, onClick, icon, children }) {
     <Button
       variant="custom"
       onClick={onClick}
-      className={`flex-1 sm:flex-none px-3 sm:px-6 py-2 rounded-[var(--radius-pill)] text-[9px] sm:text-[10px] font-black uppercase tracking-[0.1em] sm:tracking-[0.15em] transition-all duration-300 flex items-center gap-1.5 sm:gap-2 border-none justify-center h-auto !p-2 !md:p-2 !lg:p-2 !scale-none active:!scale-95
+      className={`flex-1 px-3 py-2 rounded-[var(--radius-pill)] text-[10px] sm:text-[11px] font-black uppercase tracking-[0.15em] transition-all duration-300 flex items-center gap-2 border-none justify-center h-auto !p-2 !md:p-2 !lg:p-2 !scale-none active:!scale-95
         ${active ? "bg-amber text-void shadow-lg ring-1 ring-amber/20" : "text-white/40 hover:text-white/60 bg-transparent hover:bg-white/5"}`}
     >
       {icon}

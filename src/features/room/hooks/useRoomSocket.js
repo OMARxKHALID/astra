@@ -318,10 +318,13 @@ export function useRoomSocket(props) {
           "WRONG_PASSWORD",
           "NEED_PASSWORD",
           "UNAUTHORIZED",
+          "ROOM_NOT_FOUND",
+          "TERMINATED",
         ].includes(m.code);
         if (critical || m.message === "Invalid host token") {
           if (socketRef.current) socketRef.current.disconnect();
-          p.current.onKicked?.(m.message || m.code);
+          // [Note] Pass code not message so handleKicked can switch on it reliably
+          p.current.onKicked?.(m.code || m.message);
         } else if (m.message) {
           p.current.addToast?.(m.message, "error");
         }
@@ -336,6 +339,10 @@ export function useRoomSocket(props) {
       user_joined: (m) =>
         p.current.onUserChange?.({ type: "user_joined", ...m }),
       user_left: (m) => p.current.onUserChange?.({ type: "user_left", ...m }),
+      name_changed: (m) =>
+        p.current.onUserChange?.({ type: "name_changed", ...m }),
+      user_typing: (m) =>
+        p.current.onUserChange?.({ type: "user_typing", ...m }),
       host_changed: (m) => {
         p.current.onUserChange?.({ type: "host_changed", ...m });
         p.current.onStateUpdate?.((p) =>

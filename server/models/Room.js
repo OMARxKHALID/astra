@@ -216,3 +216,13 @@ export async function saveRoom(room) {
 export function cleanupRoom(roomId) {
   debouncedSaveMap.delete(roomId);
 }
+
+export async function deleteRoomFromRedis(roomId) {
+  if (redis) {
+    try {
+      await redis.del(`room:${roomId}`);
+    } catch (err) {
+      console.error(`[redis] Delete failed for ${roomId}: ${err.message}`);
+    }
+  }
+}

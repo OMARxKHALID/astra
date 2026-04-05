@@ -168,6 +168,10 @@ export default function useRoomEvents({
         handleWrongPassword(false);
         return;
       }
+      if (reason === "ROOM_NOT_FOUND") {
+        router.push("/?expired=1");
+        return;
+      }
       router.push("/?kicked=1");
     },
     [router, handleWrongPassword],

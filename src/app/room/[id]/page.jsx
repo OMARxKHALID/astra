@@ -1,10 +1,11 @@
+import { redirect } from "next/navigation";
 import RoomView from "@/features/room/RoomView";
 import { roomStore } from "@/lib/roomStore";
 
 // Use 127.0.0.1 instead of localhost to avoid IPv6 resolution lag in Node
 const WS_HTTP_URL = process.env.WS_HTTP_URL || "http://127.0.0.1:3001";
 
-async function getRoomMeta(id, skipFetch = false) {
+async function getRoomMeta(id) {
   const stored = await roomStore.get(id);
   if (stored) {
     return {
@@ -16,8 +17,7 @@ async function getRoomMeta(id, skipFetch = false) {
     };
   }
 
-  if (skipFetch) return null;
-
+  // [Note] Fall back to live WS node — covers rooms active in RAM but not yet persisted
   try {
     const res = await fetch(`${WS_HTTP_URL}/rooms/${id}`, {
       cache: "no-store",
@@ -43,14 +43,14 @@ export async function generateMetadata({ params }) {
   return {
     title: `Room ${id.slice(0, 6).toUpperCase()}`,
     description: "Join this Astra room for a private synchronized viewing experience with friends.",
-    robots: { index: false }, // Prevent private rooms from being indexed
+    robots: { index: false },
   };
 }
 
 export default async function RoomPage({ params, searchParams }) {
   const { id } = await params;
   const sp = await searchParams;
-  
+
   // Reconstruct URLs split by un-encoded query params into separate searchParams props
   let urlParam = sp?.url ? decodeURIComponent(sp.url) : null;
   if (urlParam && urlParam.startsWith("http")) {
@@ -73,34 +73,27 @@ export default async function RoomPage({ params, searchParams }) {
     }
   }
 
-  // Fast-path: bypass server-side awaits when client provides video URL via searchParams
-  if (urlParam !== null && urlParam.trim() !== "") {
-    const isHostHint = sp?.h === "1";
-    // Client-side check for hostId (set by CreateRoomForm)
-    const hostIdFromStorage = typeof window !== "undefined" 
-      ? window.localStorage.getItem(`hostId_${id}`) 
-      : null;
+  // Fast-path: host just created this room and is navigating in with ?url=…&h=1.
+  // Skip the DB check — the socket server will validate the host token on JOIN_ROOM.
+  const isHostFastPath = urlParam !== null && urlParam.trim() !== "" && sp?.h === "1";
+  if (isHostFastPath) {
     const room = {
       roomId: id,
       videoUrl: urlParam,
       hasPassword: false,
-      isHostHint,
-      hostId: hostIdFromStorage || "",
+      isHostHint: true,
+      hostId: "",
       createdAt: Date.now(),
     };
     return <RoomView roomId={id} initialMeta={room} />;
   }
 
-  // Waterfall Path: Only fetch from storage if the client hasn't provided a fallback URL.
-  let room = await getRoomMeta(id);
+  // Waterfall path: verify the room exists before rendering anything.
+  const room = await getRoomMeta(id);
 
   if (!room) {
-    room = {
-      roomId: id,
-      videoUrl: "",
-      hasPassword: false,
-      createdAt: Date.now(),
-    };
+    // [Note] Room not in Redis or live RAM — refuse to render a phantom session
+    redirect("/?expired=1");
   }
 
   return <RoomView roomId={id} initialMeta={room} />;

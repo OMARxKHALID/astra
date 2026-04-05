@@ -297,6 +297,8 @@ export default function RoomView({ roomId, initialMeta }) {
               videoUrl={effectiveVideoUrl}
               subtitleUrl={room.serverState?.subtitleUrl || ""}
               isHost={isHost}
+              isRoom={true}
+              syncHubEnabled={settings.syncHubEnabled}
               isPlaying={room.serverState?.isPlaying}
               playbackRate={room.serverState?.playbackRate || 1}
               onPlay={(t) =>

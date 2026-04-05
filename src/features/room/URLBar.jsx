@@ -6,7 +6,11 @@ import {
   isStrictVideoUrl,
   SOURCE_LABELS,
 } from "@/lib/videoResolver";
-import { Link2 as LinkIcon, Shield as ShieldIcon, Upload as UploadIcon } from "lucide-react";
+import {
+  Link2 as LinkIcon,
+  Shield as ShieldIcon,
+  Upload as UploadIcon,
+} from "lucide-react";
 import YouTubeSearch from "./YouTubeSearch";
 import { useToast } from "@/components/Toast";
 import YoutubeIcon from "@/components/icons/YoutubeIcon";
@@ -38,10 +42,10 @@ export default function URLBar({
   const source = classifyUrl(currentUrl);
   const inputSource = classifyUrl(input);
   const showDetected = input.trim() && inputSource.type !== "unsupported";
-  
+
   // Check if current URL is a blob (local file)
   const isLocalFile = currentUrl?.startsWith("blob:");
-  
+
   // Display name - always use currentUrl to avoid hydration mismatch
   // localFileName is only used when syncing new uploads
   const displayUrl = currentUrl;
@@ -53,7 +57,7 @@ export default function URLBar({
       setStrictError(
         isStrictVideoUrl(val.trim())
           ? ""
-          : "Only direct video file links are allowed in this room."
+          : "Only direct video file links are allowed in this room.",
       );
     } else {
       setStrictError("");
@@ -83,7 +87,7 @@ export default function URLBar({
       addToast("Please select a video file", "error");
       return;
     }
-    
+
     try {
       const blobUrl = URL.createObjectURL(file);
       setLocalFileName(file.name);
@@ -113,7 +117,7 @@ export default function URLBar({
         onLoad(blobUrl, "");
         setInput("");
       } catch {
-      addToast("Failed to load video file", "error");
+        addToast("Failed to load video file", "error");
       }
     }
   }
@@ -214,8 +218,8 @@ export default function URLBar({
               </div>
             </div>
           )}
-          <form 
-            onSubmit={handleSubmit} 
+          <form
+            onSubmit={handleSubmit}
             className="flex items-center gap-3 relative"
             onDrop={handleDrop}
             onDragOver={handleDragOver}
@@ -232,11 +236,11 @@ export default function URLBar({
                   onChange={handleChange}
                   onFocus={() => setFocused(true)}
                   onBlur={() => setFocused(false)}
-                placeholder={
-                  displayUrl
-                    ? `Current: ${displayUrl.slice(0, 48)}…`
-                    : "Paste a video URL to sync…"
-                }
+                  placeholder={
+                    displayUrl
+                      ? `Current: ${displayUrl.slice(0, 48)}…`
+                      : "Paste a video URL to sync…"
+                  }
                   className="flex-1 bg-transparent text-[12px] font-mono outline-none truncate text-white/90 placeholder:text-white/20"
                   autoComplete="off"
                 />
@@ -269,16 +273,16 @@ export default function URLBar({
       )}
 
       {mode === "youtube" && <YouTubeSearch onLoad={onLoad} />}
-      
+
       {mode === "upload" && (
-        <div 
+        <div
           className="flex-1 min-w-0 flex items-center gap-3"
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
         >
           {isLocalFile ? (
-            <div 
+            <div
               onClick={() => fileInputRef.current?.click()}
               className="flex-1 h-10 flex items-center gap-3 px-4 rounded-[var(--radius-pill)] border border-amber/30 bg-amber/5 cursor-pointer hover:bg-amber/10 transition-all"
             >
@@ -291,12 +295,14 @@ export default function URLBar({
               </span>
             </div>
           ) : (
-            <div 
+            <div
               onClick={() => fileInputRef.current?.click()}
               className="flex-1 h-10 flex items-center justify-center gap-2 px-4 rounded-[var(--radius-pill)] border border-dashed border-amber/30 bg-amber/5 cursor-pointer hover:bg-amber/10 transition-all"
             >
               <UploadIcon className="w-4 h-4 text-amber" />
-              <span className="text-[12px] font-mono text-white/60">Click to upload or drag video</span>
+              <span className="text-[12px] font-mono text-white/60">
+                Click to upload or drag video
+              </span>
             </div>
           )}
           <input

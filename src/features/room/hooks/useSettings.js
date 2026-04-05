@@ -11,6 +11,7 @@ export default function useSettings() {
   const [speedSyncEnabled, setSpeedSyncEnabled] = useState(true);
   const [ambilightEnabled, setAmbilightEnabled] = useState(true);
   const [mirrorCameraEnabled, setMirrorCameraEnabled] = useState(true);
+  const [syncHubEnabled, setSyncHubEnabled] = useState(false);
   const [theatreMode, setTheatreMode] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
@@ -24,6 +25,7 @@ export default function useSettings() {
     setAmbilightEnabled(ls.get(LS_KEYS.ambilight) !== "false");
     setSpeedSyncEnabled(ls.get(LS_KEYS.speedSync) !== "false");
     setMirrorCameraEnabled(ls.get(LS_KEYS.mirrorCamera) !== "false");
+    setSyncHubEnabled(ls.get(LS_KEYS.syncHub) === "true");
     setTheatreMode(ls.get(LS_KEYS.theatreMode) === "true");
     setShowSidebar(ls.get(LS_KEYS.sidebarOpen) !== "false");
     settingsLoadedRef.current = true;
@@ -37,6 +39,7 @@ export default function useSettings() {
     ls.set(LS_KEYS.ambilight, ambilightEnabled ? "true" : "false");
     ls.set(LS_KEYS.speedSync, speedSyncEnabled ? "true" : "false");
     ls.set(LS_KEYS.mirrorCamera, mirrorCameraEnabled ? "true" : "false");
+    ls.set(LS_KEYS.syncHub, syncHubEnabled ? "true" : "false");
     ls.set(LS_KEYS.theatreMode, theatreMode ? "true" : "false");
     ls.set(LS_KEYS.sidebarOpen, showSidebar ? "true" : "false");
   }, [
@@ -46,6 +49,7 @@ export default function useSettings() {
     ambilightEnabled,
     speedSyncEnabled,
     mirrorCameraEnabled,
+    syncHubEnabled,
     theatreMode,
     showSidebar,
   ]);
@@ -63,6 +67,8 @@ export default function useSettings() {
     setAmbilightEnabled,
     mirrorCameraEnabled,
     setMirrorCameraEnabled,
+    syncHubEnabled,
+    setSyncHubEnabled,
     theatreMode,
     setTheatreMode,
     showSidebar,

@@ -89,11 +89,28 @@ export default function registerRoomHandlers(
     }
 
     if (!room) {
+      if (redis) {
+        // If Redis is healthy and active, the room MUST exist in Redis to be valid.
+        warn(`[socket] JOIN_ROOM denied: room:${roomId} not found in Redis`);
+        return socket.emit("REC:error", {
+          message: "This room does not exist or has expired.",
+          code: "ROOM_NOT_FOUND",
+        });
+      }
+
+      // Fallback behavior ONLY for environments completely running without Redis
+      if (!isHost) {
+        warn(`[socket] JOIN_ROOM denied: room:${roomId} does not exist and caller is not host (Volatile mode)`);
+        return socket.emit("REC:error", {
+          message: "This room does not exist or has expired.",
+          code: "ROOM_NOT_FOUND",
+        });
+      }
       room = new Room(
         roomId,
         videoUrl || "",
-        jwtPayload ? jwtPayload.hostId : clientId,
-        isHost ? token : "",
+        jwtPayload.hostId,
+        token,
       );
       rooms.set(roomId, room);
       room.startBroadcast(io);

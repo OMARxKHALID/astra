@@ -3,9 +3,9 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  ChevronLeft,
   Users,
   Tv,
+  Clock,
   RefreshCw,
   ShieldCheck,
   Globe,
@@ -14,12 +14,14 @@ import {
   Subtitles,
   Lock,
   ArrowRight,
-  Clock,
   Server,
   Zap,
+  Trash2,
+  XCircle,
 } from "lucide-react";
 import BackButton from "@/components/ui/BackButton";
 import Button from "@/components/ui/Button";
+import { LS_KEYS } from "@/constants/config";
 
 function AdminContent() {
   const router = useRouter();
@@ -132,9 +134,13 @@ function AdminContent() {
         return { label: "Unknown", dot: "bg-white/20", text: "text-white/40" };
     }
   };
+
   if (!isAuthorized) {
     return (
       <div className="min-h-[100dvh] bg-void flex items-center justify-center px-4 font-body overflow-hidden">
+        <div className="absolute top-5 left-5">
+          <BackButton href="/" />
+        </div>
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-amber/5 rounded-full blur-[120px]" />
           <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-jade/5 rounded-full blur-[120px]" />
@@ -209,7 +215,7 @@ function AdminContent() {
       <nav className="relative z-10 flex items-center justify-between px-6 lg:px-12 h-[72px] bg-gradient-to-b from-black/60 to-transparent">
         <div className="flex items-center gap-5">
           <BackButton href="/" />
-          
+
           <button
             onClick={() => router.push("/")}
             className="flex items-center gap-2.5 text-white/50 hover:text-white transition-colors"
@@ -231,7 +237,6 @@ function AdminContent() {
         </div>
 
         <div className="flex items-center gap-3">
-
           <button
             onClick={() => {
               fetchStats();
@@ -366,18 +371,53 @@ function AdminContent() {
                             </p>
                           </div>
 
-                          {/* Meta */}
-                          <div className="hidden sm:flex flex-col items-end gap-1 shrink-0">
-                            <span
-                              className={`text-[11px] font-bold font-mono ${
-                                room.isPaused ? "text-white/30" : "text-jade"
-                              }`}
+                          {/* Meta & Actions */}
+                          <div className="flex items-center gap-4 shrink-0">
+                            <div className="hidden sm:flex flex-col items-end gap-1">
+                              <span
+                                className={`text-[11px] font-bold font-mono ${
+                                  room.isPaused ? "text-white/30" : "text-jade"
+                                }`}
+                              >
+                                {room.isPaused ? "Paused" : "Playing"}
+                              </span>
+                              <span className="text-[10px] font-mono text-white/25">
+                                {formatTime(room.lastUpdated)}
+                              </span>
+                            </div>
+                            <button
+                              title="Terminate Session"
+                              onClick={async () => {
+                                if (
+                                  !confirm(
+                                    `Are you sure you want to completely terminate room ${room.roomId}? All users will be kicked.`,
+                                  )
+                                )
+                                  return;
+                                try {
+                                  const secret =
+                                    localStorage.getItem("astra_admin_secret");
+                                  const res = await fetch(
+                                    `/api/admin/room/${room.roomId}`,
+                                    {
+                                      method: "DELETE",
+                                      headers: { "x-admin-secret": secret || "" },
+                                    },
+                                  );
+                                  const json = await res.json();
+                                  if (json.success) {
+                                    fetchStats();
+                                  } else {
+                                    alert(json.error || "Failed to terminate room.");
+                                  }
+                                } catch (err) {
+                                  alert(err.message);
+                                }
+                              }}
+                              className="w-8 h-8 rounded-[var(--radius-pill)] flex items-center justify-center text-white/20 hover:bg-danger/20 hover:text-danger transition-colors opacity-0 group-hover:opacity-100"
                             >
-                              {room.isPaused ? "Paused" : "Playing"}
-                            </span>
-                            <span className="text-[10px] font-mono text-white/25">
-                              {formatTime(room.lastUpdated)}
-                            </span>
+                              <XCircle className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
                       ))
@@ -493,17 +533,52 @@ function AdminContent() {
                       ))}
                     </div>
                   </div>
-                  <Button
-                    variant="danger"
-                    onClick={() => {
-                      localStorage.removeItem("astra_admin_secret");
-                      setIsAuthorized(false);
-                    }}
-                    className="w-full flex items-center justify-center gap-2 py-3"
-                  >
-                    <ShieldCheck className="w-4 h-4" />
-                    Revoke Access
-                  </Button>
+                  <div className="flex flex-col gap-3">
+                    <Button
+                      variant="danger"
+                      onClick={async () => {
+                        if (
+                          !confirm(
+                            "Are you sure you want to flush all stored room data from Redis? This action cannot be undone.",
+                          )
+                        )
+                          return;
+                        try {
+                          const secret =
+                            localStorage.getItem("astra_admin_secret");
+                          const res = await fetch("/api/admin/redis", {
+                            method: "DELETE",
+                            headers: { "x-admin-secret": secret || "" },
+                          });
+                          const json = await res.json();
+                          if (json.success) {
+                            localStorage.removeItem(LS_KEYS.history);
+                            alert("Redis database and local history flushed successfully.");
+                            fetchStats();
+                          } else {
+                            alert(json.error || "Failed to flush Redis.");
+                          }
+                        } catch (err) {
+                          alert(err.message);
+                        }
+                      }}
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-danger/10 border border-danger/20 hover:bg-danger/20 text-danger"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Flush Redis Database
+                    </Button>
+                    <Button
+                      variant="danger"
+                      onClick={() => {
+                        localStorage.removeItem("astra_admin_secret");
+                        setIsAuthorized(false);
+                      }}
+                      className="w-full flex items-center justify-center gap-2 py-3"
+                    >
+                      <ShieldCheck className="w-4 h-4" />
+                      Revoke Access
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>

@@ -96,6 +96,8 @@ export default function SettingsPanel({
   setAmbilightEnabled,
   mirrorCameraEnabled,
   setMirrorCameraEnabled,
+  syncHubEnabled,
+  setSyncHubEnabled,
   identity,
 }) {
   const { addToast } = useToast();
@@ -320,6 +322,16 @@ export default function SettingsPanel({
               toggleAndToast(setMirrorCameraEnabled, "Mirror Camera", mirrorCameraEnabled)
             }
             icon={<Camera className="w-4 h-4" />}
+          />
+          <Row
+            label="Show sync hub"
+            description="Floating play/pause control on player for host"
+            enabled={syncHubEnabled}
+            onToggle={() =>
+              toggleAndToast(setSyncHubEnabled, "Sync Hub", syncHubEnabled)
+            }
+            disabled={!isHost}
+            icon={<Monitor className="w-4 h-4" />}
           />
 
           <SectionLabel>Security</SectionLabel>

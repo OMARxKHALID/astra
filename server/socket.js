@@ -6,7 +6,7 @@ import {
   SOCKET_PING_INTERVAL,
   SOCKET_PING_TIMEOUT,
 } from "./constants.js";
-import { saveRoom } from "./models/Room.js";
+import { saveRoom, deleteRoomFromRedis } from "./models/Room.js";
 import registerChatHandlers from "./handlers/chatHandler.js";
 import registerVideoHandlers from "./handlers/videoHandler.js";
 import registerRoomHandlers from "./handlers/roomHandler.js";
@@ -26,7 +26,23 @@ const rooms = new Map();
 const clientMeta = new Map();
 const tsLastSent = new Map();
 
-const httpServer = http.createServer((req, res) => {
+// [Note] Create bare httpServer first so io can be instantiated and bound to it
+// before the request handler is registered. This prevents io from being
+// undefined when the DELETE /rooms/:id handler executes.
+const httpServer = http.createServer();
+
+const io = new Server(httpServer, {
+  cors: {
+    origin: (origin, callback) => callback(null, true),
+    methods: ["GET", "POST"],
+  },
+  pingInterval: SOCKET_PING_INTERVAL,
+  pingTimeout: SOCKET_PING_TIMEOUT,
+  maxHttpBufferSize: 1e6,
+});
+
+// [Note] Request handler registered after io is fully initialized
+httpServer.on("request", (req, res) => {
   const origin = req.headers.origin || "";
   const isAllowed = ALLOWED_ORIGINS.includes(origin.replace(/\/$/, ""));
 
@@ -34,8 +50,6 @@ const httpServer = http.createServer((req, res) => {
     res.setHeader("Access-Control-Allow-Origin", origin);
   }
 
-  // Only handle our specific health/info routes.
-  // DO NOT res.end() for any other path so Socket.io can handle its own traffic.
   if (req.url === "/" || req.url === "/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
     return res.end(
@@ -45,6 +59,39 @@ const httpServer = http.createServer((req, res) => {
 
   const m = req.url?.match(/^\/rooms\/([^/?]+)/);
   if (m) {
+    if (req.method === "DELETE") {
+      if (
+        process.env.ADMIN_SECRET &&
+        req.headers["x-admin-secret"] !== process.env.ADMIN_SECRET
+      ) {
+        res.writeHead(401, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: "Unauthorized" }));
+      }
+
+      const roomId = m[1];
+      const room = rooms.get(roomId);
+
+      if (room) {
+        for (const sid of [...room.socketIds]) {
+          const s = io.sockets.sockets.get(sid);
+          if (s) {
+            s.emit("REC:error", {
+              message: "Room terminated by administrator",
+              code: "TERMINATED",
+            });
+            s.disconnect(true);
+          }
+        }
+        room.stopBroadcast();
+        rooms.delete(roomId);
+      }
+
+      deleteRoomFromRedis(roomId).catch(console.error);
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ success: true }));
+    }
+
     const room = rooms.get(m[1]);
     if (!room) {
       res.writeHead(404, { "Content-Type": "application/json" });
@@ -54,7 +101,6 @@ const httpServer = http.createServer((req, res) => {
     return res.end(JSON.stringify(room.publicState()));
   }
 
-  // Stats endpoint for admin dashboard
   if (req.url === "/stats") {
     if (
       process.env.ADMIN_SECRET &&
@@ -79,12 +125,10 @@ const httpServer = http.createServer((req, res) => {
         });
       }
 
-      // Get user distribution by room
       const userRooms = {};
-      for (const [socketId, meta] of clientMeta) {
+      for (const [, meta] of clientMeta) {
         if (meta.roomId) {
-          if (!userRooms[meta.roomId]) userRooms[meta.roomId] = 0;
-          userRooms[meta.roomId]++;
+          userRooms[meta.roomId] = (userRooms[meta.roomId] || 0) + 1;
         }
       }
 
@@ -109,16 +153,6 @@ const httpServer = http.createServer((req, res) => {
       return res.end(JSON.stringify({ error: "Internal server error" }));
     }
   }
-});
-
-const io = new Server(httpServer, {
-  cors: {
-    origin: (origin, callback) => callback(null, true),
-    methods: ["GET", "POST"],
-  },
-  pingInterval: SOCKET_PING_INTERVAL,
-  pingTimeout: SOCKET_PING_TIMEOUT,
-  maxHttpBufferSize: 1e6,
 });
 
 io.on("connection", (socket) => {
