@@ -15,10 +15,6 @@ const WS_URL =
 
 const ioRef = { current: null };
 
-/**
- * Advanced Socket.io Hook for Astra Sync.
- * Orchestrates real-time video synchronization, state management, and participant tracking.
- */
 export function useRoomSocket(props) {
   const p = useRef(props);
   p.current = props;
@@ -35,44 +31,31 @@ export function useRoomSocket(props) {
   const clockTimerRef = useRef(null);
   const localPlaybackRate = useRef(1);
 
-  /**
-   * Helper to update the server's authoritative state in a ref.
-   */
   const updateServerLine = useCallback((updates) => {
     if (serverLine.current) {
       serverLine.current = { ...serverLine.current, ...updates };
     }
   }, []);
 
-  /**
-   * Briefly suppresses native video events to prevent feedback loops.
-   */
   const suppressNativeFeedback = useCallback(() => {
     const v = p.current.videoRef?.current;
     if (v) {
       v._suppressNative = true;
-      setTimeout(() => { if (v) v._suppressNative = false; }, 150);
+      setTimeout(() => {
+        if (v) v._suppressNative = false;
+      }, 150);
     }
   }, []);
 
-  /**
-   * Checks if the video is currently stalled or buffering.
-   */
   const checkBuffering = useCallback((v) => {
     if (isBuffering.current) return true;
     return v && v.isBuffering === true;
   }, []);
 
-  /**
-   * Locks synchronization for a given duration.
-   */
   const lockSync = useCallback((ms = 1000) => {
     preventSyncUntil.current = Date.now() + ms;
   }, []);
 
-  /**
-   * Sends a command to the Socket.io server.
-   */
   const send = useCallback(
     (type, data) => {
       const socket = socketRef.current;
@@ -91,7 +74,11 @@ export function useRoomSocket(props) {
       }
 
       // Lock synchronization after significant state changes to allow for network propagation
-      if (["CMD:play", "CMD:pause", "CMD:host", "CMD:playbackRate"].includes(event)) {
+      if (
+        ["CMD:play", "CMD:pause", "CMD:host", "CMD:playbackRate"].includes(
+          event,
+        )
+      ) {
         lockSync(1000);
       } else if (event === "CMD:seek") {
         lockSync(3000);
@@ -100,17 +87,14 @@ export function useRoomSocket(props) {
     [lockSync],
   );
 
-  /**
-   * The Core Synchronization Loop.
-   * Compares local playback state with the server's leader time and applies corrections.
-   */
   const startSyncLoop = useCallback(() => {
     clearInterval(syncTimer.current);
     syncTimer.current = setInterval(() => {
-      const { videoRef, onDriftStatus, canControl, speedSyncEnabled, userId } = p.current;
+      const { videoRef, onDriftStatus, canControl, speedSyncEnabled, userId } =
+        p.current;
       const v = videoRef?.current;
       const s = serverLine.current;
-      
+
       if (!v || !s) return;
 
       const resultsInWindow = Date.now() < preventSyncUntil.current;
@@ -141,8 +125,9 @@ export function useRoomSocket(props) {
       if (leaderTime === 0) return;
 
       const drift = leaderTime - v.currentTime;
-      const syncStatus = Math.abs(drift) <= SYNC_TOLERANCE_S ? "synced" : "soft";
-      
+      const syncStatus =
+        Math.abs(drift) <= SYNC_TOLERANCE_S ? "synced" : "soft";
+
       if (syncStatus !== lastSyncStatus.current) {
         lastSyncStatus.current = syncStatus;
         onDriftStatus?.(syncStatus);
@@ -156,12 +141,20 @@ export function useRoomSocket(props) {
 
       // Apply dynamic speed correction for drift
       const speedSyncActive = speedSyncEnabled !== false;
-      const baseRate = (speedSyncActive || s?.hostId === userId) 
-        ? (localPlaybackRate.current || s.playbackRate || 1) 
-        : 1;
+      const baseRate =
+        speedSyncActive || s?.hostId === userId
+          ? localPlaybackRate.current || s.playbackRate || 1
+          : 1;
 
-      const correction = computeCorrection(v.currentTime, leaderTime, s.isPlaying);
-      const outputRate = correction.action === "soft" ? baseRate * correction.playbackRate : baseRate;
+      const correction = computeCorrection(
+        v.currentTime,
+        leaderTime,
+        s.isPlaying,
+      );
+      const outputRate =
+        correction.action === "soft"
+          ? baseRate * correction.playbackRate
+          : baseRate;
 
       if (Math.abs(v.playbackRate - outputRate) > 0.005) {
         v.playbackRate = outputRate;
@@ -169,12 +162,17 @@ export function useRoomSocket(props) {
     }, SYNC_CHECK_INTERVAL);
   }, [checkBuffering, suppressNativeFeedback]);
 
-  /**
-   * Initializes the socket connection and attaches event handlers.
-   */
   const connect = useCallback(async () => {
-    const { roomId, userId, hostToken, videoUrl, displayName, roomPassword, onConnStatus } = p.current;
-    
+    const {
+      roomId,
+      userId,
+      hostToken,
+      videoUrl,
+      displayName,
+      roomPassword,
+      onConnStatus,
+    } = p.current;
+
     if (socketRef.current) socketRef.current.disconnect();
 
     if (!ioRef.current) {
@@ -215,7 +213,6 @@ export function useRoomSocket(props) {
       clockTimerRef.current = setInterval(calibrate, CLOCK_RECAL_INTERVAL);
     });
 
-    // --- Socket Event Handlers ---
     const handlers = {
       disconnect: () => onConnStatus?.("reconnecting"),
       connect_error: () => onConnStatus?.("reconnecting"),
@@ -236,12 +233,12 @@ export function useRoomSocket(props) {
         const isInit = !serverLine.current;
         const prev = serverLine.current;
         const videoChanged = prev && prev.videoUrl !== m.video;
-        
+
         serverLine.current = state;
         if (m.playbackRate != null) localPlaybackRate.current = m.playbackRate;
-        
+
         p.current.onStateUpdate?.(state);
-        
+
         if (isInit || videoChanged) initialSeekDone.current = false;
         if (Date.now() < preventSyncUntil.current) return;
 
@@ -250,27 +247,40 @@ export function useRoomSocket(props) {
           v.currentTime = state.currentTime;
           initialSeekDone.current = true;
           if (state.isPlaying) {
-             suppressNativeFeedback();
-             v.play().catch(() => {});
+            suppressNativeFeedback();
+            v.play().catch(() => {});
           }
           if (m.reconnected) p.current.onReconnected?.();
-          else if (state.currentTime > 120) p.current.onLateJoin?.(state.currentTime);
+          else if (state.currentTime > 120)
+            p.current.onLateJoin?.(state.currentTime);
         }
 
         // System messages on state changes
         if (!isInit && prev) {
-          const sys = (text) => p.current.onChatMessage?.({ senderId: "system", ts: Date.now(), text });
-          if (prev.strictVideoUrlMode !== m.strictVideoUrlMode) 
-            sys(m.strictVideoUrlMode ? "[STRICT] Mode ON" : "[STRICT] Mode OFF");
+          const sys = (text) =>
+            p.current.onChatMessage?.({
+              senderId: "system",
+              ts: Date.now(),
+              text,
+            });
+          if (prev.strictVideoUrlMode !== m.strictVideoUrlMode)
+            sys(
+              m.strictVideoUrlMode ? "[STRICT] Mode ON" : "[STRICT] Mode OFF",
+            );
           if (prev.hostOnlyControls !== m.hostOnlyControls)
-            sys(m.hostOnlyControls ? "[LOCK] Host-only controls ON" : "[UNLOCK] Everyone can control");
+            sys(
+              m.hostOnlyControls
+                ? "[LOCK] Host-only controls ON"
+                : "[UNLOCK] Everyone can control",
+            );
         }
       },
 
       "REC:play": (m) => {
         const v = p.current.videoRef?.current;
         if (v) {
-          if (m?.videoTS != null && Math.abs(v.currentTime - m.videoTS) > 0.5) v.currentTime = m.videoTS;
+          if (m?.videoTS != null && Math.abs(v.currentTime - m.videoTS) > 0.5)
+            v.currentTime = m.videoTS;
           suppressNativeFeedback();
           v.play().catch(() => {});
         }
@@ -288,8 +298,13 @@ export function useRoomSocket(props) {
         const v = p.current.videoRef?.current;
         if (v && Math.abs(v.currentTime - time) > 0.5) v.currentTime = time;
         if (Date.now() < preventSyncUntil.current) return;
-        const fmt = (t) => `${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,"0")}`;
-        p.current.onChatMessage?.({ senderId: "system", ts: Date.now(), text: `[SEEK] Host jumped to ${fmt(time)}` });
+        const fmt = (t) =>
+          `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+        p.current.onChatMessage?.({
+          senderId: "system",
+          ts: Date.now(),
+          text: `[SEEK] Host jumped to ${fmt(time)}`,
+        });
       },
 
       "REC:tsMap": (data) => {
@@ -298,24 +313,34 @@ export function useRoomSocket(props) {
       },
 
       "REC:error": (m) => {
-        const critical = ["STRICT_VIDEO_MODE", "WRONG_PASSWORD", "NEED_PASSWORD", "UNAUTHORIZED"].includes(m.code);
+        const critical = [
+          "STRICT_VIDEO_MODE",
+          "WRONG_PASSWORD",
+          "NEED_PASSWORD",
+          "UNAUTHORIZED",
+        ].includes(m.code);
         if (critical || m.message === "Invalid host token") {
-           if (socketRef.current) socketRef.current.disconnect();
-           p.current.onKicked?.(m.message || m.code);
+          if (socketRef.current) socketRef.current.disconnect();
+          p.current.onKicked?.(m.message || m.code);
         } else if (m.message) {
-           p.current.addToast?.(m.message, "error");
+          p.current.addToast?.(m.message, "error");
         }
       },
 
       // Chat and Participants
       chat: (m) => p.current.onChatMessage?.(m),
-      chat_history: (m) => p.current.onChatMessage?.({ type: "chat_history", ...m }),
-      "REC:roster": (users) => p.current.onUserChange?.({ type: "participants", users }),
-      user_joined: (m) => p.current.onUserChange?.({ type: "user_joined", ...m }),
+      chat_history: (m) =>
+        p.current.onChatMessage?.({ type: "chat_history", ...m }),
+      "REC:roster": (users) =>
+        p.current.onUserChange?.({ type: "participants", users }),
+      user_joined: (m) =>
+        p.current.onUserChange?.({ type: "user_joined", ...m }),
       user_left: (m) => p.current.onUserChange?.({ type: "user_left", ...m }),
       host_changed: (m) => {
         p.current.onUserChange?.({ type: "host_changed", ...m });
-        p.current.onStateUpdate?.(p => p ? { ...p, hostId: m.newHostId } : p);
+        p.current.onStateUpdate?.((p) =>
+          p ? { ...p, hostId: m.newHostId } : p,
+        );
       },
 
       // WebRTC Call Signaling

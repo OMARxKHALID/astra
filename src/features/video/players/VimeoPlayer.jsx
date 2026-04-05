@@ -22,6 +22,7 @@ export default function VimeoPlayer({
   onToggleTheatre,
   hasEpisodes = false,
   onToggleEpisodes,
+  isHost = true,
 }) {
   const containerRef = useRef(null);
   const iframeRef = useRef(null);
@@ -262,6 +263,7 @@ export default function VimeoPlayer({
         Vimeo
       </div>
       <EmbedControls
+        isHost={isHost}
         visible={ctrlVis}
         isPlaying={isPlaying}
         localTime={localTime}

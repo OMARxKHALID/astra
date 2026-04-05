@@ -44,6 +44,7 @@ export default function NativeVideoPlayer({
   onToggleTheatre,
   hasEpisodes = false,
   onToggleEpisodes,
+  isHost = true,
 }) {
   const [localTime, setLocalTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -53,7 +54,7 @@ export default function NativeVideoPlayer({
   const [buffering, setBuffering] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [showSubtitles, setShowSubtitles] = useState(true);
-  const { ctrlVis, setCtrlVis, showCtrl } = usePlayerControls(3000);
+  const { ctrlVis, showCtrl } = usePlayerControls(3000);
   const [showStats, setShowStats] = useState(false);
   const [volumeOsd, setVolumeOsd] = useState(null);
   const [videoError, setVideoError] = useState(false);
@@ -117,7 +118,12 @@ export default function NativeVideoPlayer({
   const lastTapRef = useRef(0);
   const singleTapTimerRef = useRef(null);
 
-  const { hlsQuality, hlsRef } = useHLS(videoRef, videoUrl, sourceType, setVideoError);
+  const { hlsQuality, hlsRef } = useHLS(
+    videoRef,
+    videoUrl,
+    sourceType,
+    setVideoError,
+  );
   useAmbilight(videoRef, videoUrl, onAmbiColors, ambilightEnabled);
   useSubtitleStyle(
     videoRef,
@@ -470,6 +476,7 @@ export default function NativeVideoPlayer({
       />
 
       <ControlBar
+        isHost={isHost}
         isPlaying={isPlaying}
         localTime={localTime}
         duration={duration}

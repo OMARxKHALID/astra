@@ -1,14 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import {
-  Suspense,
-  useState,
-  useEffect,
-  useMemo,
-  useCallback,
-  useRef,
-} from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 
 const VideoPlayer = dynamic(() => import("@/features/video"), { ssr: false });
 const EpisodeSelector = dynamic(
@@ -17,21 +10,14 @@ const EpisodeSelector = dynamic(
 );
 
 import { useSearchParams, useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  Star,
-  Users,
-  Loader2,
-  Cloud,
-  List as ListIcon,
-} from "lucide-react";
-import Loading from "@/components/Loading";
+import { Star, Users, Loader2, Cloud, List as ListIcon } from "lucide-react";
 import BackButton from "@/components/ui/BackButton";
 import Image from "next/image";
 import {
   serverOptions,
   buildEmbedUrl,
   detectServer,
+  extractMeta,
 } from "@/lib/videoResolver";
 import { createRoom } from "@/features/room/createRoom";
 
@@ -54,18 +40,11 @@ function WatchContent() {
   const [seasonCache, setSeasonCache] = useState({});
 
   const derivedMeta = useMemo(() => {
-    if (!url) return { id: tmdbId, s, e, type };
-    const vidlinkMatch = url.match(/\/tv\/(\d+)\/(\d+)\/(\d+)/);
-    if (vidlinkMatch) {
-      return {
-        id: vidlinkMatch[1],
-        s: vidlinkMatch[2],
-        e: vidlinkMatch[3],
-        type: "tv",
-      };
-    }
-    const tmdbMatch = url.match(/[?&]tmdb=(\d+)/) || url.match(/\/tv\/(\d+)/);
-    if (tmdbMatch) return { id: tmdbMatch[1], s, e, type: "tv" };
+    // 1. Try to extract metadata from the current URL format
+    const meta = extractMeta(url);
+    if (meta.id) return meta;
+
+    // 2. Fallback to search parameters (useful for initial deep links)
     return { id: tmdbId, s, e, type };
   }, [url, tmdbId, s, e, type]);
 

@@ -59,6 +59,7 @@ export default function EmbedControls({
   onToggleTheatre,
   hasEpisodes = false,
   onToggleEpisodes,
+  isHost = true,
 }) {
   const [tmp, setTmp] = useState(0);
   const [seeking, setSeeking] = useState(false);
@@ -194,7 +195,7 @@ export default function EmbedControls({
             </button>
           )}
 
-          {hasEpisodes && onToggleEpisodes && (
+          {isHost && hasEpisodes && onToggleEpisodes && (
             <button
               onClick={onToggleEpisodes}
               title="Episodes"

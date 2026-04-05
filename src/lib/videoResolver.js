@@ -16,19 +16,11 @@ const VIMEO_PATTERNS = [
 
 const EMBED_DOMAINS = [
   "vidlink.pro",
-  "vidsrc.to",
-  "vidsrc.me",
-  "autoembed.cc",
-  "2embed.cc",
-  "www.2embed.cc",
   "multiembed.mov",
-  "embed.su",
-  "smashystream.com",
-  "player.videasy.net",
+  "streamingnow.mov",
   "superembed.stream",
-  "moviesapi.club",
   "moviesapi.to",
-  "player.smashy.stream",
+  "moviesapi.club",
   "cflul.x9l.workers.dev",
 ];
 
@@ -122,6 +114,66 @@ export const SOURCE_LABELS = {
   unsupported: "Unsupported URL",
 };
 
+export function extractMeta(rawUrl) {
+  if (!rawUrl) return { id: "", s: "1", e: "1", type: "movie" };
+  
+  // Strip query params for path matching, but keep the full URL for param search
+  const url = rawUrl.split("?")[0].split("#")[0];
+  const urlObj = (() => { try { return new URL(rawUrl); } catch { return null; } })();
+
+  // 1. Vidlink: /tv/id/s/e or /movie/id
+  if (url.includes("vidlink.pro")) {
+    const vidlinkMatch = url.match(/\/(tv|movie)\/(\d+)/);
+    if (vidlinkMatch) {
+      const isTV = vidlinkMatch[1] === "tv";
+      const segments = url.split("/").filter(Boolean);
+      return {
+        id: vidlinkMatch[2],
+        s: isTV ? (segments[segments.length - 2] || "1") : "1",
+        e: isTV ? (segments[segments.length - 1] || "1") : "1",
+        type: vidlinkMatch[1],
+      };
+    }
+  }
+
+  // 2. SuperEmbed: ?video_id=id&tmdb=1
+  if (urlObj && (url.includes("multiembed.mov") || url.includes("superembed") || url.includes("streamingnow.mov"))) {
+    const vId = urlObj.searchParams.get("video_id");
+    if (vId && urlObj.searchParams.get("tmdb") === "1") {
+      const s = urlObj.searchParams.get("s");
+      const e = urlObj.searchParams.get("e");
+      return {
+        id: vId,
+        s: s || "1",
+        e: e || "1",
+        type: s ? "tv" : "movie",
+      };
+    }
+  }
+
+  // 3. MoviesAPI: /tv/id-s-e or /movie/id
+  const apiMatch = url.match(/\/(?:moviesapi\.(?:to|club)|streamingnow\.mov)\/(tv|movie)\/(\d+)(?:-(\d+)-(\d+))?/);
+  if (apiMatch) {
+    return {
+      id: apiMatch[2],
+      s: apiMatch[3] || "1",
+      e: apiMatch[4] || "1",
+      type: apiMatch[1],
+    };
+  }
+
+  // Fallback for custom URLs with tmdb= param
+  if (urlObj) {
+    const qId = urlObj.searchParams.get("tmdb");
+    const qS = urlObj.searchParams.get("s");
+    const qE = urlObj.searchParams.get("e");
+    const qType = urlObj.searchParams.get("type");
+    if (qId) return { id: qId, s: qS || "1", e: qE || "1", type: qType || "movie" };
+  }
+
+  return { id: "", s: "1", e: "1", type: "movie" };
+}
+
 export function buildEmbedUrl(server, tmdbId, type, season = 1, episode = 1) {
   const isTV = type === "tv";
   switch (server) {
@@ -129,58 +181,52 @@ export function buildEmbedUrl(server, tmdbId, type, season = 1, episode = 1) {
       return isTV
         ? `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}?primaryColor=f59e0b&autoplay=true`
         : `https://vidlink.pro/movie/${tmdbId}?primaryColor=f59e0b&autoplay=true`;
-    case "vidsrc":
-      return isTV
-        ? `https://vidsrc.to/embed/tv/${tmdbId}/${season}-${episode}`
-        : `https://vidsrc.to/embed/movie/${tmdbId}`;
-    case "autoembed":
-      return isTV
-        ? `https://autoembed.cc/tv/tmdb/${tmdbId}-${season}-${episode}`
-        : `https://autoembed.cc/movie/tmdb/${tmdbId}`;
-    case "embed2":
-      return isTV
-        ? `https://www.2embed.cc/embedtv/${tmdbId}&s=${season}&e=${episode}`
-        : `https://www.2embed.cc/embed/${tmdbId}`;
     case "superembed":
       return isTV
-        ? `https://www.superembed.stream/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}`
-        : `https://www.superembed.stream/?video_id=${tmdbId}&tmdb=1`;
+        ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}`
+        : `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`;
     case "moviesapi":
       return isTV
-        ? `https://moviesapi.club/tv/${tmdbId}-${season}-${episode}`
-        : `https://moviesapi.club/movie/${tmdbId}`;
-    case "embedsu":
-      return isTV
-        ? `https://embed.su/embed/tv/${tmdbId}/${season}/${episode}`
-        : `https://embed.su/embed/movie/${tmdbId}`;
-    case "smashy":
-      return isTV
-        ? `https://player.smashy.stream/tv/${tmdbId}?s=${season}&e=${episode}`
-        : `https://player.smashy.stream/movie/${tmdbId}`;
+        ? `https://moviesapi.to/tv/${tmdbId}-${season}-${episode}`
+        : `https://moviesapi.to/movie/${tmdbId}`;
     default:
       return null;
   }
 }
 
 // Reverse-lookup: match against known embed URL patterns (hostname split fails for www./player./embed. prefixes)
+// Domain mapping for accurate detection/matching of mirrors
+const SERVER_DOMAINS = {
+  vidlink: ["vidlink.pro"],
+  superembed: ["multiembed.mov", "streamingnow.mov", "superembed.stream"],
+  moviesapi: ["moviesapi.to", "moviesapi.club"],
+};
+
 export function detectServer(url) {
   if (!url) return null;
-  let urlHost;
+  let host;
   try {
-    urlHost = new URL(url).hostname.toLowerCase();
+    host = new URL(url).hostname.toLowerCase().replace(/^www\.|^player\.|^embed\./, "");
   } catch {
     return null;
   }
+
+  for (const [server, domains] of Object.entries(SERVER_DOMAINS)) {
+    if (domains.some(d => {
+      const normalizedD = d.replace(/^www\.|^player\.|^embed\./, "");
+      return host === normalizedD || host.endsWith("." + normalizedD);
+    })) {
+      return server;
+    }
+  }
+
+  // Fallback: try built-in buildEmbedUrl match for other providers (if any are added)
   for (const opt of serverOptions) {
     const testUrl = buildEmbedUrl(opt.value, "1", "movie");
     if (!testUrl) continue;
     try {
-      const testHost = new URL(testUrl).hostname.toLowerCase();
-      if (
-        urlHost === testHost ||
-        urlHost.endsWith("." + testHost) ||
-        testHost.endsWith("." + urlHost)
-      ) {
+      const testHost = new URL(testUrl).hostname.toLowerCase().replace(/^www\.|^player\.|^embed\./, "");
+      if (host === testHost || host.endsWith("." + testHost)) {
         return opt.value;
       }
     } catch {}
@@ -190,11 +236,6 @@ export function detectServer(url) {
 
 export const serverOptions = [
   { label: "Vidlink (Ad-Free, Fast)", value: "vidlink" },
-  { label: "Vidsrc", value: "vidsrc" },
-  { label: "AutoEmbed", value: "autoembed" },
-  { label: "2Embed", value: "embed2" },
   { label: "SuperEmbed", value: "superembed" },
   { label: "MoviesAPI", value: "moviesapi" },
-  { label: "Embed.su", value: "embedsu" },
-  { label: "SmashyStream", value: "smashy" },
 ];

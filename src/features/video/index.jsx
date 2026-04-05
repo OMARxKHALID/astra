@@ -40,6 +40,10 @@ function VideoPlayer({
   addToast,
   theatreMode = false,
   onToggleTheatre,
+  hasEpisodes = false,
+  onToggleEpisodes,
+  onServerChange,
+  isHost = true,
 }) {
   const source = classifyUrl(videoUrl);
 
@@ -72,6 +76,7 @@ function VideoPlayer({
         addToast={addToast}
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}
+        isHost={isHost}
       />
     );
 
@@ -92,6 +97,7 @@ function VideoPlayer({
         ambilightEnabled={ambilightEnabled}
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}
+        isHost={isHost}
       />
     );
 
@@ -112,6 +118,7 @@ function VideoPlayer({
         ambilightEnabled={ambilightEnabled}
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}
+        isHost={isHost}
       />
     );
 
@@ -122,6 +129,11 @@ function VideoPlayer({
         canControl={canControl}
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}
+        hasEpisodes={hasEpisodes}
+        onToggleEpisodes={onToggleEpisodes}
+        onServerChange={onServerChange}
+        onLoad={onLoad}
+        isHost={isHost}
       />
     );
 

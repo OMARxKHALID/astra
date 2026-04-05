@@ -84,7 +84,11 @@ export default function RoomView({ roomId, initialMeta }) {
       }
 
       // T - Toggle theatre mode
-      if (e.key.toLowerCase() === "t" && !settings.showSettings && !settings.showShortcuts) {
+      if (
+        e.key.toLowerCase() === "t" &&
+        !settings.showSettings &&
+        !settings.showShortcuts
+      ) {
         settings.setTheatreMode(!settings.theatreMode);
       }
 
@@ -133,7 +137,9 @@ export default function RoomView({ roomId, initialMeta }) {
     useAmbilight(settings);
 
   const hostToken = mounted ? ls.get(`host_${roomId}`) || "" : "";
-  const isHost = (room.serverState?.hostId === identity.userId) || (!!hostToken && !room.serverState?.hostId);
+  const isHost =
+    room.serverState?.hostId === identity.userId ||
+    (!!hostToken && !room.serverState?.hostId);
 
   // [Note] Local file blob: URLs cannot be broadcast to the room (they are tab-local memory objects).
   // We keep them in a separate client-only override so the player can use them without
@@ -213,7 +219,10 @@ export default function RoomView({ roomId, initialMeta }) {
           onLateJoin={room.setLateJoinTime}
           onReconnected={() => {
             addToast("Reconnected", "success");
-            if (typeof document !== "undefined" && document.pictureInPictureElement) {
+            if (
+              typeof document !== "undefined" &&
+              document.pictureInPictureElement
+            ) {
               document.exitPictureInPicture().catch(() => {});
             }
           }}
@@ -326,6 +335,7 @@ export default function RoomView({ roomId, initialMeta }) {
               onToggleEpisodes={() =>
                 videoState.setEpisodesOpen(!videoState.episodesOpen)
               }
+              onServerChange={videoState.handleServerChange}
               addToast={addToast}
             />
             {videoState.episodesOpen && videoState.id && (
@@ -352,7 +362,8 @@ export default function RoomView({ roomId, initialMeta }) {
                   Live Feed
                 </span>
                 <span className="text-[10px] font-mono text-white/30 uppercase">
-                  {room.messages.length} message{room.messages.length !== 1 ? "s" : ""}
+                  {room.messages.length} message
+                  {room.messages.length !== 1 ? "s" : ""}
                 </span>
               </div>
             </div>
@@ -383,7 +394,8 @@ export default function RoomView({ roomId, initialMeta }) {
                   Watching
                 </span>
                 <span className="text-[10px] font-mono text-white/30 uppercase">
-                  {room.participants.length} Participant{room.participants.length !== 1 ? "s" : ""}
+                  {room.participants.length} Participant
+                  {room.participants.length !== 1 ? "s" : ""}
                 </span>
               </div>
             </div>
@@ -416,7 +428,9 @@ export default function RoomView({ roomId, initialMeta }) {
         isCallJoined={call.isJoined}
         isCalling={call.isCalling}
         onToggleCall={call.isJoined ? call.leaveCall : call.joinCall}
-        inCallCount={Object.keys(call.remoteStreams).length + (call.isJoined ? 1 : 0)}
+        inCallCount={
+          Object.keys(call.remoteStreams).length + (call.isJoined ? 1 : 0)
+        }
       />
       <MobileRoomSheets
         room={room}

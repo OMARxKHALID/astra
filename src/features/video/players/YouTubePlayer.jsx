@@ -24,6 +24,7 @@ export default function YouTubePlayer({
   onToggleTheatre,
   hasEpisodes = false,
   onToggleEpisodes,
+  isHost = true,
 }) {
   const containerRef = useRef(null);
   const iframeContainerRef = useRef(null);
@@ -386,6 +387,7 @@ export default function YouTubePlayer({
       </div>
 
       <EmbedControls
+        isHost={isHost}
         visible={ctrlVis}
         isPlaying={isPlaying}
         localTime={localTime}

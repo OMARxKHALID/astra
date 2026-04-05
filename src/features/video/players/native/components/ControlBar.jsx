@@ -60,6 +60,7 @@ export default function ControlBar({
   ctrlVis,
   hasEpisodes,
   onToggleEpisodes,
+  isHost = true,
 }) {
   return (
     <div
@@ -230,7 +231,7 @@ export default function ControlBar({
             )}
           </div>
 
-          {hasEpisodes && onToggleEpisodes && (
+          {isHost && hasEpisodes && onToggleEpisodes && (
             <button
               onClick={onToggleEpisodes}
               title="Episodes"
