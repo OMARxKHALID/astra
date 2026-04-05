@@ -72,7 +72,20 @@ export default function useVideoEvents({
     };
 
     const onErr = () => {
-      if (!videoUrl || !v.currentSrc) return;
+      if (!videoUrl && !v.currentSrc) return;
+
+      // Sometimes a video tag errors before currentSrc is set (e.g., CORS preflight fail on the src attribute itself)
+      // We shouldn't hide these errors if the browser natively threw an error event.
+
+      // [Note] blob: URLs are tab-local and die on refresh. Show a clear message instead of the
+      // generic MEDIA_ERR_SRC_NOT_SUPPORTED error that would otherwise appear.
+      if (videoUrl.startsWith("blob:")) {
+        setVideoError({
+          title: "Local File Unavailable",
+          detail: "This was a local file that only exists in your browser's memory. Please re-upload the file using the upload button in the URL bar.",
+        });
+        return;
+      }
 
       const isDirectSource = sourceType === "direct";
 

@@ -19,6 +19,7 @@ import Loading from "@/components/Loading";
 import { createRoom } from "@/features/room/createRoom";
 import { persistence } from "@/utils/persistence";
 import YoutubeIcon from "@/components/icons/YoutubeIcon";
+import BackButton from "@/components/ui/BackButton";
 
 function CustomSelect({
   label,
@@ -131,10 +132,12 @@ export default function InfoView({ initialData, type, id }) {
     setEpLoading(true);
     fetch(`/api/tmdb/tv/${id}/season/${selectedSeason}`)
       .then((r) => r.json())
-      .then((d) => {
-        const eps = d.episodes || [];
-        setEpisodes(eps);
-        setSeasonCache((prev) => ({ ...prev, [selectedSeason]: eps }));
+      .then((res) => {
+        if (res.success) {
+          const eps = res.data.episodes || [];
+          setEpisodes(eps);
+          setSeasonCache((prev) => ({ ...prev, [selectedSeason]: eps }));
+        }
         setEpLoading(false);
       })
       .catch(() => setEpLoading(false));
@@ -223,13 +226,11 @@ export default function InfoView({ initialData, type, id }) {
       key={`${type}-${id}`}
       className="h-screen w-screen bg-void flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden font-body text-[var(--color-text)] animate-in fade-in duration-500 relative"
     >
-      <button
+      <BackButton
         onClick={() => router.back()}
         aria-label="Go back to previous page"
-        className="absolute top-6 left-6 lg:top-8 lg:left-10 z-[100] w-11 h-11 rounded-full glass-card flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all active:scale-90 shadow-2xl"
-      >
-        <ChevronLeft className="w-6 h-6 pr-0.5" />
-      </button>
+        className="absolute top-6 left-6 lg:top-8 lg:left-10 z-[100]"
+      />
 
       {/* Left: backdrop image panel */}
       <div className="flex-[3] relative z-[80] flex flex-col h-[40vh] lg:h-screen transition-all duration-1000 ease lg:pl-4">

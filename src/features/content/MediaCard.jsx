@@ -6,7 +6,7 @@ export default function MediaCard({ item, onPick }) {
   return (
     <button
       onClick={() => onPick(item)}
-      className="shrink-0 w-[160px] bg-transparent border-none p-0 text-left cursor-pointer group outline-none"
+      className="shrink-0 w-[160px] bg-transparent border-none p-0 text-left cursor-pointer group outline-none relative hover:z-50"
     >
       <div className="w-[160px] h-[240px] rounded-[1rem] overflow-hidden bg-[var(--color-surface)] relative transition-transform duration-200 group-hover:scale-105 shadow-lg">
         {item.poster ? (

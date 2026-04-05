@@ -1,28 +1,36 @@
-import { NextResponse } from "next/server";
-import { randomUUID } from "crypto";
+import { apiResponse } from "@/utils/apiResponse";
+import { generateId } from "@/utils/id";
 import { signJwt } from "@/lib/jwtAuth";
 import { roomStore } from "@/lib/roomStore";
+import { withRateLimit } from "@/lib/rateLimit";
 
 export async function POST(request) {
+  const limited = await withRateLimit(request, { key: "rooms:create", requests: 20, window: "1 m" });
+  if (limited) return limited;
   try {
     const body = await request.json();
     const { videoUrl, userId, roomId: clientRoomId } = body;
 
-    const finalVideoUrl = videoUrl && typeof videoUrl === "string" ? videoUrl.trim() : "";
+    const finalVideoUrl =
+      videoUrl && typeof videoUrl === "string" ? videoUrl.trim() : "";
     if (finalVideoUrl) {
-      try { new URL(finalVideoUrl); } 
-      catch { return NextResponse.json({ error: "Invalid video URL" }, { status: 400 }); }
+      try {
+        new URL(finalVideoUrl);
+      } catch {
+        return apiResponse.badRequest("Invalid video URL");
+      }
     }
 
-    const roomId = clientRoomId && typeof clientRoomId === "string" 
-      ? clientRoomId.slice(0, 36).trim() 
-      : randomUUID().slice(0, 8);
+    const roomId =
+      clientRoomId && typeof clientRoomId === "string"
+        ? clientRoomId.slice(0, 36).trim()
+        : generateId(8);
     const hostId =
       typeof userId === "string" && userId.trim()
         ? userId.trim()
-        : randomUUID();
+        : generateId(21);
 
-    const hostToken = signJwt({ sub: hostId, roomId, role: "host" }, 86400);
+    const hostToken = signJwt({ sub: hostId, roomId, role: "host" });
 
     const stored = await roomStore.set(roomId, {
       roomId,
@@ -30,15 +38,13 @@ export async function POST(request) {
       hostId,
       createdAt: Date.now(),
     });
+
     if (!stored) {
       console.error(`[api/rooms] Failed to persist room ${roomId} in Redis`);
     }
 
-    return NextResponse.json({ roomId, hostToken, hostId }, { status: 201 });
+    return apiResponse.success({ roomId, hostToken, hostId }, 201);
   } catch (err) {
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return apiResponse.internalError(`Failed to create room: ${err.message}`);
   }
 }

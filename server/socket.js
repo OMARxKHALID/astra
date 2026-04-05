@@ -49,6 +49,57 @@ const httpServer = http.createServer((req, res) => {
     res.writeHead(200, { "Content-Type": "application/json" });
     return res.end(JSON.stringify(room.publicState()));
   }
+
+  // Stats endpoint for admin dashboard
+  if (req.url === "/stats") {
+    if (process.env.ADMIN_SECRET && req.headers["x-admin-secret"] !== process.env.ADMIN_SECRET) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "Unauthorized" }));
+    }
+    
+    try {
+      const roomList = [];
+      for (const [roomId, room] of rooms) {
+        roomList.push({
+          roomId,
+          video: room.video,
+          participants: room.socketIds.size,
+          hostId: room.hostId,
+          createdAt: room.createdAt,
+          lastUpdated: room.lastUpdated,
+          isPaused: room.paused,
+          messagesCount: room.messages?.length || 0,
+        });
+      }
+
+      // Get user distribution by room
+      const userRooms = {};
+      for (const [socketId, meta] of clientMeta) {
+        if (meta.roomId) {
+          if (!userRooms[meta.roomId]) userRooms[meta.roomId] = 0;
+          userRooms[meta.roomId]++;
+        }
+      }
+
+      const topRooms = [...roomList]
+        .sort((a, b) => b.participants - a.participants)
+        .slice(0, 10);
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({
+        rooms: rooms.size,
+        users: clientMeta.size,
+        userRooms,
+        topRooms,
+        allRooms: roomList.sort((a, b) => b.lastUpdated - a.lastUpdated),
+        uptime: process.uptime(),
+      }));
+    } catch (err) {
+      console.error("[socket] Stats error:", err);
+      res.writeHead(500, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "Internal server error" }));
+    }
+  }
 });
 
 const io = new Server(httpServer, {

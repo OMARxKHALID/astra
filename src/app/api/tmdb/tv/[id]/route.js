@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { apiResponse } from "@/utils/apiResponse";
 import { getTVDetails } from "@/services/tmdbDetails";
 
 const VALID_ID_PATTERN = /^\d+$/;
@@ -6,14 +6,14 @@ const VALID_ID_PATTERN = /^\d+$/;
 export async function GET(req, { params }) {
   const { id } = await params;
   if (!id || !VALID_ID_PATTERN.test(id)) {
-    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+    return apiResponse.badRequest("Invalid TMDB ID format");
   }
 
   try {
     const data = await getTVDetails(id);
-    if (!data) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    return NextResponse.json(data);
-  } catch {
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+    if (!data) return apiResponse.notFound("TV Show not found in TMDB");
+    return apiResponse.success(data);
+  } catch (err) {
+    return apiResponse.internalError(`Failed to fetch TV details: ${err.message}`);
   }
 }

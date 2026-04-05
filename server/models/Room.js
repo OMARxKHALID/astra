@@ -10,6 +10,12 @@ export function debounce(fn, wait) {
 }
 
 export class Room {
+  #broadcastTimer = null;
+  #lastBcastState = null;
+  #tsLockUntil = 0;
+  #lastBroadcastTime = Date.now();
+  #debouncedSave = null;
+
   constructor(roomId, video = "", hostId = "", hostToken = "") {
     this.roomId = roomId;
     this.video = video;
@@ -32,12 +38,7 @@ export class Room {
     this.socketIds = new Set();
 
     this.tsMap = {};
-    this.tsLockUntil = 0;
-    this.lastBroadcastTime = Date.now();
-
     this.messages = [];
-    this.broadcastTimer = null;
-    this.lastBcastState = null;
   }
 
   addUser(socketId, userId, username) {
@@ -70,26 +71,24 @@ export class Room {
   }
 
   lockTs(ms = 1500) {
-    this.tsLockUntil = Date.now() + ms;
+    this.#tsLockUntil = Date.now() + ms;
   }
 
   receiveTimestamp(userId, time, isHost = false, clientTs = null) {
-    if (Date.now() < this.tsLockUntil) return;
+    if (Date.now() < this.#tsLockUntil) return;
     if (typeof time !== "number" || time < 0) return;
-    
-    const staleness = clientTs 
-      ? (Date.now() - clientTs) / 1000 
-      : (Date.now() - this.lastBroadcastTime) / 1000;
-    const normalized = Math.max(0, time - staleness);
 
-    // [Note] Security: If host-only mode is on, guests can only report their own pos
-    // and cannot push the "Master" room time forward.
+    const staleness = clientTs
+      ? (Date.now() - clientTs) / 1000
+      : (Date.now() - this.#lastBroadcastTime) / 1000;
+    const normalized = Math.max(0, time + (this.paused ? 0 : staleness));
+
     const canAffectMaster = !this.hostOnlyControls || isHost;
-    if (canAffectMaster && normalized > this.videoTS) {
+    if (canAffectMaster && Math.abs(normalized - this.videoTS) > 0.5) {
       this.videoTS = normalized;
       this.lastUpdated = Date.now();
     }
-    
+
     this.tsMap[userId] = normalized;
   }
 
@@ -122,17 +121,23 @@ export class Room {
     };
   }
 
-  // Lightweight fingerprint — only broadcast REC:host when something changed
   _stateFingerprint() {
-    return `${this.video}|${this.videoTS.toFixed(1)}|${this.paused}|${this.playbackRate}|${this.hostId}|${this.hostOnlyControls}|${this.strictVideoUrlMode}|${Boolean(this.passwordHash)}|${this.tmdbMeta?.id || ""}|${this.subtitleUrl || ""}`;
+    return JSON.stringify([
+      this.video,
+      this.paused,
+      this.playbackRate,
+      this.hostId,
+      this.hostOnlyControls,
+      this.tmdbMeta?.id,
+      this.subtitleUrl,
+    ]);
   }
 
   startBroadcast(io) {
-    if (this.broadcastTimer) return;
-    this.broadcastTimer = setInterval(() => {
+    if (this.#broadcastTimer) return;
+    this.#broadcastTimer = setInterval(() => {
       if (this.socketIds.size === 0) return;
 
-      // tsMap: prune entries for users no longer in room
       const validUsers = new Set(this.joinOrder);
       for (const uid of Object.keys(this.tsMap)) {
         if (!validUsers.has(uid)) delete this.tsMap[uid];
@@ -141,6 +146,7 @@ export class Room {
       const times = Object.values(this.tsMap)
         .filter((t) => typeof t === "number")
         .sort((a, b) => a - b);
+
       const leaderTime = times.length
         ? times[Math.floor(times.length / 2)]
         : this.videoTS;
@@ -149,66 +155,65 @@ export class Room {
         ...this.tsMap,
         _leaderTime_: leaderTime,
       });
-      this.lastBroadcastTime = Date.now();
+      this.#lastBroadcastTime = Date.now();
 
       const fp = this._stateFingerprint();
-      if (fp !== this.lastBcastState) {
+      if (fp !== this.#lastBcastState) {
         io.to(this.roomId).emit("REC:host", this.publicState());
-        this.lastBcastState = fp;
+        this.#lastBcastState = fp;
       }
     }, 1000);
   }
 
   stopBroadcast() {
-    clearInterval(this.broadcastTimer);
-    this.broadcastTimer = null;
+    clearInterval(this.#broadcastTimer);
+    this.#broadcastTimer = null;
   }
 }
 
-const debouncedSave = new Map();
+const debouncedSaveMap = new Map();
 
-export function saveRoom(room) {
+export async function saveRoom(room) {
   if (!redis) return;
-  if (!debouncedSave.has(room.roomId)) {
-    debouncedSave.set(
-      room.roomId,
-      debounce(async (r) => {
-        try {
-          await redis.set(
-            `room:${r.roomId}`,
-            {
-              roomId: r.roomId,
-              video: r.video,
-              subtitleUrl: r.subtitleUrl || "",
-              paused: r.paused,
-              videoTS: r.videoTS,
-              lastUpdated: r.lastUpdated,
-              hostId: r.hostId,
-              hostToken: r.hostToken,
-              playbackRate: r.playbackRate,
-              hostOnlyControls: r.hostOnlyControls,
-              strictVideoUrlMode: r.strictVideoUrlMode,
-              passwordHash: r.passwordHash || "",
-              tmdbMeta: r.tmdbMeta || null,
-              // Only store text messages and audio dataUrls — drop image dataUrls
-              messages: (r.messages || []).map((m) => ({
-                ...m,
-                dataUrl: m.dataUrl?.startsWith("data:audio/")
-                  ? m.dataUrl
-                  : undefined,
-              })),
-            },
-            { ex: REDIS_TTL_S },
-          );
-        } catch (err) {
-          console.error(`[redis] Save failed ${r.roomId}: ${err.message}`);
-        }
-      }, SAVE_DEBOUNCE_MS),
-    );
+
+  let saver = debouncedSaveMap.get(room.roomId);
+  if (!saver) {
+    saver = debounce(async (r) => {
+      try {
+        const payload = {
+          roomId: r.roomId,
+          video: r.video,
+          subtitleUrl: r.subtitleUrl || "",
+          paused: r.paused,
+          videoTS: r.videoTS,
+          lastUpdated: r.lastUpdated,
+          hostId: r.hostId,
+          hostToken: r.hostToken,
+          playbackRate: r.playbackRate,
+          hostOnlyControls: r.hostOnlyControls,
+          strictVideoUrlMode: r.strictVideoUrlMode,
+          passwordHash: r.passwordHash || "",
+          tmdbMeta: r.tmdbMeta || null,
+          messages: (r.messages || []).map((m) => ({
+            ...m,
+            dataUrl: m.dataUrl?.startsWith("data:audio/")
+              ? m.dataUrl
+              : undefined,
+          })),
+        };
+        await redis.set(`room:${r.roomId}`, payload, { ex: REDIS_TTL_S });
+      } catch (err) {
+        console.error(
+          `[redis] Persistence failed for ${r.roomId}: ${err.message}`,
+        );
+      }
+    }, SAVE_DEBOUNCE_MS);
+    debouncedSaveMap.set(room.roomId, saver);
   }
-  debouncedSave.get(room.roomId)(room);
+
+  saver(room);
 }
 
 export function cleanupRoom(roomId) {
-  debouncedSave.delete(roomId);
+  debouncedSaveMap.delete(roomId);
 }

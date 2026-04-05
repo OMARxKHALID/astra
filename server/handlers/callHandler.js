@@ -21,21 +21,21 @@ export default function registerCallHandlers(io, socket, rooms, clientMeta) {
   socket.on("CALL:offer", (roomId, msg) => {
     const meta = clientMeta.get(socket.id);
     const targetSid = getSocketByUserId(msg.to, roomId);
-    if (!meta || !targetSid) return;
+    if (!meta || meta.roomId !== roomId || !targetSid) return;
     io.to(targetSid).emit("CALL:offer", { from: meta.userId, offer: msg.offer });
   });
 
   socket.on("CALL:answer", (roomId, msg) => {
     const meta = clientMeta.get(socket.id);
     const targetSid = getSocketByUserId(msg.to, roomId);
-    if (!meta || !targetSid) return;
+    if (!meta || meta.roomId !== roomId || !targetSid) return;
     io.to(targetSid).emit("CALL:answer", { from: meta.userId, answer: msg.answer });
   });
 
   socket.on("CALL:ice", (roomId, msg) => {
     const meta = clientMeta.get(socket.id);
     const targetSid = getSocketByUserId(msg.to, roomId);
-    if (!meta || !targetSid) return;
+    if (!meta || meta.roomId !== roomId || !targetSid) return;
     io.to(targetSid).emit("CALL:ice", { from: meta.userId, candidate: msg.candidate });
   });
 

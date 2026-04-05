@@ -135,6 +135,11 @@ export default function RoomView({ roomId, initialMeta }) {
   const hostToken = mounted ? ls.get(`host_${roomId}`) || "" : "";
   const isHost = (room.serverState?.hostId === identity.userId) || (!!hostToken && !room.serverState?.hostId);
 
+  // [Note] Local file blob: URLs cannot be broadcast to the room (they are tab-local memory objects).
+  // We keep them in a separate client-only override so the player can use them without
+  // polluting the server state or triggering "Cannot Play Video" for other members on refresh.
+  const [localVideoOverride, setLocalVideoOverride] = useState("");
+
   const videoState = useVideoState({
     videoUrl: room.serverState?.videoUrl || initialMeta?.videoUrl || "",
     params,
@@ -143,6 +148,9 @@ export default function RoomView({ roomId, initialMeta }) {
     sendRef,
     isHost,
   });
+
+  // The effective URL seen by the player: local blob overrides server state while it's valid.
+  const effectiveVideoUrl = localVideoOverride || videoState.videoUrl;
   useMediaHistory({
     roomId,
     videoUrl: videoState.videoUrl,
@@ -212,6 +220,7 @@ export default function RoomView({ roomId, initialMeta }) {
           roomPassword={room.roomPassword}
           speedSyncEnabled={settings.speedSyncEnabled}
           onCallEvent={call.handleSocketEvent}
+          addToast={addToast}
         />
       )}
       <ReconnectBanner connStatus={room.connStatus} />
@@ -252,14 +261,21 @@ export default function RoomView({ roomId, initialMeta }) {
         containerRef={sidebar.containerRef}
         urlBarContent={
           <URLBar
-            onLoad={(u, s) =>
-              sendRef.current?.({
-                type: "change_video",
-                videoUrl: u,
-                subtitleUrl: s,
-              })
-            }
-            currentUrl={videoState.videoUrl}
+            onLoad={(u, s) => {
+              if (u.startsWith("blob:")) {
+                // Local file: play on this client only, do not broadcast to room
+                setLocalVideoOverride(u);
+              } else {
+                // Remote URL: clear any local override and sync to room
+                setLocalVideoOverride("");
+                sendRef.current?.({
+                  type: "change_video",
+                  videoUrl: u,
+                  subtitleUrl: s,
+                });
+              }
+            }}
+            currentUrl={effectiveVideoUrl}
             currentSubtitleUrl={room.serverState?.subtitleUrl || ""}
             isHost={isHost}
             strictVideoUrlMode={room.serverState?.strictVideoUrlMode}
@@ -269,7 +285,7 @@ export default function RoomView({ roomId, initialMeta }) {
           <>
             <VideoPlayer
               videoRef={videoRef}
-              videoUrl={videoState.videoUrl}
+              videoUrl={effectiveVideoUrl}
               subtitleUrl={room.serverState?.subtitleUrl || ""}
               isHost={isHost}
               isPlaying={room.serverState?.isPlaying}

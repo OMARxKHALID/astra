@@ -31,13 +31,10 @@ export async function fetchTMDB(endpoint, query = "") {
   const sanitizedQuery = query?.slice(0, 500) || "";
   const url = `${TMDB_BASE_URL}/${endpoint}?api_key=${TMDB_API_KEY}${sanitizedQuery}`;
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
     const res = await fetch(url, { 
       next: { revalidate: 3600 },
-      signal: controller.signal,
+      signal: AbortSignal.timeout(10000),
     });
-    clearTimeout(timeout);
     if (!res.ok) return null;
     return res.json();
   } catch (e) {

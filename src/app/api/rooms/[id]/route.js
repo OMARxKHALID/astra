@@ -1,9 +1,9 @@
+import { apiResponse } from "@/utils/apiResponse";
 import { NextResponse } from "next/server";
 import { roomStore } from "@/lib/roomStore";
 
 const WS_HTTP_URL = process.env.WS_HTTP_URL || "http://localhost:3001";
 
-// Synchronize Next.js API with the live Socket.IO server's in-memory room state
 async function queryWsSidecar(id) {
   try {
     const res = await fetch(`${WS_HTTP_URL}/rooms/${id}`, {
@@ -16,10 +16,10 @@ async function queryWsSidecar(id) {
 
     return {
       roomId: data.roomId,
-      videoUrl: data.video || "", // publicState uses "video" not "videoUrl"
+      videoUrl: data.video || "",
       subtitleUrl: data.subtitleUrl || "",
-      isPlaying: data.paused === false, // publicState uses "paused" not "isPlaying"
-      currentTime: data.videoTS ?? 0, // publicState uses "videoTS" not "currentTime"
+      isPlaying: data.paused === false,
+      currentTime: data.videoTS ?? 0,
       lastUpdated: data.lastUpdated ?? Date.now(),
     };
   } catch {
@@ -31,14 +31,13 @@ export async function GET(_req, { params }) {
   const { id } = await params;
 
   if (!id || typeof id !== "string" || id.length > 50) {
-    return NextResponse.json({ error: "Invalid room ID" }, { status: 400 });
+    return apiResponse.badRequest("Invalid room ID");
   }
 
   const stored = await roomStore.get(id);
   if (stored) {
-    // Prefer live state for time-sensitive fields; fall back to persisted store
     const live = await queryWsSidecar(id);
-    return NextResponse.json({
+    return apiResponse.success({
       roomId: id,
       videoUrl: live?.videoUrl ?? stored.videoUrl ?? "",
       subtitleUrl: live?.subtitleUrl ?? stored.subtitleUrl ?? "",
@@ -49,19 +48,19 @@ export async function GET(_req, { params }) {
     });
   }
 
-  // No Redis entry — query the live server only
   const live = await queryWsSidecar(id);
   if (live) {
-    return NextResponse.json({
+    return apiResponse.success({
       roomId: live.roomId,
       videoUrl: live.videoUrl,
       subtitleUrl: live.subtitleUrl,
       isPlaying: live.isPlaying,
       currentTime: live.currentTime,
       lastUpdated: live.lastUpdated,
-      createdAt: live.lastUpdated,
+      // [Note] createdAt unknown when room only exists in the live sidecar (not persisted yet)
+      createdAt: null,
     });
   }
 
-  return NextResponse.json({ error: "Room not found" }, { status: 404 });
+  return apiResponse.notFound("Room not found");
 }

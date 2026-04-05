@@ -36,13 +36,15 @@ export default function SearchOverlay({ onClose, onPick }) {
       setLoading(true);
       try {
         const r = await fetch(`/api/tmdb?q=${encodeURIComponent(trimmed)}`);
-        const d = await r.json();
-        const items = (d.items || []).slice(0, 10);
-        setResults(items);
-        if (searchCache.size >= 50) {
-          searchCache.delete(searchCache.keys().next().value);
+        const res = await r.json();
+        if (res.success) {
+          const items = (res.data.items || []).slice(0, 10);
+          setResults(items);
+          if (searchCache.size >= 50) {
+            searchCache.delete(searchCache.keys().next().value);
+          }
+          searchCache.set(trimmed, items);
         }
-        searchCache.set(trimmed, items);
       } catch {}
       setLoading(false);
     }, 340);

@@ -116,9 +116,10 @@ export default function useHLS(videoRef, videoUrl, sourceType, setVideoError) {
             return;
           }
 
+          const errorDetails = d.details || d.type || "Fatal error";
           setVideoError?.({
             title: "Stream Error",
-            detail: `HLS stream failed: ${d.details || d.type || "Fatal error"}.`,
+            detail: `HLS stream failed to load. The stream format might be unsupported or restricted. (${errorDetails})`,
           });
         });
       } catch (err) {

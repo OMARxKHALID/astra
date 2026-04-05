@@ -31,11 +31,7 @@ export async function searchYouTube(query, pageToken = null) {
   if (pageToken) url += `&pageToken=${encodeURIComponent(pageToken)}`;
 
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-    
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeout);
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
     
     if (!res.ok) return { items: [], nextPageToken: null };
 

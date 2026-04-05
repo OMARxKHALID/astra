@@ -61,21 +61,14 @@ export default function registerRoomHandlers(
             (m) => m.text || (m.dataUrl && m.dataUrl.startsWith("data:audio/")),
           );
           room.lastUpdated = stored.lastUpdated ?? Date.now();
-          // [Fix] When restoring from Redis, lastUpdated is stale. Recalculate it
-          // so expectedTime() on clients doesn't produce massive drift.
-          // If the video was playing, compute what lastUpdated should be now.
           if (!room.paused && room.videoTS > 0) {
-            const rate = room.playbackRate || 1;
-            // lastUpdated = now - (videoTS / rate) * 1000 would give us "started at"
-            // But we need lastUpdated to reflect the current videoTS position.
-            // Set lastUpdated to now so expectedTime = videoTS + 0 = videoTS on join.
             room.lastUpdated = Date.now();
           }
           rooms.set(roomId, room);
           room.startBroadcast(io);
         }
       } catch (err) {
-        // silent fail — fall back to volatile room creation
+        error(`[redis] Failed to restore room:${roomId}: ${err.message}`);
       }
     }
 

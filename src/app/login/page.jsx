@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { GoogleIcon } from "@/components/icons/GoogleIcon";
 import { DiscordIcon } from "@/components/icons/DiscordIcon";
 import { GithubIcon } from "@/components/icons/GithubIcon";
+import BackButton from "@/components/ui/BackButton";
 
 const providers = [
   {
@@ -34,7 +35,9 @@ function LoginContent() {
   const error = params.get("error");
 
   return (
-    <div className="min-h-[100dvh] bg-void flex items-center justify-center px-4 font-body overflow-hidden">
+    <div className="min-h-[100dvh] bg-void flex items-center justify-center px-4 font-body overflow-hidden relative">
+      <BackButton href="/" className="absolute top-6 left-6 lg:top-8 lg:left-10 z-[100]" />
+      
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-amber/5 rounded-full blur-[100px] sm:blur-[120px]" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-jade/5 rounded-full blur-[100px] sm:blur-[120px]" />

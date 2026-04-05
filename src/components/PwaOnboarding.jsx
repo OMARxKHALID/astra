@@ -43,13 +43,10 @@ export default function PwaOnboarding() {
   if (!showBanner) return null;
 
   return (
-    <div className="fixed bottom-6 left-6 right-6 z-[100] md:left-auto md:max-w-xs animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="relative overflow-hidden group glass-card rounded-[var(--radius-panel)] shadow-[0_0_50px_-12px_rgba(245,158,11,0.3)] p-4">
-        {/* [Note] Accent Glow: subtle atmospheric lighting to draw attention to installation */}
-        <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber/10 blur-[50px] rounded-full group-hover:bg-amber/20 transition-all duration-700" />
-        
+    <div className="fixed bottom-6 left-6 right-6 z-[100] md:left-auto md:max-w-[320px] animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="relative overflow-hidden group bg-void/80 backdrop-blur-3xl border border-white/10 rounded-[var(--radius-panel)] p-5">
         <div className="relative flex items-start gap-4">
-          <div className="w-10 h-10 rounded-[var(--radius-pill)] bg-amber flex items-center justify-center shrink-0 shadow-lg shadow-amber/20">
+          <div className="w-10 h-10 rounded-[var(--radius-pill)] bg-amber flex items-center justify-center shrink-0">
             <Download className="w-5 h-5 text-void" strokeWidth={2.5} />
           </div>
           
@@ -68,7 +65,7 @@ export default function PwaOnboarding() {
 
         <button
           onClick={handleInstall}
-          className="mt-4 w-full h-10 rounded-[var(--radius-pill)] bg-amber text-void text-[11px] font-black uppercase tracking-[0.1em] hover:brightness-110 active:scale-95 transition-all shadow-md shadow-amber/10"
+          className="mt-4 w-full h-10 rounded-[var(--radius-pill)] bg-amber text-void text-[11px] font-black uppercase tracking-[0.1em] hover:brightness-110 active:scale-95 transition-all"
         >
           Install Now
         </button>

@@ -1,0 +1,33 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { ChevronLeft } from "lucide-react";
+
+export default function BackButton({ 
+  onClick, 
+  href,
+  className = "",
+  icon: Icon = ChevronLeft,
+}) {
+  const router = useRouter();
+
+  const handleBack = () => {
+    if (onClick) {
+      onClick();
+    } else if (href) {
+      router.push(href);
+    } else {
+      router.back();
+    }
+  };
+
+  return (
+    <button
+      onClick={handleBack}
+      aria-label="Go back"
+      className={`w-10 h-10 rounded-full glass-card flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all active:scale-90 cursor-pointer group shrink-0 outline-none shadow-2xl ${className}`}
+    >
+      <Icon className="w-5 h-5 pr-0.5 group-hover:-translate-x-0.5 transition-transform" />
+    </button>
+  );
+}

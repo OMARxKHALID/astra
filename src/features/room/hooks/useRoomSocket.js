@@ -15,101 +15,121 @@ const WS_URL =
 
 const ioRef = { current: null };
 
+/**
+ * Advanced Socket.io Hook for Astra Sync.
+ * Orchestrates real-time video synchronization, state management, and participant tracking.
+ */
 export function useRoomSocket(props) {
-  const p = useRef();
+  const p = useRef(props);
   p.current = props;
 
   const socketRef = useRef(null);
   const serverLine = useRef(null);
-  const timer = useRef(null);
+  const syncTimer = useRef(null);
   const tsMap = useRef({});
   const isBuffering = useRef(false);
-  const lastStatus = useRef("synced");
-  const preventUpdateEnd = useRef(0);
+  const lastSyncStatus = useRef("synced");
+  const preventSyncUntil = useRef(0);
   const clockOffset = useRef(0);
   const initialSeekDone = useRef(false);
-  const suppressNativeRef = useRef(false);
-  const socketHandlersRef = useRef({});
   const clockTimerRef = useRef(null);
   const localPlaybackRate = useRef(1);
 
+  /**
+   * Helper to update the server's authoritative state in a ref.
+   */
   const updateServerLine = useCallback((updates) => {
     if (serverLine.current) {
       serverLine.current = { ...serverLine.current, ...updates };
     }
   }, []);
 
-  const suppressNext = useCallback(() => {
-    suppressNativeRef.current = true;
+  /**
+   * Briefly suppresses native video events to prevent feedback loops.
+   */
+  const suppressNativeFeedback = useCallback(() => {
     const v = p.current.videoRef?.current;
-    if (v) v._suppressNative = true;
-    setTimeout(() => {
-      suppressNativeRef.current = false;
-      const vv = p.current.videoRef?.current;
-      if (vv) vv._suppressNative = false;
-    }, 150);
+    if (v) {
+      v._suppressNative = true;
+      setTimeout(() => { if (v) v._suppressNative = false; }, 150);
+    }
   }, []);
 
-  const isBufferingNow = useCallback((v) => {
+  /**
+   * Checks if the video is currently stalled or buffering.
+   */
+  const checkBuffering = useCallback((v) => {
     if (isBuffering.current) return true;
-    if (v && typeof v.isBuffering !== "undefined")
-      return Boolean(v.isBuffering);
-    return false;
+    return v && v.isBuffering === true;
   }, []);
 
-  const preventSync = useCallback((ms = 1000) => {
-    preventUpdateEnd.current = Date.now() + ms;
+  /**
+   * Locks synchronization for a given duration.
+   */
+  const lockSync = useCallback((ms = 1000) => {
+    preventSyncUntil.current = Date.now() + ms;
   }, []);
 
+  /**
+   * Sends a command to the Socket.io server.
+   */
   const send = useCallback(
     (type, data) => {
       const socket = socketRef.current;
-      if (!socket) return;
+      if (!socket || !socket.connected) return;
 
-      let socketEvent = type;
+      let event = type;
       if (type === "speed") {
-        socketEvent = "CMD:playbackRate";
+        event = "CMD:playbackRate";
         if (data?.rate != null) localPlaybackRate.current = data.rate;
       }
 
-      if (socketEvent.startsWith("CMD:")) {
-        socket.emit(socketEvent, p.current.roomId, data);
+      if (event.startsWith("CMD:")) {
+        socket.emit(event, p.current.roomId, data);
       } else {
-        socket.emit(socketEvent, data);
+        socket.emit(event, data);
       }
 
-      if (
-        ["CMD:play", "CMD:pause", "CMD:host", "CMD:playbackRate"].includes(socketEvent)
-      )
-        preventSync(1000);
-      if (socketEvent === "CMD:seek") preventSync(3000);
+      // Lock synchronization after significant state changes to allow for network propagation
+      if (["CMD:play", "CMD:pause", "CMD:host", "CMD:playbackRate"].includes(event)) {
+        lockSync(1000);
+      } else if (event === "CMD:seek") {
+        lockSync(3000);
+      }
     },
-    [preventSync],
+    [lockSync],
   );
 
-  const loop = useCallback(() => {
-    clearInterval(timer.current);
-    timer.current = setInterval(() => {
-      const { videoRef: vr, onDriftStatus: od } = p.current;
-      const v = vr?.current;
+  /**
+   * The Core Synchronization Loop.
+   * Compares local playback state with the server's leader time and applies corrections.
+   */
+  const startSyncLoop = useCallback(() => {
+    clearInterval(syncTimer.current);
+    syncTimer.current = setInterval(() => {
+      const { videoRef, onDriftStatus, canControl, speedSyncEnabled, userId } = p.current;
+      const v = videoRef?.current;
       const s = serverLine.current;
+      
       if (!v || !s) return;
 
-      const inPreventWindow = Date.now() < preventUpdateEnd.current;
-      const canControl = p.current.canControl !== false;
+      const resultsInWindow = Date.now() < preventSyncUntil.current;
+      const hasControl = canControl !== false;
 
-      if (!inPreventWindow && canControl) {
-        if (s.isPlaying && v.paused && !isBufferingNow(v)) {
-          suppressNext();
+      // 1. Play/Pause state enforcement
+      if (!resultsInWindow && hasControl) {
+        if (s.isPlaying && v.paused && !checkBuffering(v)) {
+          suppressNativeFeedback();
           v.play().catch(() => {});
         } else if (!s.isPlaying && !v.paused) {
-          suppressNext();
+          suppressNativeFeedback();
           v.pause();
         }
       }
 
+      // 2. Playback Rate Correction (Speed Sync)
       const targetRate = s.playbackRate || 1;
-      if (v.readyState < 3 || isBufferingNow(v) || inPreventWindow) {
+      if (v.readyState < 3 || checkBuffering(v) || resultsInWindow) {
         if (Math.abs(v.playbackRate - targetRate) > 0.005) {
           v.playbackRate = targetRate;
         }
@@ -117,72 +137,54 @@ export function useRoomSocket(props) {
       }
 
       const lt = tsMap.current._leaderTime_ ?? 0;
-      const target = expectedTime(s, clockOffset.current);
-      const leaderTime = lt > 0 ? lt : target;
+      const leaderTime = lt > 0 ? lt : expectedTime(s, clockOffset.current);
       if (leaderTime === 0) return;
 
       const drift = leaderTime - v.currentTime;
-      const newStatus = Math.abs(drift) <= SYNC_TOLERANCE_S ? "synced" : "soft";
-      if (newStatus !== lastStatus.current) {
-        lastStatus.current = newStatus;
-        od?.(newStatus);
+      const syncStatus = Math.abs(drift) <= SYNC_TOLERANCE_S ? "synced" : "soft";
+      
+      if (syncStatus !== lastSyncStatus.current) {
+        lastSyncStatus.current = syncStatus;
+        onDriftStatus?.(syncStatus);
       }
 
-      if (!initialSeekDone.current && Math.abs(drift) > 1) {
+      // Initial alignment
+      if (!initialSeekDone.current && Math.abs(drift) > 1.5) {
         v.currentTime = leaderTime;
         initialSeekDone.current = true;
       }
 
-      const correction = computeCorrection(
-        v.currentTime,
-        leaderTime,
-        s.isPlaying,
-      );
-      const speedSyncOn = p.current.speedSyncEnabled !== false;
-      const commandedRate =
-        speedSyncOn || s?.hostId === p.current.userId
-          ? localPlaybackRate.current !== 1
-            ? localPlaybackRate.current
-            : s.playbackRate || 1
-          : 1;
+      // Apply dynamic speed correction for drift
+      const speedSyncActive = speedSyncEnabled !== false;
+      const baseRate = (speedSyncActive || s?.hostId === userId) 
+        ? (localPlaybackRate.current || s.playbackRate || 1) 
+        : 1;
 
-      // [Fix] Apply drift correction RELATIVE to commanded rate, not relative to 1x.
-      // correction.playbackRate is a ratio near 1 (e.g., 0.94-1.06).
-      // If commandedRate=2 and correction=0.94, result should be 2*0.94=1.88, not 0.94.
-      const correctedRate =
-        correction.action === "soft" ? commandedRate * correction.playbackRate : commandedRate;
+      const correction = computeCorrection(v.currentTime, leaderTime, s.isPlaying);
+      const outputRate = correction.action === "soft" ? baseRate * correction.playbackRate : baseRate;
 
-      if (Math.abs(v.playbackRate - correctedRate) > 0.005) {
-        v.playbackRate = correctedRate;
+      if (Math.abs(v.playbackRate - outputRate) > 0.005) {
+        v.playbackRate = outputRate;
       }
     }, SYNC_CHECK_INTERVAL);
-  }, [isBufferingNow, suppressNext]);
+  }, [checkBuffering, suppressNativeFeedback]);
 
+  /**
+   * Initializes the socket connection and attaches event handlers.
+   */
   const connect = useCallback(async () => {
-    const {
-      roomId,
-      userId,
-      hostToken,
-      videoUrl,
-      displayName,
-      roomPassword,
-      onConnStatus,
-    } = p.current;
+    const { roomId, userId, hostToken, videoUrl, displayName, roomPassword, onConnStatus } = p.current;
     
     if (socketRef.current) socketRef.current.disconnect();
 
     if (!ioRef.current) {
-      try {
-        const { default: io } = await import("socket.io-client");
-        ioRef.current = io;
-      } catch (err) {
-        return;
-      }
+      const { default: io } = await import("socket.io-client");
+      ioRef.current = io;
     }
 
     const socket = ioRef.current(WS_URL, {
       transports: ["websocket", "polling"],
-      reconnectionAttempts: Infinity,
+      reconnectionAttempts: 5,
     });
 
     socketRef.current = socket;
@@ -197,9 +199,10 @@ export function useRoomSocket(props) {
         videoUrl: videoUrl || "",
         password: roomPassword || undefined,
       });
-      loop();
+      startSyncLoop();
 
-      const calibrateClock = () => {
+      // Time Synchronization Protocol (Clock Calibration)
+      const calibrate = () => {
         const t0 = Date.now();
         socket.emit("PING_CLOCK", t0, (serverTime) => {
           if (typeof serverTime !== "number") return;
@@ -207,231 +210,144 @@ export function useRoomSocket(props) {
           clockOffset.current = serverTime + rtt / 2 - Date.now();
         });
       };
-      calibrateClock();
+      calibrate();
       if (clockTimerRef.current) clearInterval(clockTimerRef.current);
-      clockTimerRef.current = setInterval(calibrateClock, CLOCK_RECAL_INTERVAL);
-      socket.once("disconnect", () => {
-        if (clockTimerRef.current) {
-          clearInterval(clockTimerRef.current);
-          clockTimerRef.current = null;
-        }
-      });
+      clockTimerRef.current = setInterval(calibrate, CLOCK_RECAL_INTERVAL);
     });
 
+    // --- Socket Event Handlers ---
     const handlers = {
-      disconnect: (reason) => {
-        p.current.onConnStatus?.("reconnecting");
-      },
-      connect_error: (err) => {
-        p.current.onConnStatus?.("reconnecting");
-      },
+      disconnect: () => onConnStatus?.("reconnecting"),
+      connect_error: () => onConnStatus?.("reconnecting"),
+
       "REC:host": (m) => {
         const state = {
           videoUrl: m.video,
           isPlaying: !m.paused,
           currentTime: m.videoTS,
           playbackRate: m.playbackRate ?? 1,
-          strictVideoUrlMode: m.strictVideoUrlMode ?? false,
-          hostOnlyControls: m.hostOnlyControls ?? false,
-          hasPassword: m.hasPassword ?? false,
+          strictVideoUrlMode: !!m.strictVideoUrlMode,
+          hostOnlyControls: !!m.hostOnlyControls,
+          hasPassword: !!m.hasPassword,
           subtitleUrl: m.subtitleUrl || "",
           hostId: m.hostId || "",
         };
-        const wasInitial = !serverLine.current;
+
+        const isInit = !serverLine.current;
         const prev = serverLine.current;
         const videoChanged = prev && prev.videoUrl !== m.video;
+        
         serverLine.current = state;
-        if (m.playbackRate != null) {
-          localPlaybackRate.current = m.playbackRate;
-        }
+        if (m.playbackRate != null) localPlaybackRate.current = m.playbackRate;
+        
         p.current.onStateUpdate?.(state);
-        if (wasInitial || videoChanged) initialSeekDone.current = false;
-        if (Date.now() < preventUpdateEnd.current) return;
+        
+        if (isInit || videoChanged) initialSeekDone.current = false;
+        if (Date.now() < preventSyncUntil.current) return;
+
         const v = p.current.videoRef?.current;
-        if (wasInitial && v && state.currentTime > 0) {
+        if (isInit && v && state.currentTime > 0) {
           v.currentTime = state.currentTime;
           initialSeekDone.current = true;
           if (state.isPlaying) {
-            suppressNext();
-            v.play().catch(() => {});
+             suppressNativeFeedback();
+             v.play().catch(() => {});
           }
-          if (m.reconnected) {
-            p.current.onReconnected?.();
-            if (typeof document !== "undefined" && document.pictureInPictureElement) {
-              document.exitPictureInPicture().catch(() => {});
-            }
-          }
-          else if (state.currentTime > 120)
-            p.current.onLateJoin?.(state.currentTime);
+          if (m.reconnected) p.current.onReconnected?.();
+          else if (state.currentTime > 120) p.current.onLateJoin?.(state.currentTime);
         }
 
-        if (!wasInitial && prev) {
-          const ocm = p.current.onChatMessage;
-          if (prev.strictVideoUrlMode !== m.strictVideoUrlMode)
-            ocm?.({
-              senderId: "system",
-              ts: Date.now(),
-              text: m.strictVideoUrlMode
-                ? "[STRICT_ON] Strict URL mode ON — direct files only."
-                : "[STRICT_OFF] Strict URL mode OFF — all URLs allowed.",
-            });
+        // System messages on state changes
+        if (!isInit && prev) {
+          const sys = (text) => p.current.onChatMessage?.({ senderId: "system", ts: Date.now(), text });
+          if (prev.strictVideoUrlMode !== m.strictVideoUrlMode) 
+            sys(m.strictVideoUrlMode ? "[STRICT] Mode ON" : "[STRICT] Mode OFF");
           if (prev.hostOnlyControls !== m.hostOnlyControls)
-            ocm?.({
-              senderId: "system",
-              ts: Date.now(),
-              text: m.hostOnlyControls
-                ? "[LOCK] Playback locked to host only."
-                : "[UNLOCK] Playback unlocked for everyone.",
-            });
-          if (Boolean(prev.hasPassword) !== Boolean(m.hasPassword))
-            ocm?.({
-              senderId: "system",
-              ts: Date.now(),
-              text: m.hasPassword
-                ? "[LOCK] Room password set."
-                : "[UNLOCK] Room password removed.",
-            });
+            sys(m.hostOnlyControls ? "[LOCK] Host-only controls ON" : "[UNLOCK] Everyone can control");
         }
       },
+
       "REC:play": (m) => {
         const v = p.current.videoRef?.current;
         if (v) {
-          if (m?.videoTS != null && Math.abs(v.currentTime - m.videoTS) > 0.5)
-            v.currentTime = m.videoTS;
-          suppressNext();
+          if (m?.videoTS != null && Math.abs(v.currentTime - m.videoTS) > 0.5) v.currentTime = m.videoTS;
+          suppressNativeFeedback();
           v.play().catch(() => {});
         }
       },
+
       "REC:pause": () => {
         const v = p.current.videoRef?.current;
         if (v && !v.paused) {
-          suppressNext();
+          suppressNativeFeedback();
           v.pause();
         }
       },
+
       "REC:seek": (time) => {
         const v = p.current.videoRef?.current;
         if (v && Math.abs(v.currentTime - time) > 0.5) v.currentTime = time;
-        if (Date.now() < preventUpdateEnd.current) return;
-        const mins = Math.floor(time / 60);
-        const secs = String(Math.floor(time % 60)).padStart(2, "0");
-        p.current.onChatMessage?.({
-          senderId: "system",
-          ts: Date.now(),
-          text: `[SEEK] Host jumped to ${mins}:${secs}`,
-        });
+        if (Date.now() < preventSyncUntil.current) return;
+        const fmt = (t) => `${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,"0")}`;
+        p.current.onChatMessage?.({ senderId: "system", ts: Date.now(), text: `[SEEK] Host jumped to ${fmt(time)}` });
       },
+
       "REC:tsMap": (data) => {
         tsMap.current = data;
         p.current.onTsMapUpdate?.(data);
       },
-      "REC:roster": (users) =>
-        p.current.onUserChange?.({ type: "participants", users }),
-      user_joined: (m) =>
-        p.current.onUserChange?.({ type: "user_joined", ...m }),
+
+      "REC:error": (m) => {
+        const critical = ["STRICT_VIDEO_MODE", "WRONG_PASSWORD", "NEED_PASSWORD", "UNAUTHORIZED"].includes(m.code);
+        if (critical || m.message === "Invalid host token") {
+           if (socketRef.current) socketRef.current.disconnect();
+           p.current.onKicked?.(m.message || m.code);
+        } else if (m.message) {
+           p.current.addToast?.(m.message, "error");
+        }
+      },
+
+      // Chat and Participants
+      chat: (m) => p.current.onChatMessage?.(m),
+      chat_history: (m) => p.current.onChatMessage?.({ type: "chat_history", ...m }),
+      "REC:roster": (users) => p.current.onUserChange?.({ type: "participants", users }),
+      user_joined: (m) => p.current.onUserChange?.({ type: "user_joined", ...m }),
       user_left: (m) => p.current.onUserChange?.({ type: "user_left", ...m }),
-      name_changed: (m) =>
-        p.current.onUserChange?.({ type: "name_changed", ...m }),
-      user_typing: (m) =>
-        p.current.onUserChange?.({ type: "user_typing", ...m }),
       host_changed: (m) => {
         p.current.onUserChange?.({ type: "host_changed", ...m });
-        p.current.onStateUpdate?.((prev) =>
-          prev ? { ...prev, hostId: m.newHostId } : prev,
-        );
-        if (m.transferredFrom)
-          p.current.onChatMessage?.({
-            senderId: "system",
-            ts: Date.now(),
-            text: "[HOST] Host role transferred.",
-          });
+        p.current.onStateUpdate?.(p => p ? { ...p, hostId: m.newHostId } : p);
       },
-      "REC:subtitle": (url) => {
-        if (url == null) return;
-        
-        let decodedUrl = String(url);
-        if (decodedUrl.includes("%")) {
-          try {
-            decodedUrl = decodeURIComponent(decodedUrl);
-          } catch (e) {
-            // use raw string on decode failure
-          }
-        }
-        
-        if (decodedUrl && decodedUrl.length > 0) {
-          p.current.onStateUpdate?.((prev) => {
-            const newState = prev ? { ...prev, subtitleUrl: decodedUrl } : { subtitleUrl: decodedUrl };
-            return newState;
-          });
-        }
-      },
-      chat: (m) => p.current.onChatMessage?.(m),
-      chat_history: (m) =>
-        p.current.onChatMessage?.({ type: "chat_history", ...m }),
-      chat_update: (m) => p.current.onChatUpdate?.(m),
-      "CALL:user_joined": (m) => p.current.onCallEvent?.({ type: "call_user_joined", ...m }),
-      "CALL:user_left": (m) => p.current.onCallEvent?.({ type: "call_user_left", ...m }),
+
+      // WebRTC Call Signaling
       "CALL:offer": (m) => p.current.onCallEvent?.({ type: "offer", ...m }),
       "CALL:answer": (m) => p.current.onCallEvent?.({ type: "answer", ...m }),
       "CALL:ice": (m) => p.current.onCallEvent?.({ type: "ice", ...m }),
-      "CALL:status": (m) => p.current.onCallEvent?.({ type: "status", ...m }),
-      "REC:error": (m) => {
-        if (m.code === "STRICT_VIDEO_MODE") {
-          p.current.onChatMessage?.({
-            senderId: "system",
-            ts: Date.now(),
-            text: `[STRICT] ${m.message}`,
-          });
-          return;
-        }
-        if (
-          m.code === "WRONG_PASSWORD" ||
-          m.code === "NEED_PASSWORD" ||
-          m.message === "You have been removed from the room."
-        ) {
-          if (socketRef.current) {
-            socketRef.current.io.opts.reconnection = false;
-            socketRef.current.disconnect();
-          }
-          p.current.onKicked?.(m.code || m.message);
-          return;
-        }
-        if (m.message === "Invalid host token") {
-          if (socketRef.current) socketRef.current.disconnect();
-          p.current.onKicked?.(m.message);
-        }
-      },
     };
 
     Object.entries(handlers).forEach(([ev, fn]) => socket.on(ev, fn));
-    socketHandlersRef.current = handlers;
-  }, [loop, suppressNext]);
+  }, [startSyncLoop, suppressNativeFeedback]);
 
+  // Initial connection and lifecycle
   useEffect(() => {
     connect();
     return () => {
-      const socket = socketRef.current;
-      if (socket && socketHandlersRef.current) {
-        Object.keys(socketHandlersRef.current).forEach((ev) =>
-          socket.off(ev),
-        );
-        socketHandlersRef.current = {};
+      const s = socketRef.current;
+      if (s) {
+        s.removeAllListeners();
+        s.disconnect();
       }
-      if (clockTimerRef.current) {
-        clearInterval(clockTimerRef.current);
-        clockTimerRef.current = null;
-      }
-      if (socket) socket.disconnect();
-      clearInterval(timer.current);
+      clearInterval(syncTimer.current);
+      clearInterval(clockTimerRef.current);
     };
-  }, [connect, props.userId, props.roomId]);
+  }, [connect]);
 
+  // Periodic heartbeat reporting local status to the server
   useEffect(() => {
     const int = setInterval(() => {
       const v = p.current.videoRef?.current;
-      const socket = socketRef.current;
-      if (v && !v.paused && !isBufferingNow(v) && socket?.connected) {
-        socket.emit("CMD:ts", p.current.roomId, {
+      const s = socketRef.current;
+      if (v && !v.paused && !checkBuffering(v) && s?.connected) {
+        s.emit("CMD:ts", p.current.roomId, {
           currentTime: v.currentTime,
           clientId: p.current.userId,
           ts: Date.now(),
@@ -439,7 +355,7 @@ export function useRoomSocket(props) {
       }
     }, 1000);
     return () => clearInterval(int);
-  }, [isBufferingNow]);
+  }, [checkBuffering]);
 
   return { send, socketRef, updateServerLine };
 }

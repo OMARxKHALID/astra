@@ -67,6 +67,7 @@ export default function registerVideoHandlers(
     ctx.room.playbackRate = validRate;
     if (msg?.videoTS != null) ctx.room.videoTS = Number(msg.videoTS);
     ctx.room.lastUpdated = Date.now();
+    ctx.room.lockTs();
     io.to(ctx.room.roomId).emit("REC:host", ctx.room.publicState());
     saveRoom(ctx.room);
   });
@@ -78,6 +79,16 @@ export default function registerVideoHandlers(
     if (!room) return;
 
     const rawUrl = typeof data?.video === "string" ? data.video.trim().slice(0, 2048) : "";
+
+    // [Note] blob: URLs are tab-local object URLs — they expire when the originating tab closes.
+    // Broadcasting them to other clients or storing in room state causes "Cannot Play Video" on refresh.
+    if (rawUrl.startsWith("blob:")) {
+      socket.emit("REC:error", {
+        message: "Local file URLs cannot be shared with the room. Only this device can play this file.",
+        code: "LOCAL_FILE_URL",
+      });
+      return;
+    }
 
     if (rawUrl) {
       try { new URL(rawUrl); }
@@ -122,7 +133,7 @@ export default function registerVideoHandlers(
     let finalUrl = inputUrl;
     if (/^\d+$/.test(inputUrl)) {
       const fileId = inputUrl;
-      const serverUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+      const serverUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
       finalUrl = `${serverUrl}/api/subtitles/download?url=${fileId}`;
     } else if (inputUrl.startsWith("blob:") || inputUrl.startsWith("data:") || inputUrl.startsWith("http")) {
       try { new URL(inputUrl); }

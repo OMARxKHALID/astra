@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
-import { Play, Star, ChevronLeft, ChevronRight } from "lucide-react";
+import { Play, Star } from "lucide-react";
 import { GENRE_MAP } from "@/constants/maps";
 
 export default function MediaHero({ items, onPick, onPlay }) {
@@ -19,10 +19,7 @@ export default function MediaHero({ items, onPick, onPlay }) {
 
   useEffect(() => {
     if (items.length < 2) return;
-    timer.current = setInterval(
-      () => go((i) => (i + 1) % items.length),
-      8000,
-    );
+    timer.current = setInterval(() => go((i) => (i + 1) % items.length), 8000);
     return () => clearInterval(timer.current);
   }, [items.length, go]);
 
@@ -35,7 +32,7 @@ export default function MediaHero({ items, onPick, onPlay }) {
     .filter(Boolean);
 
   return (
-    <div className="relative h-[750px] overflow-hidden group">
+    <div className="relative h-[750px] overflow-hidden group z-0">
       {item.backdrop && (
         <Image
           src={item.backdrop}
@@ -98,7 +95,7 @@ export default function MediaHero({ items, onPick, onPlay }) {
             <button
               onClick={() => onPlay && onPlay(item)}
               aria-label={`Watch ${item.title}`}
-              className="flex items-center gap-2 px-7 py-3 rounded-[var(--radius-pill)] bg-amber text-void font-bold text-sm border-none cursor-pointer hover:bg-amber transition-all font-body shadow-[0_4px_16px_rgba(var(--color-amber-rgb),0.2)] active:scale-95"
+              className="flex items-center gap-2 px-7 py-3 rounded-[var(--radius-pill)] bg-amber text-void font-bold text-sm border-none cursor-pointer hover:bg-amber transition-all font-body shadow-lg active:scale-95"
             >
               <Play className="w-4 h-4 fill-current" />
               Play

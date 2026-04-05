@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { withRateLimit } from "@/lib/rateLimit";
 
 const API_KEY = process.env.OPENSUBTITLES_KEY;
 const API_BASE = "https://api.opensubtitles.com/api/v1";
@@ -17,7 +18,7 @@ function isValidVideoUrl(urlStr) {
   }
 }
 
-// OpenSubtitles Hash: block-checksum of first and last 64KB + file size
+// [Note] OpenSubtitles Hash algorithm: block-checksum of first and last 64KB + file size
 function computeHash(buffer, size) {
     let hash = BigInt(size);
     const view = new DataView(buffer);
@@ -30,19 +31,13 @@ function computeHash(buffer, size) {
     return hash.toString(16).padStart(16, "0");
 }
 
-async function fetchWithTimeout(url, options = {}, timeout = 10000) {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
-  try {
-    const res = await fetch(url, { ...options, signal: controller.signal });
-    return res;
-  } finally {
-    clearTimeout(id);
-  }
-}
+
 
 export async function GET(request) {
   try {
+    const limited = await withRateLimit(request, { key: "subtitles:search", requests: 20, window: "1 m" });
+    if (limited) return limited;
+
     if (!API_KEY) {
       return NextResponse.json({ title: "Unknown", subtitles: [] });
     }
@@ -62,13 +57,15 @@ export async function GET(request) {
 
     if (videoUrl && isValidVideoUrl(videoUrl)) {
         try {
-            const headResp = await fetchWithTimeout(videoUrl, { method: "HEAD" });
+            const headResp = await fetch(videoUrl, { method: "HEAD", signal: AbortSignal.timeout(10000) });
             if (!headResp.ok) throw new Error(`HEAD request failed: ${headResp.status}`);
             const size = parseInt(headResp.headers.get("content-length") || "0");
             
-            if (size > 131072 && size < 500_000_000) { // max 500MB
-                const startResp = await fetchWithTimeout(videoUrl, { headers: { Range: "bytes=0-65535" } }, 15000);
-                const endResp = await fetchWithTimeout(videoUrl, { headers: { Range: `bytes=${size - 65536}-${size - 1}` } }, 15000);
+            if (size > 131072 && size < 500_000_000) { // [Note] limit hash computation to files under 500MB to save memory/bandwidth
+                const [startResp, endResp] = await Promise.all([
+                  fetch(videoUrl, { headers: { Range: "bytes=0-65535" }, signal: AbortSignal.timeout(15000) }),
+                  fetch(videoUrl, { headers: { Range: `bytes=${size - 65536}-${size - 1}` }, signal: AbortSignal.timeout(15000) })
+                ]);
                 const startBuf = await startResp.arrayBuffer();
                 const endBuf = await endResp.arrayBuffer();
                 
@@ -78,7 +75,7 @@ export async function GET(request) {
                 
                 const hash = computeHash(combined.buffer, size);
                 
-                const searchRes = await fetchWithTimeout(`${API_BASE}/subtitles?moviehash=${hash}&languages=en`, { headers });
+                const searchRes = await fetch(`${API_BASE}/subtitles?moviehash=${hash}&languages=en`, { headers, signal: AbortSignal.timeout(10000) });
                 const data = await searchRes.json();
                 
                 if (data.data) {
@@ -92,12 +89,12 @@ export async function GET(request) {
                 }
             }
         } catch {
-          // hash search failed — proceed to fallback
+          // [Note] hash search failed — proceed to fallback
         }
     }
 
     if (results.length === 0 && query) {
-        const searchRes = await fetchWithTimeout(`${API_BASE}/subtitles?query=${encodeURIComponent(query)}&languages=en`, { headers });
+        const searchRes = await fetch(`${API_BASE}/subtitles?query=${encodeURIComponent(query)}&languages=en`, { headers, signal: AbortSignal.timeout(10000) });
         const data = await searchRes.json();
         
         if (data.data) {
@@ -113,14 +110,14 @@ export async function GET(request) {
 
     if (results.length === 0 && query) {
         const cinemetaUrl = `https://v3-cinemeta.strem.io/catalog/movie/top/search=${encodeURIComponent(query)}.json`;
-        const cRes = await fetchWithTimeout(cinemetaUrl, {}, 5000);
+        const cRes = await fetch(cinemetaUrl, { signal: AbortSignal.timeout(5000) });
         const cData = await cRes.json();
         
         if (cData.metas && cData.metas.length > 0) {
             movieTitle = cData.metas[0].name;
             const imdbId = cData.metas[0].imdb_id;
             const osUrl = `https://opensubtitles-v3.strem.io/subtitles/movie/${imdbId}.json`;
-            const sRes = await fetchWithTimeout(osUrl, {}, 5000);
+            const sRes = await fetch(osUrl, { signal: AbortSignal.timeout(5000) });
             const sData = await sRes.json();
             
             if (sData.subtitles) {

@@ -3,7 +3,28 @@ import { gunzipSync } from "zlib";
 
 const API_KEY = process.env.OPENSUBTITLES_KEY;
 const API_BASE = "https://api.opensubtitles.com/api/v1";
-const MAX_RESPONSE_SIZE = 2 * 1024 * 1024; // 2MB max
+const MAX_RESPONSE_SIZE = 2 * 1024 * 1024;
+
+const BLOCKED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", "::1"];
+
+function isValidDirectUrl(urlStr) {
+  try {
+    const url = new URL(urlStr);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return false;
+    const hostname = url.hostname.toLowerCase();
+    if (BLOCKED_HOSTS.includes(hostname)) return false;
+    if (
+      hostname.startsWith("127.") ||
+      hostname.startsWith("10.") ||
+      hostname.startsWith("192.168.") ||
+      hostname.startsWith("169.254.") ||
+      hostname.startsWith("172.")
+    ) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export async function GET(request) {
   try {
@@ -28,8 +49,6 @@ export async function GET(request) {
 
     const isFileId = /^\d+$/.test(subUrlOrId.trim());
     if (isFileId) {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000);
       const dlRes = await fetch(`${API_BASE}/download`, {
         method: "POST",
         headers: {
@@ -38,9 +57,8 @@ export async function GET(request) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ file_id: parseInt(subUrlOrId, 10) }),
-        signal: controller.signal,
+        signal: AbortSignal.timeout(10000),
       });
-      clearTimeout(timeout);
       
       if (!dlRes.ok)
         throw new Error(`OpenSubtitles download API: ${dlRes.status}`);
@@ -48,14 +66,12 @@ export async function GET(request) {
       if (!dlData.link) throw new Error("No download link from OpenSubtitles");
       finalDownloadUrl = dlData.link;
     } else {
-      // Validate external URL
-      try {
-        const url = new URL(finalDownloadUrl);
-        if (url.protocol !== "http:" && url.protocol !== "https:") {
-          throw new Error("Invalid protocol");
-        }
-      } catch {
-        throw new Error("Invalid download URL");
+      // [Note] SSRF guard: direct URLs must pass the same IP blocklist as /api/proxy
+      if (!isValidDirectUrl(finalDownloadUrl)) {
+        return NextResponse.json(
+          { error: "Invalid or disallowed URL" },
+          { status: 400 },
+        );
       }
     }
 
@@ -82,7 +98,7 @@ export async function GET(request) {
       try {
         rawData = gunzipSync(rawData);
       } catch (e) {
-        // gzip decompression failed — proceed with raw data
+        // [Note] gzip decompression failed — proceed with raw data
       }
     }
 

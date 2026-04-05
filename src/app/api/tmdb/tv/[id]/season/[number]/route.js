@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { apiResponse } from "@/utils/apiResponse";
 import { redisCache } from "@/lib/redis";
 
 const VALID_ID_PATTERN = /^\d+$/;
@@ -7,30 +7,24 @@ export async function GET(req, { params }) {
   const key = process.env.TMDB_API_KEY;
   const { id, number } = await params;
 
-  if (!key) return NextResponse.json({ error: "API key not configured" }, { status: 500 });
-  if (!id || !VALID_ID_PATTERN.test(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
-  if (!number || !VALID_ID_PATTERN.test(number)) return NextResponse.json({ error: "Invalid season number" }, { status: 400 });
+  if (!key) return apiResponse.internalError("TMDB API key not configured");
+  if (!id || !VALID_ID_PATTERN.test(id)) return apiResponse.badRequest("Invalid TMDB ID");
+  if (!number || !VALID_ID_PATTERN.test(number)) return apiResponse.badRequest("Invalid season number");
 
   const cacheKey = `tmdb:season:${id}:${number}`;
 
   try {
     if (redisCache) {
       const cached = await redisCache.get(cacheKey);
-      if (cached) return NextResponse.json(cached);
+      if (cached) return apiResponse.success(cached);
     }
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
     const res = await fetch(
       `https://api.themoviedb.org/3/tv/${id}/season/${number}?api_key=${key}&language=en-US`,
-      { 
-        next: { revalidate: 3600 },
-        signal: controller.signal,
-      },
+      { signal: AbortSignal.timeout(10000) },
     );
-    clearTimeout(timeout);
     
-    if (!res.ok) return NextResponse.json({ error: "TMDB error" }, { status: 502 });
+    if (!res.ok) return apiResponse.error("TMDB service error", 502, "TMDB_FETCH_ERROR");
 
     const d = await res.json();
 
@@ -52,8 +46,8 @@ export async function GET(req, { params }) {
       await redisCache.set(cacheKey, result, { ex: 3600 });
     }
 
-    return NextResponse.json(result);
+    return apiResponse.success(result);
   } catch (err) {
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+    return apiResponse.internalError(`Failed to fetch season details: ${err.message}`);
   }
 }

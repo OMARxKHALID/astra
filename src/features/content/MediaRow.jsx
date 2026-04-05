@@ -36,7 +36,7 @@ export default function MediaRow({ title, items, onPick, accent = "var(--color-a
       </div>
       <div
         ref={ref}
-        className="flex gap-4 overflow-x-auto scrollbar-none pb-2.5 px-6 lg:px-12"
+        className="flex gap-4 overflow-x-auto scrollbar-none pt-4 -mt-4 pb-4 px-6 lg:px-12"
         style={{ scrollbarWidth: "none" }}
       >
         {items.map((item) => (

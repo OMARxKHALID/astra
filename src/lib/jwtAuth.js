@@ -11,7 +11,7 @@ function secret() {
     if (process.env.NODE_ENV === "production") {
       // [Note] Critical security: JWT_SECRET must be set on Vercel/Render for token persistence
     }
-    return "dev-fallback-not-secure";
+    return "astra-dev-fallback-secret-2024";
   }
   return s;
 }

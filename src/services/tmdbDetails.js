@@ -1,5 +1,13 @@
 import { fetchTMDB } from "./tmdb";
 
+const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
+
+const getImageUrl = (path, size = "original") => 
+  path ? `${TMDB_IMAGE_BASE}/${size}${path}` : null;
+
+/**
+ * Parses watch providers for a given TMDB response.
+ */
 function parseProviders(d) {
   const pRes = d["watch/providers"]?.results || {};
   const localP = pRes.US || Object.values(pRes)[0] || {};
@@ -7,21 +15,51 @@ function parseProviders(d) {
   return flatrate.map((p) => ({
     id: p.provider_id,
     name: p.provider_name,
-    logo: `https://image.tmdb.org/t/p/w92${p.logo_path}`,
+    logo: getImageUrl(p.logo_path, "w92"),
   }));
 }
 
+/**
+ * Common mapping for credits, reviews, and related items.
+ */
+const mapCommonDetails = (d, type) => ({
+  credits: (d.credits?.cast || []).slice(0, 10).map((c) => ({
+    id: c.id,
+    name: c.name,
+    role: c.character,
+    poster: getImageUrl(c.profile_path, "w185"),
+  })),
+  reviews: (d.reviews?.results || []).slice(0, 5).map((r) => ({
+    id: r.id,
+    author: r.author,
+    content: r.content,
+    rating: r.author_details?.rating,
+  })),
+  related: (d.recommendations?.results || []).slice(0, 10).map((hit) => ({
+    id: hit.id,
+    title: hit.title || hit.name,
+    poster: getImageUrl(hit.poster_path, "w200"),
+    type: hit.media_type || type,
+    rating: hit.vote_average ? parseFloat(hit.vote_average.toFixed(1)) : null,
+  })),
+  trailer: (d.videos?.results || []).find((v) => v.type === "Trailer" && v.site === "YouTube")?.key || null,
+  providers: parseProviders(d),
+});
+
+/**
+ * Fetches and maps detailed movie information.
+ */
 export async function getMovieDetails(id) {
   const d = await fetchTMDB(`movie/${id}`, "&append_to_response=credits,recommendations,reviews,videos,watch/providers");
   if (!d) return null;
 
-  const runtime = d.runtime
+  const runtimeStr = d.runtime
     ? d.runtime >= 60
       ? `${Math.floor(d.runtime / 60)}hr ${d.runtime % 60}min`
       : `${d.runtime}min`
     : null;
 
-  const release = d.release_date
+  const releaseDate = d.release_date
     ? new Date(d.release_date).toLocaleDateString("en-GB", {
         day: "numeric",
         month: "long",
@@ -36,39 +74,22 @@ export async function getMovieDetails(id) {
     tagline: d.tagline || null,
     rating: d.vote_average ? parseFloat(d.vote_average.toFixed(1)) : null,
     year: (d.release_date || "").slice(0, 4),
-    runtime,
-    release,
+    runtime: runtimeStr,
+    release: releaseDate,
     genres: (d.genres || []).map((g) => g.name),
     collection: d.belongs_to_collection?.name || null,
     languages: (d.spoken_languages || []).map((l) => l.english_name).join(", "),
     countries: (d.production_countries || []).map((c) => c.name).join(", "),
     companies: (d.production_companies || []).map((c) => c.name).join(", "),
-    poster: d.poster_path ? `https://image.tmdb.org/t/p/w500${d.poster_path}` : null,
-    backdrop: d.backdrop_path ? `https://image.tmdb.org/t/p/original${d.backdrop_path}` : null,
-    credits: (d.credits?.cast || []).slice(0, 10).map((c) => ({
-      id: c.id,
-      name: c.name,
-      role: c.character,
-      poster: c.profile_path ? `https://image.tmdb.org/t/p/w185${c.profile_path}` : null,
-    })),
-    reviews: (d.reviews?.results || []).slice(0, 5).map((r) => ({
-      id: r.id,
-      author: r.author,
-      content: r.content,
-      rating: r.author_details?.rating,
-    })),
-    related: (d.recommendations?.results || []).slice(0, 10).map((hit) => ({
-      id: hit.id,
-      title: hit.title || hit.name,
-      poster: hit.poster_path ? `https://image.tmdb.org/t/p/w200${hit.poster_path}` : null,
-      type: hit.media_type || "movie",
-      rating: hit.vote_average ? parseFloat(hit.vote_average.toFixed(1)) : null,
-    })),
-    trailer: (d.videos?.results || []).find((v) => v.type === "Trailer" && v.site === "YouTube")?.key || null,
-    providers: parseProviders(d),
+    poster: getImageUrl(d.poster_path, "w500"),
+    backdrop: getImageUrl(d.backdrop_path, "original"),
+    ...mapCommonDetails(d, "movie"),
   };
 }
 
+/**
+ * Fetches and maps detailed TV show information.
+ */
 export async function getTVDetails(id) {
   const d = await fetchTMDB(`tv/${id}`, "&append_to_response=credits,recommendations,reviews,videos,watch/providers");
   if (!d) return null;
@@ -79,7 +100,7 @@ export async function getTVDetails(id) {
       number: s.season_number,
       name: s.name,
       episodeCount: s.episode_count,
-      poster: s.poster_path ? `https://image.tmdb.org/t/p/w185${s.poster_path}` : null,
+      poster: getImageUrl(s.poster_path, "w185"),
       airDate: s.air_date || null,
     }));
 
@@ -95,36 +116,19 @@ export async function getTVDetails(id) {
     languages: (d.spoken_languages || []).map((l) => l.english_name).join(", "),
     countries: (d.production_countries || []).map((c) => c.name).join(", "),
     companies: (d.production_companies || []).map((c) => c.name).join(", "),
-    poster: d.poster_path ? `https://image.tmdb.org/t/p/w500${d.poster_path}` : null,
-    backdrop: d.backdrop_path ? `https://image.tmdb.org/t/p/original${d.backdrop_path}` : null,
+    poster: getImageUrl(d.poster_path, "w500"),
+    backdrop: getImageUrl(d.backdrop_path, "original"),
     status: d.status,
     episodes: d.number_of_episodes,
     lastAirDate: d.last_air_date,
     seasons,
-    credits: (d.credits?.cast || []).slice(0, 10).map((c) => ({
-      id: c.id,
-      name: c.name,
-      role: c.character,
-      poster: c.profile_path ? `https://image.tmdb.org/t/p/w185${c.profile_path}` : null,
-    })),
-    reviews: (d.reviews?.results || []).slice(0, 5).map((r) => ({
-      id: r.id,
-      author: r.author,
-      content: r.content,
-      rating: r.author_details?.rating,
-    })),
-    related: (d.recommendations?.results || []).slice(0, 10).map((hit) => ({
-      id: hit.id,
-      title: hit.title || hit.name,
-      poster: hit.poster_path ? `https://image.tmdb.org/t/p/w200${hit.poster_path}` : null,
-      type: hit.media_type || "tv",
-      rating: hit.vote_average ? parseFloat(hit.vote_average.toFixed(1)) : null,
-    })),
-    trailer: (d.videos?.results || []).find((v) => v.type === "Trailer" && v.site === "YouTube")?.key || null,
-    providers: parseProviders(d),
+    ...mapCommonDetails(d, "tv"),
   };
 }
 
+/**
+ * Fetches episodes for a specific TV show season.
+ */
 export async function getTVSeasonDetails(id, seasonNumber) {
   const d = await fetchTMDB(`tv/${id}/season/${seasonNumber}`);
   if (!d) return null;
@@ -135,8 +139,6 @@ export async function getTVSeasonDetails(id, seasonNumber) {
     overview: ep.overview,
     airDate: ep.air_date,
     runtime: ep.runtime || null,
-    still: ep.still_path
-      ? `https://image.tmdb.org/t/p/w300${ep.still_path}`
-      : null,
+    still: getImageUrl(ep.still_path, "w300"),
   }));
 }

@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { memo } from "react";
 import { classifyUrl } from "@/lib/videoResolver";
+import ErrorOverlay from "./players/native/components/ErrorOverlay";
 
 const NativeVideoPlayer = dynamic(() => import("./players/NativeVideoPlayer"), {
   ssr: false,
@@ -124,6 +125,21 @@ function VideoPlayer({
       />
     );
 
+  if (videoUrl) {
+    return (
+      <div className="relative w-full h-full bg-void flex flex-col items-center justify-center">
+        <ErrorOverlay
+          error={{
+            title: "URL Not Supported",
+            detail: "This URL format isn't recognized or the content is private/unavailable.",
+          }}
+          onRetry={() => {}}
+          onDismiss={() => {}}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full h-full bg-void flex flex-col items-center justify-center gap-4">
       <div className="absolute inset-0 bg-gradient-to-br from-void via-surface/60 to-void" />
@@ -149,9 +165,7 @@ function VideoPlayer({
           </svg>
         </div>
         <p className="text-[12px] font-mono uppercase tracking-[0.2em] text-white/20 max-w-xs leading-relaxed">
-          {videoUrl
-            ? "URL not recognized or private"
-            : "Room is ready. Paste a video link to begin."}
+          Room is ready. Paste a video link to begin.
         </p>
       </div>
     </div>

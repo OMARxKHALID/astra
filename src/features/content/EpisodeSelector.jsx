@@ -27,14 +27,17 @@ export default function EpisodeSelector({
 
     fetch(`/api/tmdb/tv/${tmdbId}/season/${season}`)
       .then((r) => r.json())
-      .then((data) => {
-        setCache?.((prev) => ({
-          ...prev,
-          [season]: {
-            episodes: data.episodes || [],
-            meta: data.meta || null,
-          },
-        }));
+      .then((res) => {
+        if (res.success) {
+          const data = res.data;
+          setCache?.((prev) => ({
+            ...prev,
+            [season]: {
+              episodes: data.episodes || [],
+              meta: data.meta || null,
+            },
+          }));
+        }
         setLoading(false);
       })
       .catch(() => setLoading(false));

@@ -26,6 +26,7 @@ import {
   List as ListIcon,
 } from "lucide-react";
 import Loading from "@/components/Loading";
+import BackButton from "@/components/ui/BackButton";
 import Image from "next/image";
 import {
   serverOptions,
@@ -108,8 +109,10 @@ function WatchContent() {
       `/api/tmdb/${derivedMeta.type || type}/${encodeURIComponent(activeTmdbId)}`,
     )
       .then((r) => r.json())
-      .then((d) => {
-        if (d && !d.error) setMeta(d);
+      .then((res) => {
+        if (res.success) {
+          setMeta(res.data);
+        }
       })
       .catch(() => {});
   }, [activeTmdbId, derivedMeta.type, type]);
@@ -180,13 +183,7 @@ function WatchContent() {
             : "-translate-y-full opacity-0 pointer-events-none"
         }`}
       >
-        <button
-          onClick={() => router.push("/")}
-          className="flex items-center justify-center gap-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[var(--radius-pill)] w-9 sm:w-auto px-0 sm:px-4 h-9 text-white/50 cursor-pointer font-body text-[12px] font-black hover:bg-white/10 hover:text-white transition-all active:scale-95 group shrink-0"
-        >
-          <ArrowLeft className="w-4 h-4 sm:group-hover:-translate-x-0.5 transition-transform" />
-          <span className="hidden sm:inline">Back</span>
-        </button>
+        <BackButton href="/" />
 
         {meta && (
           <div className="flex items-center gap-2.5 sm:gap-3 ml-1 sm:ml-2 animate-in fade-in slide-in-from-top-2 duration-700 min-w-0">

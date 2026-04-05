@@ -1,5 +1,4 @@
-import { NextResponse } from "next/server";
-import { randomUUID } from "crypto";
+import { apiResponse } from "@/utils/apiResponse";
 import { roomStore } from "@/lib/roomStore";
 
 const WS_HTTP_URL = process.env.WS_HTTP_URL || "http://localhost:3001";
@@ -8,7 +7,7 @@ export async function POST(_req, { params }) {
   const { id } = await params;
 
   if (!id || typeof id !== "string" || id.length > 50) {
-    return NextResponse.json({ error: "Invalid room ID" }, { status: 400 });
+    return apiResponse.badRequest("Invalid room ID");
   }
 
   let exists = await roomStore.get(id);
@@ -25,9 +24,9 @@ export async function POST(_req, { params }) {
   }
 
   if (!exists) {
-    return NextResponse.json({ error: "Room not found" }, { status: 404 });
+    return apiResponse.notFound("Room not found");
   }
 
-  const viewerToken = randomUUID();
-  return NextResponse.json({ roomId: id, viewerToken });
+  // [Note] No viewer token issued — socket-level identity is handled by userId + JWT host token
+  return apiResponse.success({ roomId: id });
 }

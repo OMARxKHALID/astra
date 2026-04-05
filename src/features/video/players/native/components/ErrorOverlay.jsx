@@ -38,6 +38,11 @@ export default function ErrorOverlay({ error, onRetry, onDismiss }) {
       "Paste a YouTube or Vimeo link",
       "Try a CDN/proxy URL with a known extension",
     ],
+    "Local File Unavailable": [
+      "Click the Upload button (↑) in the URL bar to re-upload",
+      "Local files only work on the device that uploaded them",
+      "Use a direct .mp4 link instead for shared rooms",
+    ],
     "Cannot Play Video": [
       "Use a direct .mp4 or .m3u8 URL",
       "YouTube or Vimeo links work best",

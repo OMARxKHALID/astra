@@ -58,8 +58,10 @@ export default function HomeView({ initialData }) {
       setLoading(true);
       fetch("/api/tmdb/browse")
         .then((r) => r.json())
-        .then((d) => {
-          setData(d);
+        .then((res) => {
+          if (res.success) {
+            setData(res.data);
+          }
           setLoading(false);
         })
         .catch(() => setLoading(false));
@@ -87,7 +89,11 @@ export default function HomeView({ initialData }) {
       setLastWatchedTitle(last.title);
       fetch(`/api/tmdb/recommendations?id=${last.id}&type=${last.type}`)
         .then((r) => r.json())
-        .then((d) => setRecommendations((d.items || []).slice(0, 20)))
+        .then((res) => {
+          if (res.success) {
+            setRecommendations((res.data.items || []).slice(0, 20));
+          }
+        })
         .catch(() => {});
     }
   }, []);
@@ -151,7 +157,7 @@ export default function HomeView({ initialData }) {
           onPick={handleNavigateToInfo}
           onPlay={handlePlay}
         />
-        <div className="mt-[-80px] relative z-10 flex flex-col gap-14">
+        <div className="mt-[-80px] relative z-50 flex flex-col gap-14">
           {recommendations.length > 0 && (
             <Row
               title={`Because you watched ${lastWatchedTitle}`}
