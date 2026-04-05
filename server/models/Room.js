@@ -14,7 +14,6 @@ export class Room {
   #lastBcastState = null;
   #tsLockUntil = 0;
   #lastBroadcastTime = Date.now();
-  #debouncedSave = null;
 
   constructor(roomId, video = "", hostId = "", hostToken = "") {
     this.roomId = roomId;

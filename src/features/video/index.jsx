@@ -126,6 +126,9 @@ function VideoPlayer({
     return (
       <EmbedPlayer
         videoUrl={videoUrl}
+        isPlaying={isPlaying}
+        onPlay={onPlay}
+        onPause={onPause}
         canControl={canControl}
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}
