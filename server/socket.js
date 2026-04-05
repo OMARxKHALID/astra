@@ -1,7 +1,11 @@
 import { Server } from "socket.io";
 import http from "http";
 import pkg from "@next/env";
-import { DEBUG, SOCKET_PING_INTERVAL, SOCKET_PING_TIMEOUT } from "./constants.js";
+import {
+  DEBUG,
+  SOCKET_PING_INTERVAL,
+  SOCKET_PING_TIMEOUT,
+} from "./constants.js";
 import { saveRoom } from "./models/Room.js";
 import registerChatHandlers from "./handlers/chatHandler.js";
 import registerVideoHandlers from "./handlers/videoHandler.js";
@@ -25,12 +29,12 @@ const tsLastSent = new Map();
 const httpServer = http.createServer((req, res) => {
   const origin = req.headers.origin || "";
   const isAllowed = ALLOWED_ORIGINS.includes(origin.replace(/\/$/, ""));
-  
+
   if (isAllowed) {
     res.setHeader("Access-Control-Allow-Origin", origin);
   }
 
-  // Only handle our specific health/info routes. 
+  // Only handle our specific health/info routes.
   // DO NOT res.end() for any other path so Socket.io can handle its own traffic.
   if (req.url === "/" || req.url === "/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
@@ -52,11 +56,14 @@ const httpServer = http.createServer((req, res) => {
 
   // Stats endpoint for admin dashboard
   if (req.url === "/stats") {
-    if (process.env.ADMIN_SECRET && req.headers["x-admin-secret"] !== process.env.ADMIN_SECRET) {
+    if (
+      process.env.ADMIN_SECRET &&
+      req.headers["x-admin-secret"] !== process.env.ADMIN_SECRET
+    ) {
       res.writeHead(401, { "Content-Type": "application/json" });
       return res.end(JSON.stringify({ error: "Unauthorized" }));
     }
-    
+
     try {
       const roomList = [];
       for (const [roomId, room] of rooms) {
@@ -86,14 +93,16 @@ const httpServer = http.createServer((req, res) => {
         .slice(0, 10);
 
       res.writeHead(200, { "Content-Type": "application/json" });
-      return res.end(JSON.stringify({
-        rooms: rooms.size,
-        users: clientMeta.size,
-        userRooms,
-        topRooms,
-        allRooms: roomList.sort((a, b) => b.lastUpdated - a.lastUpdated),
-        uptime: process.uptime(),
-      }));
+      return res.end(
+        JSON.stringify({
+          rooms: rooms.size,
+          users: clientMeta.size,
+          userRooms,
+          topRooms,
+          allRooms: roomList.sort((a, b) => b.lastUpdated - a.lastUpdated),
+          uptime: process.uptime(),
+        }),
+      );
     } catch (err) {
       console.error("[socket] Stats error:", err);
       res.writeHead(500, { "Content-Type": "application/json" });

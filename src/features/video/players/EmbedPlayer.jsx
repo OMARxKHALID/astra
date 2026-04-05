@@ -8,10 +8,7 @@ import {
   Pause as PauseIcon,
   Lock as LockIcon,
 } from "lucide-react";
-import {
-  serverOptions,
-  detectServer,
-} from "@/lib/videoResolver";
+import { serverOptions, detectServer } from "@/lib/videoResolver";
 import { useState, useRef, useEffect } from "react";
 
 // Extracts { current, duration } from provider-specific postMessage time formats.
@@ -90,11 +87,17 @@ export default function EmbedPlayer({
     if (iframe?.contentWindow) {
       if (isPlaying) {
         iframe.contentWindow.postMessage({ type: "vidlink_play" }, "*");
-        iframe.contentWindow.postMessage({ event: "command", func: "playVideo", args: [] }, "*");
+        iframe.contentWindow.postMessage(
+          { event: "command", func: "playVideo", args: [] },
+          "*",
+        );
         iframe.contentWindow.postMessage("play", "*");
       } else {
         iframe.contentWindow.postMessage({ type: "vidlink_pause" }, "*");
-        iframe.contentWindow.postMessage({ event: "command", func: "pauseVideo", args: [] }, "*");
+        iframe.contentWindow.postMessage(
+          { event: "command", func: "pauseVideo", args: [] },
+          "*",
+        );
         iframe.contentWindow.postMessage("pause", "*");
       }
     }
@@ -126,7 +129,10 @@ export default function EmbedPlayer({
             <div className="relative group/lock cursor-default">
               <div className="w-20 h-20 rounded-full bg-white/[0.02] border border-white/5 flex items-center justify-center backdrop-blur-3xl shadow-2xl relative overflow-hidden transition-all duration-700 group-hover/lock:border-amber/20 group-hover/lock:bg-white/[0.04]">
                 <div className="absolute inset-0 bg-gradient-to-tr from-amber/5 via-transparent to-transparent opacity-0 group-hover/lock:opacity-100 transition-opacity duration-700" />
-                <LockIcon className="w-8 h-8 text-white/10 group-hover/lock:text-amber/40 transition-all duration-700" strokeWidth={1} />
+                <LockIcon
+                  className="w-8 h-8 text-white/10 group-hover/lock:text-amber/40 transition-all duration-700"
+                  strokeWidth={1}
+                />
               </div>
               <div className="absolute -inset-4 rounded-full border border-amber/5 animate-pulse opacity-10" />
             </div>
@@ -150,8 +156,8 @@ export default function EmbedPlayer({
             <button
               onClick={toggleSync}
               className={`w-9 h-9 flex items-center justify-center rounded-full transition-all active:scale-90 ${
-                isPlaying 
-                  ? "bg-danger/20 text-danger/80 border border-danger/20 hover:bg-danger/30 hover:text-danger" 
+                isPlaying
+                  ? "bg-danger/20 text-danger/80 border border-danger/20 hover:bg-danger/30 hover:text-danger"
                   : "bg-amber/20 text-amber/80 border border-amber/20 hover:bg-amber/30 hover:text-amber"
               }`}
               title={isPlaying ? "Sync: Stop Room" : "Sync: Play Room"}
@@ -182,16 +188,20 @@ export default function EmbedPlayer({
               onClick={() => setShowServers(!showServers)}
               title="Change Source"
               className={`pointer-events-auto p-2.5 rounded-[var(--radius-pill)] border transition-all cursor-pointer backdrop-blur-md shadow-2xl
-                ${showServers 
-                  ? "bg-amber text-void border-amber shadow-[0_0_15px_rgba(245,158,11,0.3)]" 
-                  : "bg-void/80 text-white/40 hover:text-white hover:bg-void border-white/10"}`}
+                ${
+                  showServers
+                    ? "bg-amber text-void border-amber shadow-[0_0_15px_rgba(245,158,11,0.3)]"
+                    : "bg-void/80 text-white/40 hover:text-white hover:bg-void border-white/10"
+                }`}
             >
               <ServerIcon className="w-4 h-4" />
             </button>
             {showServers && (
               <div className="absolute top-full right-0 mt-3 w-48 glass-card border border-white/10 p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-200 pointer-events-auto overflow-hidden">
                 <div className="px-3 py-2 border-b border-white/5 mb-1">
-                   <p className="text-[10px] font-mono font-black text-white/30 uppercase tracking-widest">Select Server</p>
+                  <p className="text-[10px] font-mono font-black text-white/30 uppercase tracking-widest">
+                    Select Server
+                  </p>
                 </div>
                 {serverOptions.map((opt) => (
                   <button
@@ -201,12 +211,16 @@ export default function EmbedPlayer({
                       setShowServers(false);
                     }}
                     className={`w-full text-left px-3 py-2.5 rounded-xl text-[10.5px] font-bold transition-all flex items-center justify-between
-                      ${activeServer === opt.value 
-                        ? "bg-amber/15 text-white border border-amber/20 ring-1 ring-amber/10" 
-                        : "text-white/50 hover:bg-white/10 hover:text-white border border-transparent"}`}
+                      ${
+                        activeServer === opt.value
+                          ? "bg-amber/15 text-white border border-amber/20 ring-1 ring-amber/10"
+                          : "text-white/50 hover:bg-white/10 hover:text-white border border-transparent"
+                      }`}
                   >
                     {opt.label}
-                    {activeServer === opt.value && <div className="w-1 h-1 rounded-full bg-amber shadow-[0_0_8px_rgba(245,158,11,0.5)]" />}
+                    {activeServer === opt.value && (
+                      <div className="w-1 h-1 rounded-full bg-amber shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                    )}
                   </button>
                 ))}
               </div>
@@ -233,9 +247,11 @@ export default function EmbedPlayer({
             }}
             title={theatreMode ? "Exit theatre mode" : "Theatre mode"}
             className={`pointer-events-auto p-2.5 rounded-[var(--radius-pill)] border transition-all cursor-pointer backdrop-blur-md shadow-2xl
-              ${theatreMode 
-                ? "bg-amber text-void border-amber shadow-[0_0_15px_rgba(245,158,11,0.3)]" 
-                : "bg-void/80 text-white/40 hover:text-white hover:bg-void border-white/10"}`}
+              ${
+                theatreMode
+                  ? "bg-amber text-void border-amber shadow-[0_0_15px_rgba(245,158,11,0.3)]"
+                  : "bg-void/80 text-white/40 hover:text-white hover:bg-void border-white/10"
+              }`}
           >
             <TheatreIcon className="w-4 h-4" />
           </button>
