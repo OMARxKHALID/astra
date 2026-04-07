@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { gunzipSync } from "zlib";
+import { withRateLimit } from "@/lib/rateLimit";
 
 const API_KEY = process.env.OPENSUBTITLES_KEY;
 const API_BASE = "https://api.opensubtitles.com/api/v1";
@@ -28,6 +29,9 @@ function isValidDirectUrl(urlStr) {
 
 export async function GET(request) {
   try {
+    const limited = await withRateLimit(request, { key: "subtitles:download", requests: 10, window: "1 m" });
+    if (limited) return limited;
+
     if (!API_KEY) {
       return NextResponse.json(
         { error: "OpenSubtitles API key not configured" },

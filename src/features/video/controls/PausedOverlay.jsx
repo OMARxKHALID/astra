@@ -2,11 +2,6 @@
 
 import { Lock, Play } from "lucide-react";
 
-/**
- * PausedOverlay: The universal "Room Curtains". 
- * Displayed over players whenever the room is in a PAUSED state 
- * and the Sync Hub is enabled.
- */
 export default function PausedOverlay({ canControl, onPlay }) {
   return (
     <div

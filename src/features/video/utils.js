@@ -2,15 +2,14 @@ import { formatTime } from "@/utils/time";
 
 export { formatTime };
 
-let ytReady = false,
-  ytCbs = [];
+let ytCbs = new Set();
 export function onYTReady(cb) {
-  // [Note] check global directly to handle manual resets or cached script cases
+  // [Note] rely on actual API presence instead of stale ytReady flag
   if (window.YT?.Player) {
     cb();
     return;
   }
-  ytCbs.push(cb);
+  ytCbs.add(cb);
   if (!document.getElementById("yt-iframe-api")) {
     const t = document.createElement("script");
     t.id = "yt-iframe-api";
@@ -20,30 +19,35 @@ export function onYTReady(cb) {
 
   if (!window.onYouTubeIframeAPIReady) {
     window.onYouTubeIframeAPIReady = () => {
-      ytReady = true;
       ytCbs.forEach((f) => f());
-      ytCbs = [];
+      ytCbs.clear();
     };
   }
 }
 
-let vmReady = false,
-  vmCbs = [];
+export function cleanupYT() {
+  ytCbs.clear();
+}
+
+let vmCbs = new Set();
 export function onVMReady(cb) {
   if (window.Vimeo?.Player) {
     cb();
     return;
   }
-  vmCbs.push(cb);
+  vmCbs.add(cb);
   if (!document.getElementById("vimeo-player-api")) {
     const t = document.createElement("script");
     t.id = "vimeo-player-api";
     t.src = "https://player.vimeo.com/api/player.js";
     t.onload = () => {
-      vmReady = true;
       vmCbs.forEach((f) => f());
-      vmCbs = [];
+      vmCbs.clear();
     };
     document.head.appendChild(t);
   }
+}
+
+export function cleanupVM() {
+  vmCbs.clear();
 }

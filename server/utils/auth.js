@@ -1,14 +1,12 @@
-import { createHash, createHmac, timingSafeEqual } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
+import argon2 from "argon2";
 
 function jwtSecret() {
   const s = process.env.JWT_SECRET;
   if (!s) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error(
-        "FATAL: JWT_SECRET environment variable is missing. This is required for secure authentication in production.",
-      );
-    }
-    return "astra-dev-fallback-secret-2024";
+    throw new Error(
+      "FATAL: JWT_SECRET environment variable is missing. This is required for secure authentication.",
+    );
   }
   return s;
 }
@@ -80,9 +78,28 @@ export function isStrictVideoUrl(raw) {
   }
 }
 
-export function hashPassword(pw) {
-  const salt = process.env.ASTRA_SALT || "astra-default-salt-v1";
-  return createHash("sha256")
-    .update(pw + salt)
-    .digest("hex");
+export async function hashPassword(pw) {
+  return argon2.hash(pw, {
+    type: argon2.argon2id,
+    memoryCost: 65536,
+    timeCost: 3,
+    parallelism: 4,
+  });
+}
+
+export async function verifyPassword(pw, hash) {
+  return argon2.verify(hash, pw);
+}
+
+export function verifyAdminSecret(token) {
+  const secret = process.env.ADMIN_SECRET;
+  if (!secret || !token || typeof token !== "string") return false;
+  try {
+    const a = Buffer.from(token, "utf8");
+    const b = Buffer.from(secret, "utf8");
+    if (a.length !== b.length) return false;
+    return timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Loading from "@/components/Loading";
 import { useToast } from "@/components/Toast";
 import { persistence } from "@/utils/persistence";
@@ -16,7 +17,10 @@ import { useMediaActions } from "./hooks/useMediaActions";
 export default function HomeView({ initialData }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { data: session, status } = useSession();
   const { toasts, addToast } = useToast();
+
+  const { handleWatch, handleAstraSync, creating } = useMediaActions(null, null, status === "loading" ? null : session);
 
   const [data, setData] = useState(initialData);
   const [loading, setLoading] = useState(!initialData);
@@ -26,55 +30,14 @@ export default function HomeView({ initialData }) {
   const [recommendations, setRecommendations] = useState([]);
   const [lastWatchedTitle, setLastWatchedTitle] = useState("");
 
-  const { handleWatch, handleAstraSync, creating } = useMediaActions(null, null);
-
   useEffect(() => {
-    if (searchParams.get("kicked")) {
-      addToast("You were removed or the session ended", "error", 5000);
-      router.replace("/");
-    } else if (searchParams.get("expired")) {
-      addToast("This room does not exist or has expired.", "error", 5000);
-      router.replace("/");
-    }
-  }, [searchParams, addToast, router]);
-
-  useEffect(() => {
-    const isDataEmpty =
-      !initialData ||
-      !initialData.hero?.length ||
-      !initialData.trending?.length;
-    if (isDataEmpty) {
-      setLoading(true);
-      fetch("/api/tmdb/browse")
-        .then((r) => r.json())
-        .then((res) => {
-          if (res.success) {
-            setData(res.data);
-          }
-          setLoading(false);
-        })
-        .catch(() => setLoading(false));
-    }
-  }, [initialData]);
-
-  useEffect(() => {
-    const handleKey = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        setShowSearch(true);
-      }
-    };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
+    setFavorites(persistence.getFavorites());
+    setWatched(persistence.getWatched());
   }, []);
 
   useEffect(() => {
-    setFavorites(persistence.getFavorites());
-    const wList = persistence.getWatched();
-    setWatched(wList);
-
-    if (wList.length > 0) {
-      const last = wList[0];
+    if (watched.length > 0) {
+      const last = watched[0];
       setLastWatchedTitle(last.title);
       fetch(`/api/tmdb/recommendations?id=${last.id}&type=${last.type}`)
         .then((r) => r.json())
@@ -85,6 +48,17 @@ export default function HomeView({ initialData }) {
         })
         .catch(() => {});
     }
+  }, [watched]);
+
+  useEffect(() => {
+    const handleKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setShowSearch(true);
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
   }, []);
 
   const handleNavigateToInfo = (item) => {

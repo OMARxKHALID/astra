@@ -1,9 +1,9 @@
 "use client";
-import { useRef } from "react";
+import { useRef, memo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import MediaCard from "./MediaCard";
 
-export default function MediaRow({
+const MediaRow = memo(function MediaRow({
   title,
   items,
   onPick,
@@ -50,4 +50,6 @@ export default function MediaRow({
       </div>
     </div>
   );
-}
+});
+
+export default MediaRow;

@@ -193,7 +193,7 @@ export async function saveRoom(room) {
           strictVideoUrlMode: r.strictVideoUrlMode,
           passwordHash: r.passwordHash || "",
           tmdbMeta: r.tmdbMeta || null,
-          messages: (r.messages || []).map((m) => ({
+          messages: (r.messages || []).slice(-50).map((m) => ({
             ...m,
             dataUrl: m.dataUrl?.startsWith("data:audio/")
               ? m.dataUrl

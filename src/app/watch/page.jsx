@@ -14,6 +14,7 @@ const WatchHeader = dynamic(
 );
 
 import { useSearchParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Button from "@/components/ui/Button";
 import {
   buildEmbedUrl,
@@ -25,6 +26,7 @@ import { createRoom } from "@/features/room/services/createRoom";
 function WatchContent() {
   const params = useSearchParams();
   const router = useRouter();
+  const { data: session } = useSession();
   const videoRef = useRef(null);
 
   const url = params.get("url") || "";
@@ -126,10 +128,10 @@ function WatchContent() {
     [navigateToEpisode],
   );
 
-  const handleCreateRoom = async () => {
+  const handleCreateRoom = useCallback(async () => {
     setCreating(true);
     try {
-      const { roomId, createPromise } = createRoom(url);
+      const { roomId, createPromise } = createRoom(url, session);
       await createPromise;
       router.push(
         `/room/${roomId}?url=${encodeURIComponent(url)}&tmdb=${tmdbId}&type=${type}&h=1`,
@@ -138,9 +140,9 @@ function WatchContent() {
       console.error("Failed to sync room", err);
       setCreating(false);
     }
-  };
+  }, [url, tmdbId, type, router, session]);
 
-  const handleServerChange = (newServerValue) => {
+  const handleServerChange = useCallback((newServerValue) => {
     const newUrl = buildEmbedUrl(
       newServerValue,
       activeTmdbId,
@@ -154,7 +156,7 @@ function WatchContent() {
         `/watch?url=${encodeURIComponent(newUrl)}&tmdb=${activeTmdbId}&type=${isActiveTv ? "tv" : "movie"}&s=${activeS}&e=${activeE}`,
       );
     }
-  };
+  }, [activeTmdbId, isActiveTv, activeS, activeE, router]);
 
   if (!url) {
     return (
@@ -212,6 +214,7 @@ function WatchContent() {
             onClose={() => setEpisodesOpen(false)}
             cache={seasonCache}
             setCache={setSeasonCache}
+            poster={meta?.poster || null}
           />
         )}
       </div>

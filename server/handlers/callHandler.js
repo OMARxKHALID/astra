@@ -20,6 +20,8 @@ export default function registerCallHandlers(io, socket, rooms, clientMeta) {
 
   socket.on("CALL:offer", (roomId, msg) => {
     const meta = clientMeta.get(socket.id);
+    if (!msg || typeof msg.to !== "string" || typeof msg.offer !== "string") return;
+    if (msg.offer.length > 50000) return;
     const targetSid = getSocketByUserId(msg.to, roomId);
     if (!meta || meta.roomId !== roomId || !targetSid) return;
     io.to(targetSid).emit("CALL:offer", { from: meta.userId, offer: msg.offer });
@@ -27,6 +29,8 @@ export default function registerCallHandlers(io, socket, rooms, clientMeta) {
 
   socket.on("CALL:answer", (roomId, msg) => {
     const meta = clientMeta.get(socket.id);
+    if (!msg || typeof msg.to !== "string" || typeof msg.answer !== "string") return;
+    if (msg.answer.length > 50000) return;
     const targetSid = getSocketByUserId(msg.to, roomId);
     if (!meta || meta.roomId !== roomId || !targetSid) return;
     io.to(targetSid).emit("CALL:answer", { from: meta.userId, answer: msg.answer });
@@ -34,6 +38,8 @@ export default function registerCallHandlers(io, socket, rooms, clientMeta) {
 
   socket.on("CALL:ice", (roomId, msg) => {
     const meta = clientMeta.get(socket.id);
+    if (!msg || typeof msg.to !== "string") return;
+    if (msg.candidate && typeof msg.candidate !== "object") return;
     const targetSid = getSocketByUserId(msg.to, roomId);
     if (!meta || meta.roomId !== roomId || !targetSid) return;
     io.to(targetSid).emit("CALL:ice", { from: meta.userId, candidate: msg.candidate });

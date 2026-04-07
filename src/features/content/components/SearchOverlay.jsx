@@ -10,7 +10,9 @@ export default function SearchOverlay({ onClose, onPick }) {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
+  const activeIdxRef = useRef(0);
   const inputRef = useRef(null);
+  activeIdxRef.current = activeIdx;
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -65,12 +67,12 @@ export default function SearchOverlay({ onClose, onPick }) {
           setActiveIdx((prev) => (prev - 1 + count) % count);
         } else if (e.key === "Enter") {
           e.preventDefault();
-          onPick(results[activeIdx]);
+          onPick(results[activeIdxRef.current]);
           onClose();
         }
       }
     },
-    [onClose, results, activeIdx, onPick],
+    [onClose, results, onPick],
   );
 
   useEffect(() => {

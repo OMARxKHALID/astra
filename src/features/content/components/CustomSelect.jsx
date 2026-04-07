@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown, Check } from "lucide-react";
+import Button from "@/components/ui/Button";
 
 export default function CustomSelect({
   label,
@@ -38,8 +39,8 @@ export default function CustomSelect({
         </label>
       )}
       <div className="relative">
-        <button
-          type="button"
+        <Button
+          variant="custom"
           onClick={() => setIsOpen(!isOpen)}
           className={`w-full flex items-center justify-between px-5 h-10 rounded-[var(--radius-pill)] border transition-all duration-300 glass-card shadow-lg bg-[var(--color-surface)] hover:border-white/20 group ${
             isOpen
@@ -53,7 +54,7 @@ export default function CustomSelect({
           <Icon
             className={`w-3.5 h-3.5 text-[var(--color-muted)] transition-transform duration-300 ${isOpen ? "rotate-180 text-amber" : "group-hover:text-amber"}`}
           />
-        </button>
+        </Button>
 
         {isOpen && (
           <div
@@ -61,24 +62,24 @@ export default function CustomSelect({
           >
             <div className="max-h-[240px] overflow-y-auto no-scrollbar flex flex-col gap-0.5">
               {options.map((opt) => (
-                <button
+                <Button
                   type="button"
                   key={opt.value}
                   onClick={() => {
                     onChange(opt.value);
                     setIsOpen(false);
                   }}
-                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-[0.85rem] text-[11px] lg:text-[12px] font-bold transition-all duration-200 group/item ${
+                  className={`w-full flex items-center justify-between px-4 py-2.5 !rounded-[0.85rem] text-[11px] lg:text-[12px] font-bold transition-all duration-200 group/item !border-none !bg-transparent ${
                     opt.value === value
-                      ? "bg-amber text-void shadow-lg shadow-amber/10"
-                      : "text-[var(--color-muted)] hover:bg-white/10 hover:text-bright"
+                      ? "!bg-amber text-void shadow-lg shadow-amber/10"
+                      : "text-[var(--color-muted)] hover:!bg-white/10 hover:!text-bright"
                   }`}
                 >
                   <span className="truncate pr-4">{opt.label}</span>
                   {opt.value === value && (
                     <Check className="w-3.5 h-3.5 shrink-0" />
                   )}
-                </button>
+                </Button>
               ))}
             </div>
           </div>

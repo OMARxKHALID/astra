@@ -8,10 +8,9 @@ function b64url(str) {
 function secret() {
   const s = process.env.JWT_SECRET;
   if (!s) {
-    if (process.env.NODE_ENV === "production") {
-      // [Note] Critical security: JWT_SECRET must be set on Vercel/Render for token persistence
-    }
-    return "astra-dev-fallback-secret-2024";
+    throw new Error(
+      "FATAL: JWT_SECRET environment variable is missing. This is required for secure authentication.",
+    );
   }
   return s;
 }
@@ -46,4 +45,16 @@ export function verifyJwt(token) {
   if (payload.exp && payload.exp < Math.floor(Date.now() / 1000))
     throw new Error("Token expired");
   return payload;
+}
+
+export function extractJwtSub(token) {
+  if (!token || typeof token !== "string") return null;
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
+    return payload.sub || null;
+  } catch {
+    return null;
+  }
 }

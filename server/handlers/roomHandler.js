@@ -1,5 +1,5 @@
 import { Room, saveRoom, cleanupRoom } from "../models/Room.js";
-import { verifyHostToken, hashPassword } from "../utils/auth.js";
+import { verifyHostToken, hashPassword, verifyPassword } from "../utils/auth.js";
 import {
   DEBUG,
   EMPTY_ROOM_CLEANUP_MS,
@@ -27,6 +27,12 @@ export default function registerRoomHandlers(
 ) {
   socket.on("JOIN_ROOM", async (msg) => {
     const { roomId, token, clientId, videoUrl, username, password } = msg || {};
+
+    if (typeof roomId !== "string" || typeof clientId !== "string") {
+      warn(`[socket] JOIN_ROOM aborted: invalid roomId or clientId`);
+      return;
+    }
+
     log(
       `[socket] JOIN_ROOM: room=${roomId} user=${clientId} hasToken=${!!token}`,
     );
@@ -127,8 +133,8 @@ export default function registerRoomHandlers(
           code: "NEED_PASSWORD",
         });
       }
-      const provided = hashPassword(String(password));
-      if (provided !== room.passwordHash) {
+      const valid = await verifyPassword(String(password), room.passwordHash);
+      if (!valid) {
         return socket.emit("REC:error", {
           message: "Wrong password",
           code: "WRONG_PASSWORD",
@@ -201,13 +207,13 @@ export default function registerRoomHandlers(
     saveRoom(room);
   });
 
-  socket.on("CMD:setPassword", (_rId, msg) => {
+  socket.on("CMD:setPassword", async (_rId, msg) => {
     const meta = clientMeta.get(socket.id);
     if (!meta?.isHost) return;
     const room = rooms.get(meta.roomId);
     if (!room) return;
     const pw = msg?.password ? String(msg.password).trim().slice(0, 64) : "";
-    room.passwordHash = pw ? hashPassword(pw) : "";
+    room.passwordHash = pw ? await hashPassword(pw) : "";
     io.to(room.roomId).emit("REC:host", room.publicState());
     saveRoom(room);
   });

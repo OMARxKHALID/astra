@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Users, Search } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -9,8 +8,6 @@ import UserMenu from "./UserMenu";
 
 export default function HomeNavbar({ onOpenSearch }) {
   const router = useRouter();
-
-  const [moving, setMoving] = useState(false);
 
   return (
     <nav className="absolute top-0 left-0 right-0 h-[72px] flex items-center justify-between px-6 lg:px-12 z-[100] bg-gradient-to-b from-black/80 to-transparent pt-4">
@@ -56,15 +53,10 @@ export default function HomeNavbar({ onOpenSearch }) {
 
         <Button
           variant="ghost"
-          loading={moving}
-          disabled={moving}
-          onClick={() => {
-            setMoving(true);
-            router.push("/create");
-          }}
+          onClick={() => router.push("/create")}
           className="flex items-center gap-2 px-5 h-9 text-white/80 !border-white/10"
         >
-          {!moving && <Users className="w-3.5 h-3.5" />}
+          <Users className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Create Room</span>
         </Button>
       </div>

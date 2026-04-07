@@ -1,8 +1,9 @@
 "use client";
 import Image from "next/image";
 import { Film, Play, Star } from "lucide-react";
+import { memo } from "react";
 
-export default function MediaCard({ item, onPick }) {
+function MediaCard({ item, onPick }) {
   return (
     <button
       onClick={() => onPick(item)}
@@ -53,3 +54,5 @@ export default function MediaCard({ item, onPick }) {
     </button>
   );
 }
+
+export default memo(MediaCard);

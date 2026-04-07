@@ -4,13 +4,12 @@ import {
   Monitor as TheatreIcon,
   List as EpisodesIcon,
   Cloud as ServerIcon,
-  Lock as LockIcon,
-  Play as PlayIcon,
 } from "lucide-react";
-import { serverOptions, detectServer } from "@/lib/videoResolver";
+import { detectServer } from "@/lib/videoResolver";
 import { useState, useRef, useEffect } from "react";
 import SyncHub from "../controls/SyncHub";
 import PausedOverlay from "../controls/PausedOverlay";
+import { ServerDropdown } from "../controls/ServerPicker";
 import Button from "@/components/ui/Button";
 
 // Extracts { current, duration } from provider-specific postMessage time formats.
@@ -59,14 +58,20 @@ export default function EmbedPlayer({
   playbackRate = 1,
   onPlay,
   onPause,
-  activeServer
 }) {
   const containerRef = useRef(null);
   const [showServers, setShowServers] = useState(false);
   const [ready, setReady] = useState(false);
 
+  const iframeOrigin = (() => {
+    try { return new URL(videoUrl).origin; } catch { return null; }
+  })();
+
+  const activeServer = detectServer(videoUrl);
+
   useEffect(() => {
     const handleMessage = (e) => {
+      if (iframeOrigin && e.origin !== iframeOrigin) return;
       const data = e.data;
       const parsed = parseTimeMessage(data);
       if (parsed && typeof onLoad === "function") {
@@ -79,25 +84,25 @@ export default function EmbedPlayer({
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [videoUrl, onLoad]);
+  }, [videoUrl, onLoad, iframeOrigin]);
 
   // Sync isPlaying state to the iframe via postMessage
   useEffect(() => {
     const iframe = containerRef.current?.querySelector("iframe");
-    if (!iframe?.contentWindow) return;
+    if (!iframe?.contentWindow || !iframeOrigin) return;
 
     if (isPlaying) {
-      iframe.contentWindow.postMessage({ type: "vidlink_play" }, "*");
+      iframe.contentWindow.postMessage({ type: "vidlink_play" }, iframeOrigin);
       try {
         iframe.contentWindow.postMessage(
           { type: "vidlink_speed", rate: playbackRate },
-          "*",
+          iframeOrigin,
         );
       } catch {}
     } else {
-      iframe.contentWindow.postMessage({ type: "vidlink_pause" }, "*");
+      iframe.contentWindow.postMessage({ type: "vidlink_pause" }, iframeOrigin);
     }
-  }, [isPlaying, ready, videoUrl, playbackRate]);
+  }, [isPlaying, ready, videoUrl, playbackRate, iframeOrigin]);
 
   return (
     <div
@@ -130,7 +135,6 @@ export default function EmbedPlayer({
           onPlay={onPlay}
           onPause={onPause}
           visible={syncHubEnabled}
-          className={`${!isPlaying ? "opacity-100 translate-y-0" : "opacity-0 group-hover/embed:opacity-100"}`}
         />
       )}
 
@@ -152,34 +156,14 @@ export default function EmbedPlayer({
               <ServerIcon className="w-4 h-4" />
             </Button>
             {showServers && (
-              <div className="absolute top-full right-0 mt-3 w-48 glass-card border border-white/10 p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-200 pointer-events-auto overflow-hidden">
-                <div className="px-3 py-2 border-b border-white/5 mb-1">
-                  <p className="text-[10px] font-mono font-black text-white/30 uppercase tracking-widest">
-                    Select Server
-                  </p>
-                </div>
-                {serverOptions.map((opt) => (
-                  <Button
-                    key={opt.value}
-                    variant="custom"
-                    onClick={() => {
-                      onServerChange(opt.value);
-                      setShowServers(false);
-                    }}
-                    className={`w-full text-left px-3 py-2.5 !rounded-xl text-[10.5px] font-bold transition-all flex items-center justify-between !border-none !bg-transparent
-                      ${
-                        activeServer === opt.value
-                          ? "!bg-amber/15 !text-white ring-1 ring-amber/10"
-                          : "text-white/50 hover:!bg-white/10 hover:!text-white"
-                      }`}
-                  >
-                    {opt.label}
-                    {activeServer === opt.value && (
-                      <div className="w-1 h-1 rounded-full bg-amber shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
-                    )}
-                  </Button>
-                ))}
-              </div>
+              <ServerDropdown
+                activeServer={activeServer}
+                onServerChange={(v) => {
+                  onServerChange(v);
+                  setShowServers(false);
+                }}
+                visible={showServers}
+              />
             )}
           </div>
         )}

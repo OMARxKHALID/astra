@@ -3,22 +3,21 @@
 import { Play, Pause } from "lucide-react";
 import Button from "@/components/ui/Button";
 
-export default function SyncHub({ 
-  isPlaying, 
-  onPlay, 
-  onPause, 
-  visible = true,
-  className = ""
+export default function SyncHub({
+  isPlaying,
+  onPlay,
+  onPause,
+  visible = true
 }) {
   if (!visible) return null;
 
-  const isVisible = className.includes("opacity-100") || !isPlaying;
-
   return (
-    <div 
+    <div
       className={`absolute top-6 left-1/2 -translate-x-1/2 z-[30] transition-all duration-500 rounded-[var(--radius-pill)]
-        ${isVisible ? "translate-y-0 opacity-100 pointer-events-auto" : "translate-y-2 opacity-0 pointer-events-none"}
-        ${className}`}
+        ${!isPlaying
+          ? "translate-y-0 opacity-100 pointer-events-auto"
+          : "translate-y-2 opacity-0 group-hover/embed:opacity-100 group-hover/embed:translate-y-0 pointer-events-none group-hover/embed:pointer-events-auto"}
+      `}
     >
       <div className="flex items-center gap-3 px-1.5 py-1.5 rounded-[var(--radius-pill)] glass-card !bg-void/80 text-white/40 hover:text-white shadow-2xl transition-all duration-500">
         <Button

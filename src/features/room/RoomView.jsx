@@ -13,6 +13,7 @@ import {
 import SyncEngine from "@/features/sync/components/SyncEngine";
 import VideoPlayer from "@/features/video";
 import { getLeaderTime } from "@/lib/syncManager";
+import { extractJwtSub } from "@/lib/jwtAuth";
 import URLBar from "./components/URLBar";
 import ReconnectBanner from "./components/ReconnectBanner";
 import ToastContainer, { useToast } from "@/components/Toast";
@@ -139,9 +140,10 @@ export default function RoomView({ roomId, initialMeta }) {
     useAmbilight(settings);
 
   const hostToken = mounted ? ls.get(`host_${roomId}`) || "" : "";
+  const tokenSub = extractJwtSub(hostToken);
   const isHost =
     room.serverState?.hostId === identity.userId ||
-    (!!hostToken && !room.serverState?.hostId);
+    (!!hostToken && tokenSub === identity.userId);
 
   // [Note] Local file blob: URLs cannot be broadcast to the room (they are tab-local memory objects).
   // We keep them in a separate client-only override so the player can use them without
@@ -351,6 +353,7 @@ export default function RoomView({ roomId, initialMeta }) {
                 onClose={() => videoState.setEpisodesOpen(false)}
                 cache={videoState.seasonCache}
                 setCache={videoState.setSeasonCache}
+                compact
               />
             )}
           </>

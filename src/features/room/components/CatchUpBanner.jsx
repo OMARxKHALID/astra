@@ -2,10 +2,6 @@
 
 import Button from "@/components/ui/Button";
 
-/**
- * CatchUpBanner: A subtle top-bar allowing users to sync their local 
- * playback to the room's current leader time after joining.
- */
 export default function CatchUpBanner({ videoTS, onSync, onDismiss }) {
   const h = Math.floor(videoTS / 3600);
   const m = Math.floor((videoTS % 3600) / 60);

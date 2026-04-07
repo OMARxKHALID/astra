@@ -167,24 +167,9 @@ function ChatMessageInner({
 
   const isAudio = msg.dataUrl?.startsWith("data:audio/");
 
-  return (
-    <div
-      ref={msgRef}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      onTouchCancel={handleTouchEnd}
-      className={`flex ${isOwn ? "flex-row-reverse" : "flex-row"} gap-2 group relative cursor-pointer animate-[messageIn_0.35s_cubic-bezier(0.23,1,0.32,1)]`}
-    >
-      {/* [Note] Emoji picker portal: uses pointerdown-outside to close (not mouseleave)
-          so the picker stays alive long enough for mobile tap to register on an emoji.
-          Emoji buttons use onPointerDown for immediate response on both mouse and touch. */}
-      {isHovered &&
-        rect &&
-        typeof document !== "undefined" &&
-        createPortal(
+  const pickerElement =
+    isHovered && rect && typeof document !== "undefined"
+      ? createPortal(
           <div
             ref={pickerRef}
             onMouseEnter={handlePickerEnter}
@@ -199,7 +184,6 @@ function ChatMessageInner({
               <button
                 key={emoji}
                 type="button"
-                // onPointerDown fires immediately on mouse click and touch tap, avoiding synthetic event delay on mobile
                 onPointerDown={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -213,7 +197,22 @@ function ChatMessageInner({
             ))}
           </div>,
           document.body,
-        )}
+        )
+      : null;
+
+  return (
+    <>
+      {pickerElement}
+      <div
+        ref={msgRef}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
+        className={`flex ${isOwn ? "flex-row-reverse" : "flex-row"} gap-2 group relative cursor-pointer animate-[messageIn_0.35s_cubic-bezier(0.23,1,0.32,1)]`}
+      >
       <div
         className={`shrink-0 mt-0.5 transition-transform duration-300 group-hover:scale-110 ${isOwn ? "order-2" : "order-1"}`}
       >
@@ -305,6 +304,7 @@ function ChatMessageInner({
         )}
       </div>
     </div>
+    </>
   );
 }
 

@@ -20,6 +20,7 @@ export default function useUser(sendRef) {
     if (status === "loading") return;
 
     if (session?.user?.id) {
+      ls.set(LS_KEYS.userId, session.user.id);
       setUserId(session.user.id);
       return;
     }

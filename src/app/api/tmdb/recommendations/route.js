@@ -16,7 +16,7 @@ export async function GET(req) {
     const items = (data?.results || []).map((i) => normalizeTMDB(i, validType));
 
     return apiResponse.success({ items });
-  } catch (err) {
-    return apiResponse.success({ items: [] });
+  } catch {
+    return apiResponse.error("TMDB service unavailable", 503);
   }
 }

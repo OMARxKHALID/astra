@@ -110,7 +110,7 @@ export default function UserMenu() {
             <Button
               variant="custom"
               onClick={() => { setOpen(false); router.push("/profile"); }}
-              className="w-full flex items-center gap-3 px-3 h-10 !rounded-xl text-[13px] font-bold text-white/60 hover:bg-white/10 hover:text-bright hover:pl-4 transition-all duration-300 !bg-transparent !border-none group"
+              className="w-full flex items-center gap-3 px-3 h-10 !rounded-xl text-[13px] font-bold text-white/60 hover:bg-white/10 hover:text-bright hover:pl-4 transition-all duration-300 !bg-transparent !border-none !justify-start group"
             >
               <Settings className="w-4 h-4 group-hover:text-amber transition-colors" />
               Profile Settings
@@ -118,7 +118,7 @@ export default function UserMenu() {
             <Button
               variant="custom"
               onClick={() => signOut({ callbackUrl: "/" })}
-              className="w-full flex items-center gap-3 px-3 h-10 !rounded-xl text-[13px] font-bold text-danger/60 hover:bg-danger/10 hover:text-danger hover:pl-4 transition-all duration-300 !bg-transparent !border-none group"
+              className="w-full flex items-center gap-3 px-3 h-10 !rounded-xl text-[13px] font-bold text-danger/60 hover:bg-danger/10 hover:text-danger hover:pl-4 transition-all duration-300 !bg-transparent !border-none !justify-start group"
             >
               <LogOut className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
               Sign Out

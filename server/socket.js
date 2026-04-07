@@ -7,6 +7,7 @@ import {
   SOCKET_PING_TIMEOUT,
 } from "./constants.js";
 import { saveRoom, deleteRoomFromRedis } from "./models/Room.js";
+import { verifyAdminSecret } from "./utils/auth.js";
 import registerChatHandlers from "./handlers/chatHandler.js";
 import registerVideoHandlers from "./handlers/videoHandler.js";
 import registerRoomHandlers from "./handlers/roomHandler.js";
@@ -33,7 +34,11 @@ const httpServer = http.createServer();
 
 const io = new Server(httpServer, {
   cors: {
-    origin: (origin, callback) => callback(null, true),
+    origin: (origin, callback) => {
+      const normalized = origin?.replace(/\/$/, "");
+      if (ALLOWED_ORIGINS.includes(normalized)) callback(null, true);
+      else callback(new Error("Not allowed by CORS"));
+    },
     methods: ["GET", "POST"],
   },
   pingInterval: SOCKET_PING_INTERVAL,
@@ -60,10 +65,7 @@ httpServer.on("request", (req, res) => {
   const m = req.url?.match(/^\/rooms\/([^/?]+)/);
   if (m) {
     if (req.method === "DELETE") {
-      if (
-        process.env.ADMIN_SECRET &&
-        req.headers["x-admin-secret"] !== process.env.ADMIN_SECRET
-      ) {
+      if (!verifyAdminSecret(req.headers["x-admin-secret"])) {
         res.writeHead(401, { "Content-Type": "application/json" });
         return res.end(JSON.stringify({ error: "Unauthorized" }));
       }
@@ -102,10 +104,7 @@ httpServer.on("request", (req, res) => {
   }
 
   if (req.url === "/stats") {
-    if (
-      process.env.ADMIN_SECRET &&
-      req.headers["x-admin-secret"] !== process.env.ADMIN_SECRET
-    ) {
+    if (!verifyAdminSecret(req.headers["x-admin-secret"])) {
       res.writeHead(401, { "Content-Type": "application/json" });
       return res.end(JSON.stringify({ error: "Unauthorized" }));
     }

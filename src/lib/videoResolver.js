@@ -14,15 +14,14 @@ const VIMEO_PATTERNS = [
   /player\.vimeo\.com\/video\/(\d+)/,
 ];
 
-const EMBED_DOMAINS = [
-  "vidlink.pro",
-  "multiembed.mov",
-  "streamingnow.mov",
-  "superembed.stream",
-  "moviesapi.to",
-  "moviesapi.club",
-  "cflul.x9l.workers.dev",
-];
+// Single source of truth for embed servers — used by both classifyUrl and detectServer
+const SERVER_DOMAINS = {
+  vidlink: ["vidlink.pro"],
+  superembed: ["multiembed.mov", "streamingnow.mov", "superembed.stream"],
+  moviesapi: ["moviesapi.to", "moviesapi.club"],
+};
+
+const EMBED_DOMAINS = Object.values(SERVER_DOMAINS).flat();
 
 export { isStrictVideoUrl };
 
@@ -119,7 +118,8 @@ export function extractMeta(rawUrl) {
   
   // Strip query params for path matching, but keep the full URL for param search
   const url = rawUrl.split("?")[0].split("#")[0];
-  const urlObj = (() => { try { return new URL(rawUrl); } catch { return null; } })();
+  let urlObj = null;
+  try { urlObj = new URL(rawUrl); } catch { /* not a valid URL */ }
 
   // 1. Vidlink: /tv/id/s/e or /movie/id
   if (url.includes("vidlink.pro")) {
@@ -193,14 +193,6 @@ export function buildEmbedUrl(server, tmdbId, type, season = 1, episode = 1) {
       return null;
   }
 }
-
-// Reverse-lookup: match against known embed URL patterns (hostname split fails for www./player./embed. prefixes)
-// Domain mapping for accurate detection/matching of mirrors
-const SERVER_DOMAINS = {
-  vidlink: ["vidlink.pro"],
-  superembed: ["multiembed.mov", "streamingnow.mov", "superembed.stream"],
-  moviesapi: ["moviesapi.to", "moviesapi.club"],
-};
 
 export function detectServer(url) {
   if (!url) return null;

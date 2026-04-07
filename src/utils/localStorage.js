@@ -12,4 +12,9 @@ export const ls = {
       if (typeof window !== "undefined") localStorage.setItem(k, v);
     } catch { /* noop */ }
   },
+  remove(k) {
+    try {
+      if (typeof window !== "undefined") localStorage.removeItem(k);
+    } catch { /* noop */ }
+  },
 };

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { formatTime } from "../utils";
 import SpeedPicker from "./SpeedPicker";
+import Button from "@/components/ui/Button";
 import {
   Play as PlayIcon,
   Pause as PauseIcon,
@@ -104,11 +105,12 @@ export default function EmbedControls({
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2.5">
-          <button
+          <Button
+            variant="custom"
             onClick={onPlayPause}
             aria-label={isPlaying ? "Pause" : "Play"}
             disabled={!canControl}
-            className={`w-9 h-9 sm:w-11 sm:h-11 shrink-0 flex items-center justify-center rounded-[var(--radius-pill)] border border-white/10 transition-all active:scale-90 backdrop-blur-sm
+            className={`w-9 h-9 sm:w-11 sm:h-11 shrink-0 flex items-center justify-center rounded-[var(--radius-pill)] border border-white/10 transition-all active:scale-90 backdrop-blur-sm !bg-transparent
               ${canControl ? "bg-white/10 hover:bg-white/10 text-white" : "bg-white/10 text-white/40 cursor-not-allowed"}`}
           >
             {isPlaying ? (
@@ -116,23 +118,24 @@ export default function EmbedControls({
             ) : (
               <PlayIcon className="w-5 h-5 ml-0.5" />
             )}
-          </button>
+          </Button>
 
           {showVolume && (
             <div className="flex items-center group/vol">
-              <button
+              <Button
+                variant="custom"
                 onClick={onMuteToggle}
                 aria-label={muted ? "Unmute" : "Mute"}
-                className="w-9 h-9 shrink-0 flex items-center justify-center rounded-[var(--radius-pill)] text-white/40 hover:text-white transition-colors"
+                className="w-9 h-9 shrink-0 flex items-center justify-center rounded-[var(--radius-pill)] text-white/40 hover:text-white transition-colors !bg-transparent"
               >
                 {muted || volume === 0 ? (
                   <MuteIcon className="w-4 h-4" />
                 ) : (
                   <VolumeIcon className="w-4 h-4" />
                 )}
-              </button>
+              </Button>
               <div className="w-0 group-hover/vol:w-20 transition-all duration-300 overflow-hidden flex items-center h-9">
-                <div className="relative w-18 h-1.5 ml-2 bg-white/10 rounded-full cursor-pointer overflow-hidden">
+                <div className="relative w-20 h-1.5 ml-2 bg-white/10 rounded-full cursor-pointer overflow-hidden">
                   <div
                     className="absolute inset-y-0 left-0 bg-amber rounded-full pointer-events-none transition-all duration-150"
                     style={{ width: `${(muted ? 0 : volume) * 100}%` }}
@@ -165,14 +168,15 @@ export default function EmbedControls({
           <div className="flex-1" />
 
           {showCc && onCcToggle && (
-            <button
+            <Button
+              variant="custom"
               onClick={onCcToggle}
               aria-label="Toggle subtitles"
-              className={`w-9 h-9 shrink-0 flex items-center justify-center rounded-[var(--radius-pill)] border transition-all active:scale-90 backdrop-blur-sm
+              className={`w-9 h-9 shrink-0 flex items-center justify-center rounded-[var(--radius-pill)] border transition-all active:scale-90 backdrop-blur-sm !bg-transparent
                 ${ccEnabled ? "bg-amber/20 text-amber border-amber/30" : "bg-white/10 hover:bg-white/10 text-white border-white/10"}`}
             >
               <CcIcon className="w-5 h-5" />
-            </button>
+            </Button>
           )}
 
           {showSpeed && onSpeedChange && canControl && (
@@ -180,11 +184,12 @@ export default function EmbedControls({
           )}
 
           {onToggleTheatre && (
-            <button
+            <Button
+              variant="custom"
               onClick={onToggleTheatre}
               aria-label={theatreMode ? "Exit theatre mode" : "Theatre mode"}
               title={theatreMode ? "Exit theatre mode (T)" : "Theatre mode (T)"}
-              className={`hidden sm:flex w-9 h-9 shrink-0 items-center justify-center rounded-[var(--radius-pill)] border transition-all active:scale-90 backdrop-blur-sm
+              className={`hidden sm:flex w-9 h-9 shrink-0 items-center justify-center rounded-[var(--radius-pill)] border transition-all active:scale-90 backdrop-blur-sm !bg-transparent
                 ${
                   theatreMode
                     ? "bg-amber/20 text-amber border-amber/30"
@@ -192,31 +197,33 @@ export default function EmbedControls({
                 }`}
             >
               <TheatreIconInline className="w-4 h-4" />
-            </button>
+            </Button>
           )}
 
           {isHost && hasEpisodes && onToggleEpisodes && (
-            <button
+            <Button
+              variant="custom"
               onClick={onToggleEpisodes}
               title="Episodes"
-              className="w-9 h-9 shrink-0 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white transition-all active:scale-90 backdrop-blur-sm"
+              className="w-9 h-9 shrink-0 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white transition-all active:scale-90 backdrop-blur-sm !bg-transparent"
             >
               <EpisodesIcon className="w-4 h-4" />
-            </button>
+            </Button>
           )}
 
           {onFullscreen && (
-            <button
+            <Button
+              variant="custom"
               onClick={onFullscreen}
               aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-              className="w-9 h-9 shrink-0 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white transition-all active:scale-90 backdrop-blur-sm"
+              className="w-9 h-9 shrink-0 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white transition-all active:scale-90 backdrop-blur-sm !bg-transparent"
             >
               {isFullscreen ? (
                 <CompressIcon className="w-4 h-4" />
               ) : (
                 <ExpandIcon className="w-4 h-4" />
               )}
-            </button>
+            </Button>
           )}
         </div>
       </div>

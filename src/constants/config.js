@@ -41,4 +41,5 @@ export const LS_KEYS = {
   subtitleOffset: "as_subtitleOffset",
   localFileName: "as_localFileName",
   syncHub: "as_synchub",
+  adminSecret: "as_ecret",
 };

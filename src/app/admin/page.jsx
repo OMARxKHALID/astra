@@ -22,6 +22,7 @@ import {
 import BackButton from "@/components/ui/BackButton";
 import Button from "@/components/ui/Button";
 import { LS_KEYS } from "@/constants/config";
+import { ls } from "@/utils/localStorage";
 
 function AdminContent() {
   const router = useRouter();
@@ -31,19 +32,21 @@ function AdminContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [ready, setReady] = useState(false);
   const [secretInput, setSecretInput] = useState("");
 
   const secretParam = searchParams.get("secret");
 
   useEffect(() => {
-    const savedSecret = localStorage.getItem("astra_admin_secret");
+    const savedSecret = ls.get(LS_KEYS.adminSecret);
     if (secretParam) {
-      localStorage.setItem("astra_admin_secret", secretParam);
+      ls.set(LS_KEYS.adminSecret, secretParam);
       setIsAuthorized(true);
       router.replace("/admin");
     } else if (savedSecret) {
       setIsAuthorized(true);
     }
+    setReady(true);
   }, [secretParam, router]);
 
   const fetchStats = async () => {
@@ -51,7 +54,7 @@ function AdminContent() {
     setLoading(true);
     setError(null);
     try {
-      const secret = localStorage.getItem("astra_admin_secret");
+      const secret = ls.get(LS_KEYS.adminSecret);
       const res = await fetch("/api/admin/stats", {
         headers: { "x-admin-secret": secret || "" },
       });
@@ -73,7 +76,7 @@ function AdminContent() {
   const fetchApiStatus = async () => {
     if (!isAuthorized) return;
     try {
-      const secret = localStorage.getItem("astra_admin_secret");
+      const secret = ls.get(LS_KEYS.adminSecret);
       const res = await fetch("/api/admin/api-status", {
         headers: { "x-admin-secret": secret || "" },
       });
@@ -99,6 +102,8 @@ function AdminContent() {
       return () => clearInterval(interval);
     }
   }, [isAuthorized]);
+
+  if (!ready) return null;
 
   const formatUptime = (seconds) => {
     if (!seconds) return "0h 0m";
@@ -163,7 +168,7 @@ function AdminContent() {
             onSubmit={(e) => {
               e.preventDefault();
               if (secretInput.trim()) {
-                localStorage.setItem("astra_admin_secret", secretInput.trim());
+                ls.set(LS_KEYS.adminSecret, secretInput.trim());
                 setIsAuthorized(true);
               } else {
                 setError("Please enter a secret key");
@@ -179,12 +184,13 @@ function AdminContent() {
                 value={secretInput}
                 onChange={(e) => setSecretInput(e.target.value)}
               />
-              <button
+              <Button
                 type="submit"
+                variant="custom"
                 className="absolute right-1.5 top-1.5 h-9 w-9 bg-amber text-void rounded-[var(--radius-pill)] flex items-center justify-center hover:bg-amber/90 active:scale-95 transition-all"
               >
                 <ArrowRight className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
             {error && (
               <p className="text-danger text-[12px] font-mono text-center">
@@ -193,12 +199,13 @@ function AdminContent() {
             )}
           </form>
 
-          <button
+          <Button
+            variant="custom"
             onClick={() => router.push("/")}
             className="mt-8 w-full text-center text-[11px] text-white/20 hover:text-white/50 font-mono uppercase tracking-[0.2em] transition-colors"
           >
             Return Home
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -216,9 +223,10 @@ function AdminContent() {
         <div className="flex items-center gap-5">
           <BackButton href="/" />
 
-          <button
+          <Button
+            variant="custom"
             onClick={() => router.push("/")}
-            className="flex items-center gap-2.5 text-white/50 hover:text-white transition-colors"
+            className="flex items-center gap-2.5 text-white/50 hover:text-white transition-colors !bg-transparent"
           >
             <div className="w-6 h-6 rounded-[var(--radius-pill)] bg-amber flex items-center justify-center text-void font-black text-sm">
               A
@@ -226,7 +234,7 @@ function AdminContent() {
             <span className="font-display font-bold text-lg tracking-tight">
               Astra
             </span>
-          </button>
+          </Button>
 
           <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-[var(--radius-pill)] bg-amber/10 border border-amber/20">
             <div className="w-1.5 h-1.5 rounded-full bg-amber animate-pulse" />
@@ -385,7 +393,8 @@ function AdminContent() {
                                 {formatTime(room.lastUpdated)}
                               </span>
                             </div>
-                            <button
+                            <Button
+                              variant="custom"
                               title="Terminate Session"
                               onClick={async () => {
                                 if (
@@ -396,7 +405,7 @@ function AdminContent() {
                                   return;
                                 try {
                                   const secret =
-                                    localStorage.getItem("astra_admin_secret");
+                                    ls.get(LS_KEYS.adminSecret);
                                   const res = await fetch(
                                     `/api/admin/room/${room.roomId}`,
                                     {
@@ -414,10 +423,10 @@ function AdminContent() {
                                   alert(err.message);
                                 }
                               }}
-                              className="w-8 h-8 rounded-[var(--radius-pill)] flex items-center justify-center text-white/20 hover:bg-danger/20 hover:text-danger transition-colors opacity-0 group-hover:opacity-100"
+                              className="w-8 h-8 !p-0 rounded-[var(--radius-pill)] flex items-center justify-center text-white/20 hover:bg-danger/20 hover:text-danger transition-colors opacity-0 group-hover:opacity-100 !bg-transparent"
                             >
                               <XCircle className="w-4 h-4" />
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       ))
@@ -545,14 +554,14 @@ function AdminContent() {
                           return;
                         try {
                           const secret =
-                            localStorage.getItem("astra_admin_secret");
+                            ls.get(LS_KEYS.adminSecret);
                           const res = await fetch("/api/admin/redis", {
                             method: "DELETE",
                             headers: { "x-admin-secret": secret || "" },
                           });
                           const json = await res.json();
                           if (json.success) {
-                            localStorage.removeItem(LS_KEYS.history);
+                            ls.remove(LS_KEYS.history);
                             alert("Redis database and local history flushed successfully.");
                             fetchStats();
                           } else {
@@ -570,7 +579,7 @@ function AdminContent() {
                     <Button
                       variant="danger"
                       onClick={() => {
-                        localStorage.removeItem("astra_admin_secret");
+                        ls.remove(LS_KEYS.adminSecret);
                         setIsAuthorized(false);
                       }}
                       className="w-full flex items-center justify-center gap-2 py-3"

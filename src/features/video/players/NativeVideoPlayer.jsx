@@ -63,42 +63,43 @@ export default function NativeVideoPlayer({
   const [posterVisible, setPosterVisible] = useState(true);
   const [isPip, setIsPip] = useState(false);
   const [pipSupported, setPipSupported] = useState(false);
-  const [recentSubs, setRecentSubs] = useState(() => {
-    try {
-      return JSON.parse(ls.get(LS_KEYS.recentSubs) || "[]");
-    } catch {
-      return [];
-    }
+  const [recentSubs, setRecentSubs] = useState([]);
+  const [subStyle, setSubStyle] = useState({
+    fontSize: 100,
+    color: "#ffffff",
+    background: "rgba(0,0,0,0)",
+    position: "bottom",
+    shadow: "soft",
   });
-  const [subStyle, setSubStyle] = useState(() => {
+  const [subtitleOffset, setSubtitleOffset] = useState(0);
+
+  useEffect(() => {
+    try {
+      setRecentSubs(JSON.parse(ls.get(LS_KEYS.recentSubs) || "[]"));
+    } catch {}
+  }, []);
+
+  useEffect(() => {
     try {
       const saved = ls.get(LS_KEYS.subStyle);
       if (saved) {
         const parsed = JSON.parse(saved);
-        return {
+        setSubStyle({
           fontSize: parsed.fontSize || 100,
           color: parsed.color || "#ffffff",
           background: parsed.background || "rgba(0,0,0,0)",
           position: parsed.position || "bottom",
           shadow: parsed.shadow || "soft",
-        };
+        });
       }
     } catch {}
-    return {
-      fontSize: 100,
-      color: "#ffffff",
-      background: "rgba(0,0,0,0)",
-      position: "bottom",
-      shadow: "soft",
-    };
-  });
-  const [subtitleOffset, setSubtitleOffset] = useState(() => {
+  }, []);
+
+  useEffect(() => {
     try {
-      return parseFloat(ls.get(LS_KEYS.subtitleOffset) || "0");
-    } catch {
-      return 0;
-    }
-  });
+      setSubtitleOffset(parseFloat(ls.get(LS_KEYS.subtitleOffset) || "0"));
+    } catch {}
+  }, []);
 
   // Persist subStyle to localStorage
   useEffect(() => {

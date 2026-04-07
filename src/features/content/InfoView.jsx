@@ -43,11 +43,6 @@ export default function InfoView({ initialData, type, id }) {
   useEffect(() => {
     if (type !== "tv" || activeTab !== "episodes" || !id) return;
 
-    if (seasonCache[selectedSeason]) {
-      setEpisodes(seasonCache[selectedSeason]);
-      return;
-    }
-
     setEpLoading(true);
     fetch(`/api/tmdb/tv/${id}/season/${selectedSeason}`)
       .then((r) => r.json())
@@ -60,11 +55,7 @@ export default function InfoView({ initialData, type, id }) {
         setEpLoading(false);
       })
       .catch(() => setEpLoading(false));
-  }, [id, activeTab, selectedSeason, type, seasonCache]);
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [id]);
+  }, [id, activeTab, selectedSeason, type]);
 
   if (!data?.id || data.error) {
     return (

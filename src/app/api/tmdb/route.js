@@ -13,7 +13,7 @@ export async function GET(req) {
       .map((i) => normalizeTMDB(i));
 
     return apiResponse.success({ items });
-  } catch (err) {
-    return apiResponse.success({ items: [] });
+  } catch {
+    return apiResponse.error("TMDB service unavailable", 503);
   }
 }

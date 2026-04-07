@@ -14,7 +14,7 @@ export async function GET(req) {
 
     const results = await searchYouTube(q, pageToken);
     return apiResponse.success(results);
-  } catch (err) {
-    return apiResponse.success({ items: [], nextPageToken: null });
+  } catch {
+    return apiResponse.error("YouTube service unavailable", 503);
   }
 }
