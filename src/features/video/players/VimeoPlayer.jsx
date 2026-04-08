@@ -23,6 +23,7 @@ export default function VimeoPlayer({
   onToggleTheatre,
   hasEpisodes = false,
   onToggleEpisodes,
+  onEnded,
   isHost = true,
 }) {
   const containerRef = useRef(null);
@@ -166,6 +167,7 @@ export default function VimeoPlayer({
           });
           player.on("ended", () => {
             _ended.current = true;
+            onEnded?.();
             player
               .getDuration()
               .then((d) => {
@@ -182,7 +184,7 @@ export default function VimeoPlayer({
       playerRef.current = null;
       setReady(false);
     };
-  }, [videoId]);
+  }, [videoId, onEnded, onPause]);
 
   useEffect(() => {
     if (!ready || !playerRef.current) return;

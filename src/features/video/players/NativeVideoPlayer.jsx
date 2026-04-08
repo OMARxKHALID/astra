@@ -44,6 +44,7 @@ export default function NativeVideoPlayer({
   onToggleTheatre,
   hasEpisodes = false,
   onToggleEpisodes,
+  onEnded,
   isHost = true,
 }) {
   const [localTime, setLocalTime] = useState(0);
@@ -160,6 +161,7 @@ export default function NativeVideoPlayer({
     setFullscreen,
     onPause,
     onPlay,
+    onEnded,
     seekingRef,
     playbackRate,
     addToast,

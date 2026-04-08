@@ -43,6 +43,7 @@ function VideoPlayer({
   hasEpisodes = false,
   onToggleEpisodes,
   onServerChange,
+  onEnded,
   isHost = true,
   isRoom = false,
   syncHubEnabled = false,
@@ -66,6 +67,7 @@ function VideoPlayer({
         onPause={onPause}
         onSeek={onSeek}
         onSpeed={onSpeed}
+        onEnded={onEnded}
         canControl={canControl}
         onLoad={onLoad}
         onSubtitleChange={onSubtitleChange}
@@ -96,6 +98,7 @@ function VideoPlayer({
         onPause={onPause}
         onSeek={onSeek}
         onSpeed={onSpeed}
+        onEnded={onEnded}
         canControl={canControl}
         onLoad={onLoad}
         onAmbiColors={onAmbiColors}
@@ -120,6 +123,7 @@ function VideoPlayer({
         onPause={onPause}
         onSeek={onSeek}
         onSpeed={onSpeed}
+        onEnded={onEnded}
         canControl={canControl}
         onLoad={onLoad}
         onAmbiColors={onAmbiColors}
@@ -140,6 +144,7 @@ function VideoPlayer({
         isPlaying={isPlaying}
         onPlay={onPlay}
         onPause={onPause}
+        onEnded={onEnded}
         canControl={canControl}
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}

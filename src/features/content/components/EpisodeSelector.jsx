@@ -15,6 +15,8 @@ export default function EpisodeSelector({
   setCache,
   poster,
   isRoom = false,
+  bingeWatchEnabled = false,
+  onToggleBingeWatch,
 }) {
   const cachedData = cache[currentSeason];
   const [episodes, setEpisodes] = useState(cachedData?.episodes || []);
@@ -94,6 +96,23 @@ export default function EpisodeSelector({
             <p className="text-[11px] text-white/80 text-center mt-3 line-clamp-3 leading-relaxed font-body">
               {seasonMeta.overview}
             </p>
+          )}
+          {onToggleBingeWatch && (
+            <div className="flex items-center gap-2 mt-4">
+              <span className="text-[10px] text-white/50 font-mono uppercase tracking-wider">Auto-Next</span>
+              <button
+                onClick={onToggleBingeWatch}
+                className={`relative w-10 h-5 rounded-full transition-all duration-300 ${
+                  bingeWatchEnabled ? "bg-amber" : "bg-white/20"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-md transition-all duration-300 ${
+                    bingeWatchEnabled ? "left-5" : "left-0.5"
+                  }`}
+                />
+              </button>
+            </div>
           )}
         </div>
 

@@ -13,6 +13,7 @@ export default function useVideoEvents({
   setFullscreen,
   onPause,
   onPlay,
+  onEnded,
   seekingRef,
   playbackRate,
   addToast,
@@ -45,6 +46,7 @@ export default function useVideoEvents({
     const onCan = () => {};
 
     const onNativeEnded = () => {
+      onEnded?.();
       onPause?.(v.duration);
     };
 
@@ -216,6 +218,7 @@ export default function useVideoEvents({
     setVideoError,
     setPosterVisible,
     setFullscreen,
+    onEnded,
     addToast,
   ]);
 

@@ -2,13 +2,10 @@
 
 import dynamic from "next/dynamic";
 import { useRef, useCallback, useEffect, useState } from "react";
+import { getNextEpisode } from "@/lib/videoResolver";
 import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  MessageSquare as ChatIcon,
-  Users as UsersIcon,
-  Video as VideoIcon,
-} from "lucide-react";
+import { MessageSquare as ChatIcon, Users as UsersIcon } from "lucide-react";
 
 import SyncEngine from "@/features/sync/components/SyncEngine";
 import VideoPlayer from "@/features/video";
@@ -25,7 +22,9 @@ import { IncomingCallBanner } from "./components/IncomingCallBanner";
 import CatchUpBanner from "./components/CatchUpBanner";
 import Button from "@/components/ui/Button";
 
-const SettingsPanel = dynamic(() => import("./components/SettingsPanel"), { ssr: false });
+const SettingsPanel = dynamic(() => import("./components/SettingsPanel"), {
+  ssr: false,
+});
 const ShortcutsModal = dynamic(() => import("./components/ShortcutsModal"), {
   ssr: false,
 });
@@ -36,7 +35,9 @@ const EpisodeSelector = dynamic(
   () => import("@/features/content/components/EpisodeSelector"),
   { ssr: false },
 );
-const ChatSidebar = dynamic(() => import("./components/ChatSidebar"), { ssr: false });
+const ChatSidebar = dynamic(() => import("./components/ChatSidebar"), {
+  ssr: false,
+});
 const UserList = dynamic(() => import("./components/UserList"), { ssr: false });
 const CallGrid = dynamic(
   () => import("./components/CallGrid").then((mod) => mod.CallGrid),
@@ -181,6 +182,25 @@ export default function RoomView({ roomId, initialMeta, initialPreferences }) {
     if (times.length)
       videoRef.current.currentTime = times[Math.floor(times.length / 2)];
   }, [room.tsMapState]);
+  
+  const handleVideoEnded = useCallback(() => {
+    console.log("[Room] Video ended event caught. isHost:", isHost);
+    if (!isHost || !sendRef.current) return;
+    
+    const nextUrl = getNextEpisode(effectiveVideoUrl);
+    if (nextUrl) {
+      addToast("Starting next episode in 2 seconds...", "info");
+      setTimeout(() => {
+        if (sendRef.current) {
+          sendRef.current({
+            type: "change_video",
+            videoUrl: nextUrl,
+            subtitleUrl: "",
+          });
+        }
+      }, 2000);
+    }
+  }, [isHost, effectiveVideoUrl, addToast]);
 
   const isTheatre = settings.theatreMode && !isFullscreen;
   const leaderTime = getLeaderTime(room.tsMapState);
@@ -338,6 +358,7 @@ export default function RoomView({ roomId, initialMeta, initialPreferences }) {
                 videoState.setEpisodesOpen(!videoState.episodesOpen)
               }
               onServerChange={videoState.handleServerChange}
+              onEnded={handleVideoEnded}
               addToast={addToast}
             />
             {videoState.episodesOpen && videoState.id && (

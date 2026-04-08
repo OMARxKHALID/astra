@@ -6,7 +6,7 @@ import {
   Cloud as ServerIcon,
 } from "lucide-react";
 import { detectServer } from "@/lib/videoResolver";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import SyncHub from "../controls/SyncHub";
 import PausedOverlay from "../controls/PausedOverlay";
 import { ServerDropdown } from "../controls/ServerPicker";
@@ -14,6 +14,18 @@ import Button from "@/components/ui/Button";
 
 // Extracts { current, duration } from provider-specific postMessage time formats.
 function parseTimeMessage(data) {
+  // Handle Vidlink's wrapped format: { type: 'PLAYER_EVENT', data: { event: 'timeupdate', currentTime: ..., duration: ... } }
+  if (data?.type === "PLAYER_EVENT" && data?.data) {
+    const inner = data.data;
+    if (inner.event === "timeupdate" || inner.event === "ended") {
+      const current = inner.currentTime ?? inner.time ?? inner.seconds ?? inner.position;
+      const duration = inner.duration ?? inner.total ?? inner.length;
+      if (current != null && duration != null && duration > 0) {
+        return { current: Number(current), duration: Number(duration), isEnded: inner.event === "ended" };
+      }
+    }
+  }
+
   if (!data || typeof data !== "object") return null;
 
   if (
@@ -58,25 +70,52 @@ export default function EmbedPlayer({
   playbackRate = 1,
   onPlay,
   onPause,
+  onEnded,
 }) {
   const containerRef = useRef(null);
   const [showServers, setShowServers] = useState(false);
   const [ready, setReady] = useState(false);
 
-  const iframeOrigin = (() => {
+  const iframeOrigin = useMemo(() => {
     try { return new URL(videoUrl).origin; } catch { return null; }
-  })();
+  }, [videoUrl]);
 
   const activeServer = detectServer(videoUrl);
 
+  const hasTriggeredEnd = useRef(false);
+
+  useEffect(() => {
+    hasTriggeredEnd.current = false;
+  }, [videoUrl]);
+
   useEffect(() => {
     const handleMessage = (e) => {
-      if (iframeOrigin && e.origin !== iframeOrigin) return;
+      const isAllowedOrigin = !iframeOrigin || e.origin === iframeOrigin || e.origin.includes("vidlink") || e.origin.includes("vidsrc");
+      if (!isAllowedOrigin) return;
+      
       const data = e.data;
       const parsed = parseTimeMessage(data);
-      if (parsed && typeof onLoad === "function") {
-        onLoad(videoUrl, null, parsed.duration);
+      
+      if (parsed) {
+        if (typeof onLoad === "function") {
+          onLoad(videoUrl, null, parsed.duration);
+        }
+        
+        const threshold = parsed.duration - 2;
+        const isNearEnd = parsed.current >= threshold;
+        const shouldTrigger = (isNearEnd || parsed.isEnded) && parsed.duration > 0 && typeof onEnded === "function" && !hasTriggeredEnd.current;
+        
+        if (shouldTrigger) {
+          hasTriggeredEnd.current = true;
+          onEnded?.();
+        }
       }
+
+      if (data?.type === "vidlink_ended" && !hasTriggeredEnd.current) {
+        hasTriggeredEnd.current = true;
+        onEnded?.();
+      }
+
       if (data?.type === "vidlink_ready") {
         setReady(true);
       }
@@ -84,25 +123,26 @@ export default function EmbedPlayer({
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [videoUrl, onLoad, iframeOrigin]);
+  }, [videoUrl, onLoad, onEnded, iframeOrigin]);
 
-  // Sync isPlaying state to the iframe via postMessage
   useEffect(() => {
     const iframe = containerRef.current?.querySelector("iframe");
-    if (!iframe?.contentWindow || !iframeOrigin) return;
+    if (!iframe?.contentWindow) return;
+
+    const sendMessage = (msg) => {
+      // Always use wildcard for Embed providers to bypass origin mismatch reporting
+      iframe.contentWindow.postMessage(msg, "*");
+    };
 
     if (isPlaying) {
-      iframe.contentWindow.postMessage({ type: "vidlink_play" }, iframeOrigin);
+      sendMessage({ type: "vidlink_play" });
       try {
-        iframe.contentWindow.postMessage(
-          { type: "vidlink_speed", rate: playbackRate },
-          iframeOrigin,
-        );
+        sendMessage({ type: "vidlink_speed", rate: playbackRate });
       } catch {}
     } else {
-      iframe.contentWindow.postMessage({ type: "vidlink_pause" }, iframeOrigin);
+      sendMessage({ type: "vidlink_pause" });
     }
-  }, [isPlaying, ready, videoUrl, playbackRate, iframeOrigin]);
+  }, [isPlaying, ready, videoUrl, playbackRate]);
 
   return (
     <div

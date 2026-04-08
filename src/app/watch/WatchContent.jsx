@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import ToastContainer, { useToast } from "@/components/Toast";
 import Button from "@/components/ui/Button";
 import {
   buildEmbedUrl,
@@ -26,6 +27,7 @@ export default function WatchContent({ initialMeta }) {
   const params = useSearchParams();
   const router = useRouter();
   const { data: session } = useSession();
+  const { toasts, addToast } = useToast();
   const videoRef = useRef(null);
 
   const url = params.get("url") || "";
@@ -40,6 +42,7 @@ export default function WatchContent({ initialMeta }) {
   const [cloudOpen, setCloudOpen] = useState(false);
   const [episodesOpen, setEpisodesOpen] = useState(false);
   const [seasonCache, setSeasonCache] = useState({});
+  const [bingeWatchEnabled, setBingeWatchEnabled] = useState(false);
 
   const derivedMeta = useMemo(() => {
     const meta = extractMeta(url);
@@ -161,6 +164,21 @@ export default function WatchContent({ initialMeta }) {
     }
   }, [activeTmdbId, isActiveTv, activeS, activeE, router]);
 
+  const handleVideoEnded = useCallback(() => {
+    if (!bingeWatchEnabled || !isActiveTv || !activeTmdbId) return;
+    const nextEpisode = Number(activeE) + 1;
+    const server = detectServer(url) || "vidlink";
+    const nextUrl = buildEmbedUrl(server, activeTmdbId, "tv", Number(activeS), nextEpisode);
+    if (nextUrl) {
+      addToast(`Starting Episode ${nextEpisode} in 2 seconds...`, "info");
+      setTimeout(() => {
+        router.replace(
+          `/watch?url=${encodeURIComponent(nextUrl)}&tmdb=${activeTmdbId}&type=tv&s=${activeS}&e=${nextEpisode}`,
+        );
+      }, 2000);
+    }
+  }, [bingeWatchEnabled, isActiveTv, activeTmdbId, activeE, activeS, url, router, addToast]);
+
   if (!url) {
     return (
       <div className="h-dvh bg-void flex flex-col items-center justify-center gap-4">
@@ -205,6 +223,7 @@ export default function WatchContent({ initialMeta }) {
           isPlaying={true}
           hasEpisodes={isActiveTv}
           onToggleEpisodes={() => setEpisodesOpen(!episodesOpen)}
+          onEnded={handleVideoEnded}
         />
 
         {episodesOpen && activeTmdbId && (
@@ -218,9 +237,12 @@ export default function WatchContent({ initialMeta }) {
             cache={seasonCache}
             setCache={setSeasonCache}
             poster={meta?.poster || null}
+            bingeWatchEnabled={bingeWatchEnabled}
+            onToggleBingeWatch={() => setBingeWatchEnabled(!bingeWatchEnabled)}
           />
         )}
       </div>
+      <ToastContainer toasts={toasts} />
     </div>
   );
 }

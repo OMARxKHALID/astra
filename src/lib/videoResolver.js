@@ -123,15 +123,16 @@ export function extractMeta(rawUrl) {
 
   // 1. Vidlink: /tv/id/s/e or /movie/id
   if (url.includes("vidlink.pro")) {
-    const vidlinkMatch = url.match(/\/(tv|movie)\/(\d+)/);
+    const vidlinkMatch = url.match(/\/(tv|movie)\/(\d+)(?:\/(\d+)\/(\d+))?/);
     if (vidlinkMatch) {
-      const isTV = vidlinkMatch[1] === "tv";
-      const segments = url.split("/").filter(Boolean);
+      const type = vidlinkMatch[1];
+      const id = vidlinkMatch[2];
+      const isTV = type === "tv";
       return {
-        id: vidlinkMatch[2],
-        s: isTV ? (segments[segments.length - 2] || "1") : "1",
-        e: isTV ? (segments[segments.length - 1] || "1") : "1",
-        type: vidlinkMatch[1],
+        id,
+        s: isTV ? (vidlinkMatch[3] || "1") : "1",
+        e: isTV ? (vidlinkMatch[4] || "1") : "1",
+        type,
       };
     }
   }
@@ -212,6 +213,71 @@ export function detectServer(url) {
     }
   }
 
+  return null;
+}
+
+/**
+ * Intelligently increments the episode/file index in a URL for binge-watching.
+ * Supports:
+ * - Vidlink: /tv/id/s/e
+ * - SuperEmbed: ?s=S&e=E
+ * - MoviesAPI: /tv/id-s-e
+ * - Generic: &fileIndex=X or ?fileIndex=X
+ * - Static: file-1.mp4 -> file-2.mp4
+ */
+export function getNextEpisode(currentUrl) {
+  if (!currentUrl) return null;
+  console.log("[Binge] Calculating next for:", currentUrl);
+
+  // 1. Check for Embed Servers first via extractMeta + buildEmbedUrl
+  const server = detectServer(currentUrl);
+  if (server) {
+    const meta = extractMeta(currentUrl);
+    console.log("[Binge] Detected server:", server, "Meta:", meta);
+    if (meta.type === "tv") {
+      const nextEp = Number(meta.e) + 1;
+      const next = buildEmbedUrl(server, meta.id, "tv", meta.s, nextEp);
+      console.log("[Binge] Success! Next TV URL:", next);
+      return next;
+    }
+  }
+
+  // 2. Generic Query Params: fileIndex=X, ep=X, e=X
+  try {
+    const urlObj = new URL(currentUrl);
+    const PARAMS = ["fileIndex", "ep", "episode", "e"];
+    for (const p of PARAMS) {
+      if (urlObj.searchParams.has(p)) {
+        const val = Number(urlObj.searchParams.get(p));
+        if (!isNaN(val)) {
+          urlObj.searchParams.set(p, String(val + 1));
+          const next = urlObj.toString();
+          console.log("[Binge] Success! Next Param URL:", next);
+          return next;
+        }
+      }
+    }
+  } catch {
+    /* fallback to regex */
+  }
+
+  // 3. Regex Fallback: Matches trailing or isolated numbers like "-ep1" or "/1"
+  // This matches common patterns like: series-s01e01.mp4 -> series-s01e02.mp4
+  const EP_REGEX = /((?:ep|e|episode|file)?[\-_.]?0*)(\d+)(\.[a-z0-9]+)?$/i;
+  const match = currentUrl.match(EP_REGEX);
+  if (match) {
+    const prefix = match[1];
+    const numStr = match[2];
+    const ext = match[3] || "";
+    const nextNum = Number(numStr) + 1;
+    // Preserve padding (e.g. 01 -> 02)
+    const padded = String(nextNum).padStart(numStr.length, "0");
+    const next = currentUrl.replace(EP_REGEX, `${prefix}${padded}${ext}`);
+    console.log("[Binge] Success! Next Regex URL:", next);
+    return next;
+  }
+
+  console.log("[Binge] No next episode found.");
   return null;
 }
 

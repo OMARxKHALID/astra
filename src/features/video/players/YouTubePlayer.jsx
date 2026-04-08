@@ -25,6 +25,7 @@ export default function YouTubePlayer({
   onToggleTheatre,
   hasEpisodes = false,
   onToggleEpisodes,
+  onEnded,
   isHost = true,
 }) {
   const containerRef = useRef(null);
@@ -282,6 +283,7 @@ export default function YouTubePlayer({
             )
               isBufferingRef.current = false;
             if (e.data === YT?.ENDED) {
+              onEnded?.();
               onPause?.(playerRef.current?.getDuration?.() ?? 0);
             }
           },
@@ -299,7 +301,7 @@ export default function YouTubePlayer({
       setReady(false);
       setIsAdPlaying(false);
     };
-  }, [videoId]);
+  }, [videoId, onEnded, onPause]);
 
   useEffect(() => {
     if (!ready || !playerRef.current) return;

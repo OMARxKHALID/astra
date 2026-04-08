@@ -67,6 +67,10 @@ export function useRoomSocket(props) {
         if (data?.rate != null) localPlaybackRate.current = data.rate;
       }
 
+      if (type === "change_video") {
+        event = "CMD:host";
+      }
+
       if (event.startsWith("CMD:")) {
         socket.emit(event, p.current.roomId, data);
       } else {
@@ -111,7 +115,19 @@ export function useRoomSocket(props) {
         }
       }
 
-      // 2. Playback Rate Correction (Speed Sync)
+      const lt = tsMap.current._leaderTime_ ?? 0;
+      const leaderTime = lt > 0 ? lt : expectedTime(s, clockOffset.current);
+      if (leaderTime === 0) return;
+
+      const drift = leaderTime - v.currentTime;
+
+      // 2. Initial alignment (Requires HAVE_FUTURE_DATA)
+      if (!initialSeekDone.current && v.readyState >= 3 && Math.abs(drift) > 1.5) {
+        v.currentTime = leaderTime;
+        initialSeekDone.current = true;
+      }
+
+      // 3. Playback Rate Correction (Speed Sync) - Requires HAVE_ENOUGH_DATA
       const targetRate = s.playbackRate || 1;
       if (v.readyState < 4 || checkBuffering(v) || resultsInWindow) {
         if (Math.abs(v.playbackRate - targetRate) > 0.005) {
@@ -120,23 +136,12 @@ export function useRoomSocket(props) {
         return;
       }
 
-      const lt = tsMap.current._leaderTime_ ?? 0;
-      const leaderTime = lt > 0 ? lt : expectedTime(s, clockOffset.current);
-      if (leaderTime === 0) return;
-
-      const drift = leaderTime - v.currentTime;
       const syncStatus =
         Math.abs(drift) <= SYNC_TOLERANCE_S ? "synced" : "soft";
 
       if (syncStatus !== lastSyncStatus.current) {
         lastSyncStatus.current = syncStatus;
         onDriftStatus?.(syncStatus);
-      }
-
-      // Initial alignment
-      if (!initialSeekDone.current && Math.abs(drift) > 1.5) {
-        v.currentTime = leaderTime;
-        initialSeekDone.current = true;
       }
 
       // Apply dynamic speed correction for drift
