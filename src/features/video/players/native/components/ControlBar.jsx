@@ -61,6 +61,7 @@ export default function ControlBar({
   hasEpisodes,
   onToggleEpisodes,
   isHost = true,
+  isRoom = true,
 }) {
   return (
     <div
@@ -231,11 +232,11 @@ export default function ControlBar({
             )}
           </div>
 
-          {isHost && hasEpisodes && onToggleEpisodes && (
+          {isHost && isRoom && hasEpisodes && onToggleEpisodes && (
             <button
               onClick={onToggleEpisodes}
               title="Episodes"
-              className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white/40 hover:text-white transition-all active:scale-90"
+              className="episodes-toggle-btn w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white/40 hover:text-white transition-all active:scale-90"
             >
               <EpisodesIcon className="w-4 h-4" />
             </button>

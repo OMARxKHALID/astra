@@ -114,7 +114,7 @@ httpServer.on("request", (req, res) => {
       for (const [roomId, room] of rooms) {
         roomList.push({
           roomId,
-          video: room.video,
+          videoUrl: room.videoUrl,
           participants: room.socketIds.size,
           hostId: room.hostId,
           createdAt: room.createdAt,

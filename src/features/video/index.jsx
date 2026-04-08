@@ -78,7 +78,10 @@ function VideoPlayer({
         addToast={addToast}
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}
+        hasEpisodes={hasEpisodes}
+        onToggleEpisodes={onToggleEpisodes}
         isHost={isHost}
+        isRoom={isRoom}
       />
     );
 
@@ -99,7 +102,10 @@ function VideoPlayer({
         ambilightEnabled={ambilightEnabled}
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}
+        hasEpisodes={hasEpisodes}
+        onToggleEpisodes={onToggleEpisodes}
         isHost={isHost}
+        isRoom={isRoom}
       />
     );
 
@@ -120,7 +126,10 @@ function VideoPlayer({
         ambilightEnabled={ambilightEnabled}
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}
+        hasEpisodes={hasEpisodes}
+        onToggleEpisodes={onToggleEpisodes}
         isHost={isHost}
+        isRoom={isRoom}
       />
     );
 

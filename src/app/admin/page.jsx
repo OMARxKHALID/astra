@@ -375,7 +375,7 @@ function AdminContent() {
                               )}
                             </div>
                             <p className="text-[11px] font-mono text-white/25 truncate">
-                              {room.video || "No media loaded"}
+                              {room.videoUrl || "No media loaded"}
                             </p>
                           </div>
 

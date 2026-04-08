@@ -16,7 +16,7 @@ async function queryWsSidecar(id) {
 
     return {
       roomId: data.roomId,
-      videoUrl: data.video || "",
+      videoUrl: data.videoUrl || data.video || "",
       subtitleUrl: data.subtitleUrl || "",
       isPlaying: data.paused === false,
       currentTime: data.videoTS ?? 0,

@@ -139,7 +139,7 @@ export default function EmbedPlayer({
       )}
 
       {/* 3. ORIGINAL CONTROLS (Top Right) */}
-      <div className="absolute top-4 right-4 z-20 flex gap-2 translate-y-2 opacity-0 group-hover/embed:translate-y-0 group-hover/embed:opacity-100 transition-all duration-500">
+      <div className="absolute top-4 right-4 z-[80] flex gap-2 translate-y-2 opacity-0 group-hover/embed:translate-y-0 group-hover/embed:opacity-100 transition-all duration-500">
         {isHost && onServerChange && (
           <div className="relative group/servers">
             <Button
@@ -167,7 +167,7 @@ export default function EmbedPlayer({
             )}
           </div>
         )}
-        {isHost && hasEpisodes && onToggleEpisodes && (
+        {isHost && isRoom && hasEpisodes && onToggleEpisodes && (
           <Button
             variant="custom"
             onClick={() => {
@@ -175,7 +175,7 @@ export default function EmbedPlayer({
               setShowServers(false);
             }}
             title="Browse Episodes"
-            className="!p-2.5 !rounded-[var(--radius-pill)] !bg-void/80 !text-white/40 hover:!text-white hover:!bg-void !border !border-white/10 transition-all shadow-2xl"
+            className="episodes-toggle-btn !p-2.5 !rounded-[var(--radius-pill)] !bg-void/80 !text-white/40 hover:!text-white hover:!bg-void !border !border-white/10 transition-all shadow-2xl"
           >
             <EpisodesIcon className="w-4 h-4" />
           </Button>

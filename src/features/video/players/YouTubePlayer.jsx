@@ -79,7 +79,7 @@ export default function YouTubePlayer({
     };
     img.onerror = () => onAmbiColors(null);
     return () => onAmbiColors(null);
-  }, [thumbnailUrl, onAmbiColors]);
+  }, [thumbnailUrl, onAmbiColors, ambilightEnabled]);
 
   // [Note] Ad Skipper: If getVideoData mismatch → seekTo(9999) to force completion
   const startAdWatch = useCallback(() => {

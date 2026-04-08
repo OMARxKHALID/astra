@@ -13,7 +13,7 @@ export default function SyncHub({
 
   return (
     <div
-      className={`absolute top-6 left-1/2 -translate-x-1/2 z-[30] transition-all duration-500 rounded-[var(--radius-pill)]
+      className={`absolute top-6 left-1/2 -translate-x-1/2 z-[80] transition-all duration-500 rounded-[var(--radius-pill)]
         ${!isPlaying
           ? "translate-y-0 opacity-100 pointer-events-auto"
           : "translate-y-2 opacity-0 group-hover/embed:opacity-100 group-hover/embed:translate-y-0 pointer-events-none group-hover/embed:pointer-events-auto"}

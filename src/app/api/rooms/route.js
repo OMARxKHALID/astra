@@ -22,8 +22,8 @@ export async function POST(request) {
     }
 
     const roomId =
-      clientRoomId && typeof clientRoomId === "string"
-        ? clientRoomId.slice(0, 36).trim()
+      clientRoomId && typeof clientRoomId === "string" && /^[a-zA-Z0-9_-]{4,36}$/.test(clientRoomId.trim())
+        ? clientRoomId.trim()
         : generateId(8);
     const hostId =
       typeof userId === "string" && userId.trim()

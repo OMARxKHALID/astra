@@ -61,6 +61,7 @@ export default function EmbedControls({
   hasEpisodes = false,
   onToggleEpisodes,
   isHost = true,
+  isRoom = true,
 }) {
   const [tmp, setTmp] = useState(0);
   const [seeking, setSeeking] = useState(false);
@@ -200,12 +201,12 @@ export default function EmbedControls({
             </Button>
           )}
 
-          {isHost && hasEpisodes && onToggleEpisodes && (
+          {isHost && isRoom && hasEpisodes && onToggleEpisodes && (
             <Button
               variant="custom"
               onClick={onToggleEpisodes}
               title="Episodes"
-              className="w-9 h-9 shrink-0 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white transition-all active:scale-90 backdrop-blur-sm !bg-transparent"
+              className="episodes-toggle-btn w-9 h-9 shrink-0 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white transition-all active:scale-90 backdrop-blur-sm !bg-transparent"
             >
               <EpisodesIcon className="w-4 h-4" />
             </Button>

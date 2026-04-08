@@ -21,7 +21,7 @@ export function useVideoState({ videoUrl, params, sendRef, isHost }) {
   const isActiveTv = parsed.type === "tv" && !!parsed.id;
 
   const handleSelectEpisode = useCallback(
-    ({ season, episode }) => {
+    (season, episode) => {
       // 1. Only allow if we've identified the movie/show ID
       if (!parsed.id) return;
 

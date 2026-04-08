@@ -40,7 +40,14 @@ export async function GET(req, { params }) {
         : null,
     }));
 
-    const result = { episodes, meta: { season_number: d.season_number } };
+    const result = { 
+      episodes, 
+      meta: { 
+        season_number: d.season_number,
+        name: d.name || `Season ${d.season_number}`,
+        overview: d.overview || ""
+      } 
+    };
     
     if (redisCache) {
       await redisCache.set(cacheKey, result, { ex: 3600 });

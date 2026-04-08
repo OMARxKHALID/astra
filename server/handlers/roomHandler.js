@@ -51,7 +51,7 @@ export default function registerRoomHandlers(
           log(`[redis] Restoring room:${roomId} from storage`);
           room = new Room(
             roomId,
-            stored.video,
+            stored.videoUrl || stored.video || "",
             stored.hostId,
             stored.hostToken,
           );
@@ -123,7 +123,7 @@ export default function registerRoomHandlers(
     } else if (isHost && !room.hostToken && token && jwtPayload) {
       room.hostId = jwtPayload.hostId;
       room.hostToken = token;
-      if (videoUrl) room.video = videoUrl;
+      if (videoUrl) room.videoUrl = videoUrl;
     }
 
     if (room.passwordHash && !isHost) {

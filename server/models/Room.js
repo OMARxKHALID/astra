@@ -15,9 +15,9 @@ export class Room {
   #tsLockUntil = 0;
   #lastBroadcastTime = Date.now();
 
-  constructor(roomId, video = "", hostId = "", hostToken = "") {
+  constructor(roomId, videoUrl = "", hostId = "", hostToken = "") {
     this.roomId = roomId;
-    this.video = video;
+    this.videoUrl = videoUrl;
     this.subtitleUrl = "";
     this.videoTS = 0;
     this.paused = true;
@@ -91,8 +91,8 @@ export class Room {
     this.tsMap[userId] = normalized;
   }
 
-  changeVideo(video, videoTS = 0, paused = false, subtitleUrl = "") {
-    this.video = video;
+  changeVideo(videoUrl, videoTS = 0, paused = false, subtitleUrl = "") {
+    this.videoUrl = videoUrl;
     this.videoTS = videoTS;
     this.paused = paused;
     this.subtitleUrl = subtitleUrl || "";
@@ -105,7 +105,7 @@ export class Room {
   publicState() {
     return {
       roomId: this.roomId,
-      video: this.video,
+      videoUrl: this.videoUrl,
       subtitleUrl: this.subtitleUrl || "",
       paused: this.paused,
       videoTS: this.videoTS,
@@ -122,7 +122,7 @@ export class Room {
 
   _stateFingerprint() {
     return JSON.stringify([
-      this.video,
+      this.videoUrl,
       this.paused,
       this.playbackRate,
       this.hostId,
@@ -181,7 +181,7 @@ export async function saveRoom(room) {
       try {
         const payload = {
           roomId: r.roomId,
-          video: r.video,
+          videoUrl: r.videoUrl,
           subtitleUrl: r.subtitleUrl || "",
           paused: r.paused,
           videoTS: r.videoTS,

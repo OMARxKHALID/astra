@@ -212,17 +212,6 @@ export function detectServer(url) {
     }
   }
 
-  // Fallback: try built-in buildEmbedUrl match for other providers (if any are added)
-  for (const opt of serverOptions) {
-    const testUrl = buildEmbedUrl(opt.value, "1", "movie");
-    if (!testUrl) continue;
-    try {
-      const testHost = new URL(testUrl).hostname.toLowerCase().replace(/^www\.|^player\.|^embed\./, "");
-      if (host === testHost || host.endsWith("." + testHost)) {
-        return opt.value;
-      }
-    } catch {}
-  }
   return null;
 }
 

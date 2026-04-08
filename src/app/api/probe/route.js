@@ -1,19 +1,7 @@
 import { NextResponse } from "next/server";
 
-const ALLOWED_PROTOCOLS = ["https:", "http:"];
-const BLOCKED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", "::1"];
+import { isValidUrl } from "@/lib/ssrf";
 
-function isValidUrl(urlStr) {
-  try {
-    const url = new URL(urlStr);
-    if (!ALLOWED_PROTOCOLS.includes(url.protocol)) return false;
-    if (BLOCKED_HOSTS.includes(url.hostname)) return false;
-    if (url.hostname.startsWith("127.") || url.hostname.startsWith("10.") || url.hostname.startsWith("192.168.")) return false;
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 export async function GET(request) {
   try {

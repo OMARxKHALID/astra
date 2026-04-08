@@ -25,7 +25,7 @@ const WatchHeader = memo(function WatchHeader({
 
   return (
     <div
-      className={`fixed top-0 left-0 right-0 z-[70] px-3 sm:px-5 py-3 sm:py-4 bg-gradient-to-b from-black/95 via-black/50 to-transparent flex items-center gap-2 sm:gap-3 transition-all duration-500 transform ${
+      className={`fixed top-0 left-0 right-0 z-[80] px-3 sm:px-5 py-3 sm:py-4 bg-gradient-to-b from-black/95 via-black/50 to-transparent flex items-center gap-2 sm:gap-3 transition-all duration-500 transform ${
         visible
           ? "translate-y-0 opacity-100"
           : "-translate-y-full opacity-0 pointer-events-none"
@@ -105,7 +105,7 @@ const WatchHeader = memo(function WatchHeader({
               <Button
                 variant="custom"
                 onClick={onToggleEpisodes}
-                className={`!px-3 sm:!px-3.5 h-9 !bg-transparent transition-all flex items-center justify-center !rounded-none !rounded-r-[var(--radius-pill)] ${
+                className={`episodes-toggle-btn !px-3 sm:!px-3.5 h-9 !bg-transparent transition-all flex items-center justify-center !rounded-none !rounded-r-[var(--radius-pill)] ${
                   episodesOpen ? "!text-amber !bg-amber/20" : "!text-amber hover:!bg-white/10"
                 }`}
                 title="Episodes"

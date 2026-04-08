@@ -1,31 +1,11 @@
 import { NextResponse } from "next/server";
 import { gunzipSync } from "zlib";
 import { withRateLimit } from "@/lib/rateLimit";
+import { isValidUrl } from "@/lib/ssrf";
 
 const API_KEY = process.env.OPENSUBTITLES_KEY;
 const API_BASE = "https://api.opensubtitles.com/api/v1";
 const MAX_RESPONSE_SIZE = 2 * 1024 * 1024;
-
-const BLOCKED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", "::1"];
-
-function isValidDirectUrl(urlStr) {
-  try {
-    const url = new URL(urlStr);
-    if (url.protocol !== "http:" && url.protocol !== "https:") return false;
-    const hostname = url.hostname.toLowerCase();
-    if (BLOCKED_HOSTS.includes(hostname)) return false;
-    if (
-      hostname.startsWith("127.") ||
-      hostname.startsWith("10.") ||
-      hostname.startsWith("192.168.") ||
-      hostname.startsWith("169.254.") ||
-      hostname.startsWith("172.")
-    ) return false;
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 export async function GET(request) {
   try {
@@ -71,7 +51,7 @@ export async function GET(request) {
       finalDownloadUrl = dlData.link;
     } else {
       // [Note] SSRF guard: direct URLs must pass the same IP blocklist as /api/proxy
-      if (!isValidDirectUrl(finalDownloadUrl)) {
+      if (!(await isValidUrl(finalDownloadUrl))) {
         return NextResponse.json(
           { error: "Invalid or disallowed URL" },
           { status: 400 },

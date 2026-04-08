@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { onVMReady } from "../utils";
 import { usePlayerControls } from "../hooks/usePlayerControls";
 import { useVideoHotkeys } from "../hooks/useVideoHotkeys";
@@ -70,7 +70,7 @@ export default function VimeoPlayer({
     };
     img.onerror = () => onAmbiColors(null);
     return () => onAmbiColors(null);
-  }, [thumbnailUrl, onAmbiColors]);
+  }, [thumbnailUrl, onAmbiColors, ambilightEnabled]);
 
   // read by SyncEngine to suppress rate corrections while stalled
   const isBufferingRef = useRef(false);
@@ -80,51 +80,52 @@ export default function VimeoPlayer({
     playerRef.current.setVolume(muted ? 0 : volume).catch(() => {});
   }, [volume, muted, ready]);
 
+  const _t = useRef(0);
+  const _p = useRef(true);
+  const _r = useRef(1);
+  const _dur = useRef(0);
+  const _ended = useRef(false);
+
   useEffect(() => {
     if (!videoRef) return;
-    let _t = 0,
-      _p = true,
-      _r = 1,
-      _dur = 0,
-      _ended = false;
     videoRef.current = {
       get currentTime() {
-        return _t;
+        return _t.current;
       },
       set currentTime(t) {
-        _t = t;
-        _ended = false;
+        _t.current = t;
+        _ended.current = false;
         playerRef.current?.setCurrentTime(t).catch(() => {});
       },
       get duration() {
-        return _dur;
+        return _dur.current;
       },
       get paused() {
-        return _p;
+        return _p.current;
       },
       get ended() {
-        return _ended;
+        return _ended.current;
       },
       get readyState() {
         return ready ? 4 : 0;
       },
       get playbackRate() {
-        return _r;
+        return _r.current;
       },
       set playbackRate(r) {
-        _r = r;
+        _r.current = r;
         if (ready) playerRef.current?.setPlaybackRate(r).catch(() => {});
       },
       get isBuffering() {
         return isBufferingRef.current;
       },
       play() {
-        _p = false;
-        _ended = false;
+        _p.current = false;
+        _ended.current = false;
         return playerRef.current?.play().catch(() => {}) ?? Promise.resolve();
       },
       pause() {
-        _p = true;
+        _p.current = true;
         playerRef.current?.pause().catch(() => {});
       },
     };
@@ -147,9 +148,10 @@ export default function VimeoPlayer({
         .then(() => {
           player.getDuration().then((d) => {
             setDuration(d);
-            _dur = d;
+            _dur.current = d;
           });
-          player.on("timeupdate", ({ seconds, duration }) => {
+          player.on("timeupdate", ({ seconds }) => {
+            _t.current = seconds;
             setLocalTime(seconds);
           });
           player.on("progress", ({ percent }) => setBufferedPct(percent * 100));
@@ -163,6 +165,7 @@ export default function VimeoPlayer({
             isBufferingRef.current = false;
           });
           player.on("ended", () => {
+            _ended.current = true;
             player
               .getDuration()
               .then((d) => {

@@ -219,7 +219,7 @@ export function useRoomSocket(props) {
 
       "REC:host": (m) => {
         const state = {
-          videoUrl: m.video,
+          videoUrl: m.videoUrl,
           isPlaying: !m.paused,
           currentTime: m.videoTS,
           playbackRate: m.playbackRate ?? 1,
@@ -232,7 +232,7 @@ export function useRoomSocket(props) {
 
         const isInit = !serverLine.current;
         const prev = serverLine.current;
-        const videoChanged = prev && prev.videoUrl !== m.video;
+        const videoChanged = prev && prev.videoUrl !== m.videoUrl;
 
         serverLine.current = state;
         if (m.playbackRate != null) localPlaybackRate.current = m.playbackRate;
@@ -312,6 +312,12 @@ export function useRoomSocket(props) {
         p.current.onTsMapUpdate?.(data);
       },
 
+      "REC:subtitle": (url) => {
+        p.current.onStateUpdate?.((prev) =>
+          prev ? { ...prev, subtitleUrl: url || "" } : prev,
+        );
+      },
+
       "REC:error": (m) => {
         const critical = [
           "STRICT_VIDEO_MODE",
@@ -346,12 +352,18 @@ export function useRoomSocket(props) {
         p.current.onUserChange?.({ type: "user_typing", ...m }),
       host_changed: (m) => {
         p.current.onUserChange?.({ type: "host_changed", ...m });
-        p.current.onStateUpdate?.((p) =>
-          p ? { ...p, hostId: m.newHostId } : p,
+        p.current.onStateUpdate?.((prev) =>
+          prev ? { ...prev, hostId: m.newHostId } : prev,
         );
       },
 
       // WebRTC Call Signaling
+      "CALL:user_joined": (m) =>
+        p.current.onCallEvent?.({ type: "call_user_joined", ...m }),
+      "CALL:user_left": (m) =>
+        p.current.onCallEvent?.({ type: "call_user_left", ...m }),
+      "CALL:status": (m) =>
+        p.current.onCallEvent?.({ type: "status", ...m }),
       "CALL:offer": (m) => p.current.onCallEvent?.({ type: "offer", ...m }),
       "CALL:answer": (m) => p.current.onCallEvent?.({ type: "answer", ...m }),
       "CALL:ice": (m) => p.current.onCallEvent?.({ type: "ice", ...m }),

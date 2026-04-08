@@ -12,7 +12,13 @@ if (!redisUrl || !redisToken) {
 
 const redis =
   redisUrl && redisToken
-    ? new Redis({ url: redisUrl, token: redisToken })
+    ? new Redis({
+        url: redisUrl,
+        token: redisToken,
+        retry: {
+          retries: 0,
+        },
+      })
     : null;
 
 export const roomStore = {

@@ -78,7 +78,7 @@ export default function registerVideoHandlers(
     const room = rooms.get(meta.roomId);
     if (!room) return;
 
-    const rawUrl = typeof data?.video === "string" ? data.video.trim().slice(0, 2048) : "";
+    const rawUrl = typeof data?.videoUrl === "string" ? data.videoUrl.trim().slice(0, 2048) : "";
 
     // [Note] blob: URLs are tab-local object URLs — they expire when the originating tab closes.
     // Broadcasting them to other clients or storing in room state causes "Cannot Play Video" on refresh.

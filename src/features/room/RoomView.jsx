@@ -353,7 +353,8 @@ export default function RoomView({ roomId, initialMeta }) {
                 onClose={() => videoState.setEpisodesOpen(false)}
                 cache={videoState.seasonCache}
                 setCache={videoState.setSeasonCache}
-                compact
+                poster={room.meta?.poster || null}
+                isRoom
               />
             )}
           </>
@@ -541,6 +542,9 @@ export default function RoomView({ roomId, initialMeta }) {
               displayNames={room.displayNames}
               onSend={(t, d) =>
                 sendRef.current?.({ type: "chat", text: t, dataUrl: d })
+              }
+              onReaction={(ts, emoji) =>
+                sendRef.current?.({ type: "reaction", ts, emoji })
               }
               typingUsers={room.typingUsers}
               onTyping={() => sendRef.current?.({ type: "typing" })}
