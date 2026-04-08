@@ -24,6 +24,41 @@ import Button from "@/components/ui/Button";
 import { LS_KEYS } from "@/constants/config";
 import { ls } from "@/utils/localStorage";
 
+const formatUptime = (seconds) => {
+  if (!seconds) return "0h 0m";
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  return `${h}h ${m}m`;
+};
+
+const formatTime = (ts) => {
+  if (!ts) return "—";
+  const diff = Date.now() - ts;
+  if (diff < 60000) return "Just now";
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  return new Date(ts).toLocaleDateString();
+};
+
+const getStatusInfo = (status) => {
+  switch (status) {
+    case "ok":
+      return { label: "Online", dot: "bg-jade", text: "text-jade" };
+    case "error":
+      return { label: "Error", dot: "bg-danger", text: "text-danger" };
+    case "timeout":
+      return {
+        label: "Slow",
+        dot: "bg-amber animate-pulse",
+        text: "text-amber",
+      };
+    case "not_configured":
+      return { label: "Unset", dot: "bg-white/20", text: "text-white/30" };
+    default:
+      return { label: "Unknown", dot: "bg-white/20", text: "text-white/40" };
+  }
+};
+
 function AdminContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -104,41 +139,6 @@ function AdminContent() {
   }, [isAuthorized]);
 
   if (!ready) return null;
-
-  const formatUptime = (seconds) => {
-    if (!seconds) return "0h 0m";
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    return `${h}h ${m}m`;
-  };
-
-  const formatTime = (ts) => {
-    if (!ts) return "—";
-    const diff = Date.now() - ts;
-    if (diff < 60000) return "Just now";
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-    return new Date(ts).toLocaleDateString();
-  };
-
-  const getStatusInfo = (status) => {
-    switch (status) {
-      case "ok":
-        return { label: "Online", dot: "bg-jade", text: "text-jade" };
-      case "error":
-        return { label: "Error", dot: "bg-danger", text: "text-danger" };
-      case "timeout":
-        return {
-          label: "Slow",
-          dot: "bg-amber animate-pulse",
-          text: "text-amber",
-        };
-      case "not_configured":
-        return { label: "Unset", dot: "bg-white/20", text: "text-white/30" };
-      default:
-        return { label: "Unknown", dot: "bg-white/20", text: "text-white/40" };
-    }
-  };
 
   if (!isAuthorized) {
     return (

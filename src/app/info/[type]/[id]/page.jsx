@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { notFound } from "next/navigation";
 import InfoView from "@/features/content/InfoView";
 
 import {
@@ -32,15 +33,19 @@ export async function generateMetadata({ params }) {
   if (!data) return { title: "Content Info" };
 
   const title = data.title || data.name;
-  const description = data.overview?.slice(0, 160) || `Watch ${title} in sync with friends on Astra.`;
-  const image = data.backdrop_path 
+  const description =
+    data.overview?.slice(0, 160) ||
+    `Watch ${title} in sync with friends on Astra.`;
+  const image = data.backdrop_path
     ? `https://image.tmdb.org/t/p/w1280${data.backdrop_path}`
     : "/og-image.png";
 
   return {
     title,
     description,
-    keywords: data.genres ? data.genres.join(", ") : "movies, tv shows, streaming",
+    keywords: data.genres
+      ? data.genres.join(", ")
+      : "movies, tv shows, streaming",
     alternates: {
       canonical: `/info/${type}/${id}`,
     },
@@ -60,42 +65,55 @@ export async function generateMetadata({ params }) {
   };
 }
 
-// Next.js 15 requires awaiting params
+// [Note] Next.js 15: params/searchParams must be awaited
 export default async function InfoPage({ params }) {
   const unwrappedParams = await params;
   const { type, id } = unwrappedParams;
   const data = await getInfoData(type, id);
 
-  const jsonLd = data ? {
-    "@context": "https://schema.org",
-    "@type": type === "movie" ? "Movie" : "TVSeries",
-    "name": data.title || data.name,
-    "description": data.overview,
-    "image": `https://image.tmdb.org/t/p/w780${data.poster_path}`,
-    "datePublished": data.release_date || data.first_air_date,
-    ...(data.rating && {
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": data.rating,
-        "bestRating": "10",
-        "ratingCount": data.vote_count || 100
-      }
-    }),
-    ...(data.credits && {
-      "actor": data.credits.filter(c => c.role !== "Director").map(actor => ({
-        "@type": "Person",
-        "name": actor.name
-      })),
-      "director": data.credits.filter(c => c.role === "Director").map(dir => ({
-        "@type": "Person",
-        "name": dir.name
-      }))
-    })
-  } : null;
+  if (!data) {
+    notFound();
+  }
+
+  const jsonLd = {
+        "@context": "https://schema.org",
+        "@type": type === "movie" ? "Movie" : "TVSeries",
+        name: data.title || data.name,
+        description: data.overview,
+        image: `https://image.tmdb.org/t/p/w780${data.poster_path}`,
+        datePublished: data.release_date || data.first_air_date,
+        ...(data.rating && {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: data.rating,
+            bestRating: "10",
+            ratingCount: data.vote_count || 100,
+          },
+        }),
+        ...(data.credits && {
+          actor: data.credits
+            .filter((c) => c.role !== "Director")
+            .map((actor) => ({
+              "@type": "Person",
+              name: actor.name,
+            })),
+          director: data.credits
+            .filter((c) => c.role === "Director")
+            .map((dir) => ({
+              "@type": "Person",
+              name: dir.name,
+            })),
+        }),
+      };
 
   return (
     <>
-      {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
       <InfoView initialData={data} type={type} id={id} />
     </>
   );

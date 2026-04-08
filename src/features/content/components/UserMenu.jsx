@@ -55,7 +55,7 @@ export default function UserMenu() {
         onClick={() => setOpen(!open)}
         className={`w-9 h-9 !p-0 rounded-full overflow-hidden border transition-all cursor-pointer shadow-lg !bg-transparent
           ${open
-            ? "!border-[var(--color-amber)] shadow-[0_0_24px_rgba(var(--color-amber-rgb),0.4)] scale-105"
+            ? "!border-amber shadow-[0_0_24px_rgba(var(--color-amber-rgb),0.4)] scale-105"
             : "!border-white/10 hover:!border-white/30"
           }`}
       >
@@ -100,7 +100,7 @@ export default function UserMenu() {
                   {user.name || "Astra User"}
                 </p>
                 <p className="text-[11px] text-white/30 font-mono truncate">
-                  {(user.email || "").toLowerCase()}
+                  {(user.email || "Free Tier").toLowerCase()}
                 </p>
               </div>
             </div>

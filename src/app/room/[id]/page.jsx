@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import RoomView from "@/features/room/RoomView";
 import { roomStore } from "@/lib/roomStore";
 
-// Use 127.0.0.1 instead of localhost to avoid IPv6 resolution lag in Node
+// [Note] 127.0.0.1: avoids IPv6 resolution lag in Node
 const WS_HTTP_URL = process.env.WS_HTTP_URL || "http://127.0.0.1:3001";
 
 async function getRoomMeta(id) {
@@ -51,7 +52,7 @@ export default async function RoomPage({ params, searchParams }) {
   const { id } = await params;
   const sp = await searchParams;
 
-  // Reconstruct URLs split by un-encoded query params into separate searchParams props
+  // [Note] URL Reconstruction: handles un-encoded query params split by searchParams prop
   let urlParam = sp?.url ? decodeURIComponent(sp.url) : null;
   if (urlParam && urlParam.startsWith("http")) {
     try {
@@ -73,8 +74,7 @@ export default async function RoomPage({ params, searchParams }) {
     }
   }
 
-  // Fast-path: host just created this room and is navigating in with ?url=…&h=1.
-  // Skip the DB check — the socket server will validate the host token on JOIN_ROOM.
+  // [Note] Fast-path: Host navigating with ?url=...&h=1 skips DB check (socket server validates token)
   const isHostFastPath = urlParam !== null && urlParam.trim() !== "" && sp?.h === "1";
   if (isHostFastPath) {
     const room = {
@@ -88,7 +88,6 @@ export default async function RoomPage({ params, searchParams }) {
     return <RoomView roomId={id} initialMeta={room} />;
   }
 
-  // Waterfall path: verify the room exists before rendering anything.
   const room = await getRoomMeta(id);
 
   if (!room) {
@@ -96,5 +95,14 @@ export default async function RoomPage({ params, searchParams }) {
     redirect("/?expired=1");
   }
 
-  return <RoomView roomId={id} initialMeta={room} />;
+  // [Note] Client Cookie Pattern: Read user preferences from cookies for SSR-safe initial state
+  const cookieStore = await cookies();
+  const preferences = {
+    theatreMode: cookieStore.get("astra_theatre_mode")?.value === "true",
+    sidebarOpen: cookieStore.get("astra_sidebar_open")?.value !== "false",
+    ambilight: cookieStore.get("astra_ambilight")?.value !== "false",
+    guestName: cookieStore.get("astra_guest_name")?.value || null,
+  };
+
+  return <RoomView roomId={id} initialMeta={room} initialPreferences={preferences} />;
 }

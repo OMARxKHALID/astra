@@ -3,17 +3,18 @@
 import { useState, useEffect, useRef } from "react";
 import { LS_KEYS } from "@/constants/config";
 import { ls } from "@/utils/localStorage";
+import { setPreference } from "@/app/actions";
 
-export default function useSettings() {
+export default function useSettings(initialPreferences = {}) {
   const [screenshotEnabled, setScreenshotEnabled] = useState(true);
   const [hlsQualityEnabled, setHlsQualityEnabled] = useState(true);
   const [scrubPreviewEnabled, setScrubPreviewEnabled] = useState(true);
   const [speedSyncEnabled, setSpeedSyncEnabled] = useState(true);
-  const [ambilightEnabled, setAmbilightEnabled] = useState(true);
+  const [ambilightEnabled, setAmbilightEnabled] = useState(initialPreferences.ambilight ?? true);
   const [mirrorCameraEnabled, setMirrorCameraEnabled] = useState(true);
   const [syncHubEnabled, setSyncHubEnabled] = useState(false);
-  const [theatreMode, setTheatreMode] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [theatreMode, setTheatreMode] = useState(initialPreferences.theatreMode ?? false);
+  const [showSidebar, setShowSidebar] = useState(initialPreferences.sidebarOpen ?? true);
   const [showSettings, setShowSettings] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const settingsLoadedRef = useRef(false);
@@ -42,6 +43,11 @@ export default function useSettings() {
     ls.set(LS_KEYS.syncHub, syncHubEnabled ? "true" : "false");
     ls.set(LS_KEYS.theatreMode, theatreMode ? "true" : "false");
     ls.set(LS_KEYS.sidebarOpen, showSidebar ? "true" : "false");
+
+    // [Note] Client Cookie Pattern: Sync to cookies via Server Action for SSR-safe initial state
+    setPreference("astra_theatre_mode", theatreMode ? "true" : "false");
+    setPreference("astra_sidebar_open", showSidebar ? "true" : "false");
+    setPreference("astra_ambilight", ambilightEnabled ? "true" : "false");
   }, [
     screenshotEnabled,
     hlsQualityEnabled,

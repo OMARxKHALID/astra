@@ -21,14 +21,13 @@ export default function HomeView({ initialData }) {
   const { toasts, addToast } = useToast();
 
   const { handleWatch, handleAstraSync, creating } = useMediaActions(null, null, status === "loading" ? null : session);
-
-  const [data, setData] = useState(initialData);
-  const [loading, setLoading] = useState(!initialData);
+  
   const [showSearch, setShowSearch] = useState(false);
   const [favorites, setFavorites] = useState([]);
   const [watched, setWatched] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
-  const [lastWatchedTitle, setLastWatchedTitle] = useState("");
+
+  const lastWatchedTitle = watched[0]?.title || "";
 
   useEffect(() => {
     setFavorites(persistence.getFavorites());
@@ -38,7 +37,6 @@ export default function HomeView({ initialData }) {
   useEffect(() => {
     if (watched.length > 0) {
       const last = watched[0];
-      setLastWatchedTitle(last.title);
       fetch(`/api/tmdb/recommendations?id=${last.id}&type=${last.type}`)
         .then((r) => r.json())
         .then((res) => {
@@ -65,8 +63,7 @@ export default function HomeView({ initialData }) {
     if (item) router.push(`/info/${item.type || "movie"}/${item.id}`);
   };
 
-  if (loading && !data) return <Loading />;
-  if (!data) return <div className="h-screen bg-void" />;
+  if (!initialData) return <div className="h-screen bg-void" />;
 
   return (
     <div className="min-h-screen bg-void font-body text-text">
@@ -74,7 +71,7 @@ export default function HomeView({ initialData }) {
 
       <main className="pb-12">
         <Hero
-          items={data.hero || []}
+          items={initialData.hero || []}
           onPick={handleNavigateToInfo}
           onPlay={handleWatch}
           onSync={handleAstraSync}
@@ -107,25 +104,25 @@ export default function HomeView({ initialData }) {
           )}
           <Row
             title="Trending Now"
-            items={data.trending || []}
+            items={initialData.trending || []}
             onPick={handleNavigateToInfo}
             accent="var(--color-amber)"
           />
           <Row
             title="Top Rated Movies"
-            items={data.topMovies || []}
+            items={initialData.topMovies || []}
             onPick={handleNavigateToInfo}
             accent="var(--color-jade)"
           />
           <Row
             title="Popular TV Shows"
-            items={data.topSeries || []}
+            items={initialData.topSeries || []}
             onPick={handleNavigateToInfo}
             accent="var(--color-amber)"
           />
           <Row
             title="Anime / Animation"
-            items={data.anime || []}
+            items={initialData.anime || []}
             onPick={handleNavigateToInfo}
             accent="var(--color-danger)"
           />

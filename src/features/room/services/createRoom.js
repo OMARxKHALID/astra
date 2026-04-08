@@ -20,7 +20,10 @@ export function createRoom(videoUrl, session = null) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ videoUrl, userId, roomId }),
   }).then(async (res) => {
-    if (!res.ok) throw new Error(res.status === 400 ? "Invalid video URL" : "Server error");
+    if (!res.ok)
+      throw new Error(
+        res.status === 400 ? "Invalid video URL" : "Server error",
+      );
     const json = await res.json();
     if (!json.success) throw new Error(json.error || "Server error");
     const data = json.data;

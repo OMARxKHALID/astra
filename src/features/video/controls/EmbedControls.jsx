@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { formatTime } from "../utils";
 import SpeedPicker from "./SpeedPicker";
-import Button from "@/components/ui/Button";
 import {
   Play as PlayIcon,
   Pause as PauseIcon,
@@ -106,7 +105,7 @@ export default function EmbedControls({
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2.5">
-          <Button
+          <button
             variant="custom"
             onClick={onPlayPause}
             aria-label={isPlaying ? "Pause" : "Play"}
@@ -119,11 +118,11 @@ export default function EmbedControls({
             ) : (
               <PlayIcon className="w-5 h-5 ml-0.5" />
             )}
-          </Button>
+          </button>
 
           {showVolume && (
             <div className="flex items-center group/vol">
-              <Button
+              <button
                 variant="custom"
                 onClick={onMuteToggle}
                 aria-label={muted ? "Unmute" : "Mute"}
@@ -134,7 +133,7 @@ export default function EmbedControls({
                 ) : (
                   <VolumeIcon className="w-4 h-4" />
                 )}
-              </Button>
+              </button>
               <div className="w-0 group-hover/vol:w-20 transition-all duration-300 overflow-hidden flex items-center h-9">
                 <div className="relative w-20 h-1.5 ml-2 bg-white/10 rounded-full cursor-pointer overflow-hidden">
                   <div
@@ -169,7 +168,7 @@ export default function EmbedControls({
           <div className="flex-1" />
 
           {showCc && onCcToggle && (
-            <Button
+            <button
               variant="custom"
               onClick={onCcToggle}
               aria-label="Toggle subtitles"
@@ -177,7 +176,7 @@ export default function EmbedControls({
                 ${ccEnabled ? "bg-amber/20 text-amber border-amber/30" : "bg-white/10 hover:bg-white/10 text-white border-white/10"}`}
             >
               <CcIcon className="w-5 h-5" />
-            </Button>
+            </button>
           )}
 
           {showSpeed && onSpeedChange && canControl && (
@@ -185,7 +184,7 @@ export default function EmbedControls({
           )}
 
           {onToggleTheatre && (
-            <Button
+            <button
               variant="custom"
               onClick={onToggleTheatre}
               aria-label={theatreMode ? "Exit theatre mode" : "Theatre mode"}
@@ -198,22 +197,22 @@ export default function EmbedControls({
                 }`}
             >
               <TheatreIconInline className="w-4 h-4" />
-            </Button>
+            </button>
           )}
 
           {isHost && isRoom && hasEpisodes && onToggleEpisodes && (
-            <Button
+            <button
               variant="custom"
               onClick={onToggleEpisodes}
               title="Episodes"
               className="episodes-toggle-btn w-9 h-9 shrink-0 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white transition-all active:scale-90 backdrop-blur-sm !bg-transparent"
             >
               <EpisodesIcon className="w-4 h-4" />
-            </Button>
+            </button>
           )}
 
           {onFullscreen && (
-            <Button
+            <button
               variant="custom"
               onClick={onFullscreen}
               aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
@@ -224,7 +223,7 @@ export default function EmbedControls({
               ) : (
                 <ExpandIcon className="w-4 h-4" />
               )}
-            </Button>
+            </button>
           )}
         </div>
       </div>

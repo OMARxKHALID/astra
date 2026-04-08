@@ -69,3 +69,27 @@ export async function getBrowseData() {
     anime: animeDeduped,
   };
 }
+
+export async function getSeasonData(id, number) {
+  const data = await fetchTMDB(`tv/${id}/season/${number}`);
+  if (!data) return null;
+
+  const episodes = (data.episodes || []).map((ep) => ({
+    id: ep.id,
+    number: ep.episode_number,
+    name: ep.name,
+    overview: ep.overview,
+    airDate: ep.air_date,
+    runtime: ep.runtime || null,
+    still: ep.still_path ? `${IMG_BASE_URL}/w300${ep.still_path}` : null,
+  }));
+
+  return {
+    episodes,
+    meta: {
+      season_number: data.season_number,
+      name: data.name || `Season ${data.season_number}`,
+      overview: data.overview || "",
+    },
+  };
+}

@@ -21,7 +21,7 @@ import { useMediaActions } from "./hooks/useMediaActions";
 export default function InfoView({ initialData, type, id }) {
   const router = useRouter();
   const { data: session } = useSession();
-  const [data] = useState(initialData);
+  const data = initialData;
   const [activeTab, setActiveTab] = useState(
     type === "tv" ? "episodes" : "overview",
   );
@@ -57,7 +57,7 @@ export default function InfoView({ initialData, type, id }) {
       .catch(() => setEpLoading(false));
   }, [id, activeTab, selectedSeason, type]);
 
-  if (!data?.id || data.error) {
+  if (!initialData || initialData.error) {
     return (
       <div className="h-screen bg-void text-[var(--color-text)] flex flex-col items-center justify-center gap-6 animate-in fade-in duration-700">
         <div className="w-20 h-20 rounded-full bg-danger/10 flex items-center justify-center text-danger border border-danger/20">
@@ -81,7 +81,7 @@ export default function InfoView({ initialData, type, id }) {
     );
   }
 
-  const genres = data?.genres ? data.genres.join(", ") : "";
+  const genres = data?.genres || [];
   const companies = data?.companies || "";
   const languages = data?.languages || "";
   const countries = data?.countries || "";
@@ -203,7 +203,7 @@ export default function InfoView({ initialData, type, id }) {
         </div>
       </div>
 
-      <div className="group/info flex-[1] hover:lg:flex-[2.5] transition-all duration-1000 ease flex flex-col min-h-[70vh] lg:h-screen lg:min-h-0 lg:overflow-y-auto no-scrollbar bg-void py-0 pb-10 lg:py-0 overflow-visible">
+      <div className="group/info flex-[1.4] hover:lg:flex-[2.5] transition-all duration-1000 ease flex flex-col min-h-[70vh] lg:h-screen lg:min-h-0 lg:overflow-y-auto no-scrollbar bg-void py-0 pb-10 lg:py-0 overflow-visible">
         <div className="flex-1 lg:h-full p-4 lg:p-6 lg:mt-[2.5vh] lg:mx-4 lg:rounded-[var(--radius-panel)] lg:pt-6 pt-[1.5rem]">
           <div className="sticky top-0 z-[60] bg-void/80 flex items-center border-b border-white/10 mb-6 pt-4 lg:pt-6 -mt-0 lg:-mt-6 px-4 lg:px-6 -mx-4 lg:-mx-6 backdrop-blur-2xl overflow-x-auto no-scrollbar scroll-smooth snap-x">
             <div className="flex items-center w-full transition-all duration-1000">
@@ -214,7 +214,7 @@ export default function InfoView({ initialData, type, id }) {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab.toLowerCase())}
-                  className={`flex-none shrink-0 bg-none border-none pb-3 cursor-pointer text-[13px] font-semibold transition-all duration-1000 border-b-[2px] outline-none -mb-[1px] snap-start whitespace-nowrap px-1 mr-8 group-hover/info:lg:mr-24 ${
+                  className={`flex-1 shrink-0 bg-none border-none pb-3 cursor-pointer text-[13px] font-semibold transition-all duration-1000 border-b-[2px] outline-none -mb-[1px] snap-start whitespace-nowrap px-1 text-center ${
                     activeTab === tab.toLowerCase()
                       ? "text-amber border-amber"
                       : "text-muted border-transparent hover:text-dim"
@@ -268,7 +268,21 @@ export default function InfoView({ initialData, type, id }) {
                 {[
                   { label: "Release", value: data.release || data.year },
                   { label: "Runtime", value: data.runtime },
-                  { label: "Genre", value: genres },
+                  {
+                    label: "Genre",
+                    value: (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {genres.map((g, i) => (
+                          <span
+                            key={i}
+                            className="px-2.5 py-1 rounded-[var(--radius-pill)] bg-white/5 border border-white/10 text-[11px] text-dim font-medium hover:bg-white/10 transition-colors cursor-default"
+                          >
+                            {g}
+                          </span>
+                        ))}
+                      </div>
+                    ),
+                  },
                   {
                     label: "Show Details",
                     value:

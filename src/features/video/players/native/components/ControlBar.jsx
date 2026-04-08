@@ -105,10 +105,7 @@ export default function ControlBar({
           />
 
           {hlsQualityEnabled && hlsQuality && sourceType === "hls" && (
-            <HlsQualitySelector
-              hlsQuality={hlsQuality}
-              hlsRef={hlsRef}
-            />
+            <HlsQualitySelector hlsQuality={hlsQuality} hlsRef={hlsRef} />
           )}
 
           {!canControl && (
@@ -121,7 +118,8 @@ export default function ControlBar({
           )}
 
           <span className="text-[11px] font-mono text-white/60 tabular-nums shrink-0 hidden sm:inline">
-            {formatTime(localTime)} <span className="text-white/30">/</span> {formatTime(duration)}
+            {formatTime(localTime)} <span className="text-white/30">/</span>{" "}
+            {formatTime(duration)}
           </span>
 
           <div className="flex-1 min-w-0" />
@@ -284,9 +282,7 @@ function HlsQualitySelector({ hlsQuality, hlsRef }) {
 
   return (
     <div className="relative group hidden lg:block">
-      <button
-        className="flex items-center h-8 px-3 rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/15 transition-colors border border-white/10 text-[10px] font-mono font-bold text-white/60 hover:text-white shrink-0 cursor-pointer"
-      >
+      <button className="flex items-center h-8 px-3 rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/15 transition-colors border border-white/10 text-[10px] font-mono font-bold text-white/60 hover:text-white shrink-0 cursor-pointer">
         {hlsQuality.level}
         <svg className="w-3 h-3 ml-1" viewBox="0 0 12 12" fill="currentColor">
           <path d="M2 4l4 4 4-4" />

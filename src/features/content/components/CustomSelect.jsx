@@ -32,9 +32,9 @@ export default function CustomSelect({
   }, []);
 
   return (
-    <div className="flex flex-col gap-2 w-full" ref={containerRef}>
+    <div className="flex flex-col gap-1.5 w-full" ref={containerRef}>
       {label && (
-        <label className="text-[9px] font-black text-[var(--color-muted)] uppercase tracking-[0.2em] ml-2">
+        <label className="text-[10px] font-bold text-[var(--color-muted)] uppercase tracking-[0.25em] ml-4 mb-0.5">
           {label}
         </label>
       )}
@@ -42,42 +42,46 @@ export default function CustomSelect({
         <Button
           variant="custom"
           onClick={() => setIsOpen(!isOpen)}
-          className={`w-full flex items-center justify-between px-5 h-10 rounded-[var(--radius-pill)] border transition-all duration-300 glass-card shadow-lg bg-[var(--color-surface)] hover:border-white/20 group ${
+          className={`w-full flex items-center justify-between px-5 h-12 rounded-[var(--radius-pill)] border transition-all duration-300 glass-card bg-[var(--color-surface)]/20 hover:bg-white/5 group ${
             isOpen
-              ? "border-amber ring-2 ring-amber/10 shadow-amber/5 z-[50]"
-              : "border-[var(--color-border)] z-[1]"
+              ? "border-amber ring-4 ring-amber/5 !bg-white/5 z-[50]"
+              : "border-white/5 z-[1]"
           }`}
         >
-          <span className="text-[11px] lg:text-[12px] font-bold text-[var(--color-text)] truncate pr-4">
+          <span className="text-[13px] font-bold text-[var(--color-text)] truncate pr-4">
             {selectedOption.label}
           </span>
-          <Icon
-            className={`w-3.5 h-3.5 text-[var(--color-muted)] transition-transform duration-300 ${isOpen ? "rotate-180 text-amber" : "group-hover:text-amber"}`}
-          />
+          <div className={`p-1 rounded-full transition-all duration-300 ${isOpen ? "bg-amber/10 text-amber" : "bg-white/5 text-[var(--color-muted)] group-hover:text-amber group-hover:bg-amber/5"}`}>
+            <Icon
+              className={`w-3.5 h-3.5 transition-transform duration-500 cubic-bezier(0.16, 1, 0.3, 1) ${isOpen ? "rotate-180" : ""}`}
+            />
+          </div>
         </Button>
 
         {isOpen && (
           <div
-            className={`absolute ${position === "top" ? "bottom-full mb-2" : "top-full mt-2"} left-0 right-0 z-[100] glass-card border border-white/10 rounded-[1.25rem] overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 ${position === "top" ? "slide-in-from-bottom-2" : "slide-in-from-top-2"} duration-200 p-1.5 backdrop-blur-2xl bg-[var(--color-surface)]/95`}
+            className={`absolute ${position === "top" ? "bottom-full mb-3" : "top-full mt-3"} left-0 right-0 z-[100] glass-card border border-white/10 rounded-[var(--radius-panel)] overflow-hidden shadow-[0_32px_64px_-16px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 ${position === "top" ? "slide-in-from-bottom-3" : "slide-in-from-top-3"} duration-300 p-2.5 backdrop-blur-3xl bg-void/95`}
           >
-            <div className="max-h-[240px] overflow-y-auto no-scrollbar flex flex-col gap-0.5">
+            <div className="max-h-[280px] overflow-y-auto thin-scrollbar flex flex-col gap-1.5 pr-1">
               {options.map((opt) => (
                 <Button
-                  type="button"
+                  variant="custom"
                   key={opt.value}
                   onClick={() => {
                     onChange(opt.value);
                     setIsOpen(false);
                   }}
-                  className={`w-full flex items-center justify-between px-4 py-2.5 !rounded-[0.85rem] text-[11px] lg:text-[12px] font-bold transition-all duration-200 group/item !border-none !bg-transparent ${
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-[1.25rem] text-[13px] font-bold transition-all duration-200 group/item border ${
                     opt.value === value
-                      ? "!bg-amber text-void shadow-lg shadow-amber/10"
-                      : "text-[var(--color-muted)] hover:!bg-white/10 hover:!text-bright"
+                      ? "bg-amber text-void border-amber shadow-lg shadow-amber/10"
+                      : "text-white/40 border-transparent hover:bg-white/5 hover:text-white hover:border-white/5"
                   }`}
                 >
                   <span className="truncate pr-4">{opt.label}</span>
-                  {opt.value === value && (
-                    <Check className="w-3.5 h-3.5 shrink-0" />
+                  {opt.value === value ? (
+                    <Check className="w-4 h-4 shrink-0" strokeWidth={3} />
+                  ) : (
+                    <div className="w-4 h-4 rounded-full border border-white/10 group-hover/item:border-white/20 transition-colors" />
                   )}
                 </Button>
               ))}

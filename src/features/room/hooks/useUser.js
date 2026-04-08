@@ -6,14 +6,15 @@ import { useSession } from "next-auth/react";
 import { LS_KEYS } from "@/constants/config";
 import { ls } from "@/utils/localStorage";
 import { generateId, generateGuestId } from "@/utils/id";
+import { setPreference } from "@/app/actions";
 
-export default function useUser(sendRef) {
+export default function useUser(sendRef, initialPreferences = {}) {
   const { data: session, status } = useSession();
   const [userId, setUserId] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [nameReady, setNameReady] = useState(false);
+  const [displayName, setDisplayName] = useState(initialPreferences.guestName || "");
+  const [nameReady, setNameReady] = useState(!!initialPreferences.guestName);
   const [editingName, setEditingName] = useState(false);
-  const [nameInput, setNameInput] = useState("");
+  const [nameInput, setNameInput] = useState(initialPreferences.guestName || "");
 
   useEffect(() => {
     // [Note] Identity Lock: Wait for session status to resolve to avoid temporary identity flips
@@ -58,6 +59,11 @@ export default function useUser(sendRef) {
     setDisplayName(name);
     setNameReady(true);
     setNameInput(name);
+    
+    // [Note] Identity Persistence: Sync to cookie for SSR-safe initial load
+    if (name) {
+      setPreference("astra_guest_name", name);
+    }
   }, [session?.user?.name, status]);
 
   const commitName = useCallback(
@@ -66,6 +72,7 @@ export default function useUser(sendRef) {
       if (!name) return;
       setDisplayName(name);
       ls.set(LS_KEYS.displayName, name);
+      setPreference("astra_guest_name", name);
       sendRef?.current?.({ type: "set_name", username: name });
       setEditingName(false);
     },

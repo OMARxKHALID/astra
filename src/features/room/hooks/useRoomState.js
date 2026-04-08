@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 
 export default function useRoomState(initialMeta) {
+  const searchParams = useSearchParams();
   const [serverState, setServerState] = useState(
     initialMeta?.videoUrl
       ? {
@@ -29,13 +31,11 @@ export default function useRoomState(initialMeta) {
   const [roomPassword, setRoomPassword] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
   const [mobileSheet, setMobileSheet] = useState(null);
-  const [debugMode, setDebugMode] = useState(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      return params.get("debug") === "1";
-    }
-    return false;
-  });
+  const [debugMode, setDebugMode] = useState(false);
+
+  useEffect(() => {
+    setDebugMode(searchParams?.get("debug") === "1");
+  }, [searchParams]);
 
   const displayNamesRef = useRef(displayNames);
   displayNamesRef.current = displayNames;

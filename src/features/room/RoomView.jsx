@@ -54,7 +54,7 @@ import { useMediaHistory } from "./hooks/useMediaHistory";
 import { useVideoState } from "./hooks/useVideoState";
 import { ls } from "@/utils/localStorage";
 
-export default function RoomView({ roomId, initialMeta }) {
+export default function RoomView({ roomId, initialMeta, initialPreferences }) {
   const router = useRouter();
   const params = useSearchParams();
   const { toasts, addToast } = useToast();
@@ -68,15 +68,13 @@ export default function RoomView({ roomId, initialMeta }) {
   const socketRef = useRef(null);
   const typingTimersRef = useRef({});
 
-  const identity = useUser(sendRef);
-  const settings = useSettings();
+  const identity = useUser(sendRef, initialPreferences);
+  const settings = useSettings(initialPreferences);
   const room = useRoomState(initialMeta);
   const sidebar = useSidebar();
 
-  // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Ignore if typing in an input
       if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName)) return;
       if (e.target.isContentEditable) return;
 
@@ -86,7 +84,6 @@ export default function RoomView({ roomId, initialMeta }) {
         if (room.mobileSheet) room.setMobileSheet(null);
       }
 
-      // T - Toggle theatre mode
       if (
         e.key.toLowerCase() === "t" &&
         !settings.showSettings &&
@@ -95,7 +92,6 @@ export default function RoomView({ roomId, initialMeta }) {
         settings.setTheatreMode(!settings.theatreMode);
       }
 
-      // ? - Show shortcuts
       if (e.key === "?" && !settings.showSettings && !settings.showShortcuts) {
         settings.setShowShortcuts(true);
       }
@@ -159,7 +155,7 @@ export default function RoomView({ roomId, initialMeta }) {
     isHost,
   });
 
-  // The effective URL seen by the player: local blob overrides server state while it's valid.
+  // [Note] Effective URL: local blob overrides server state while valid
   const effectiveVideoUrl = localVideoOverride || videoState.videoUrl;
   useMediaHistory({
     roomId,
