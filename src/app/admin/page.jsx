@@ -90,9 +90,14 @@ function AdminContent() {
     setError(null);
     try {
       const secret = ls.get(LS_KEYS.adminSecret);
-      const res = await fetch("/api/admin/stats", {
-        headers: { "x-admin-secret": secret || "" },
-      });
+      // Ensure the rotation animation is visible even on fast networks
+      const [res] = await Promise.all([
+        fetch("/api/admin/stats", {
+          headers: { "x-admin-secret": secret || "" },
+        }),
+        new Promise((resolve) => setTimeout(resolve, 500)),
+      ]);
+
       if (res.status === 401) {
         setIsAuthorized(false);
         setError("Unauthorized. Please verify your secret key.");
@@ -198,14 +203,6 @@ function AdminContent() {
               </p>
             )}
           </form>
-
-          <Button
-            variant="custom"
-            onClick={() => router.push("/")}
-            className="mt-8 w-full text-center text-[11px] text-white/20 hover:text-white/50 font-mono uppercase tracking-[0.2em] transition-colors"
-          >
-            Return Home
-          </Button>
         </div>
       </div>
     );
@@ -221,8 +218,6 @@ function AdminContent() {
       {/* Navbar */}
       <nav className="relative z-10 flex items-center justify-between px-6 lg:px-12 h-[72px] bg-gradient-to-b from-black/60 to-transparent">
         <div className="flex items-center gap-5">
-          <BackButton href="/" />
-
           <Button
             variant="custom"
             onClick={() => router.push("/")}
@@ -261,15 +256,6 @@ function AdminContent() {
       </nav>
 
       <main className="relative z-10 px-6 lg:px-12 pb-16 max-w-7xl mx-auto">
-        <header className="pt-2 pb-10">
-          <p className="text-[11px] font-mono text-white/25 uppercase tracking-[0.25em] mb-2">
-            Instance Dashboard
-          </p>
-          <h1 className="font-display text-4xl sm:text-5xl font-black text-bright tracking-tight">
-            Telemetry
-          </h1>
-        </header>
-
         {loading && !stats ? (
           <div className="flex flex-col items-center justify-center h-[40vh] gap-5">
             <div className="w-10 h-10 rounded-full border-2 border-amber/20 border-t-amber animate-spin" />
@@ -404,20 +390,23 @@ function AdminContent() {
                                 )
                                   return;
                                 try {
-                                  const secret =
-                                    ls.get(LS_KEYS.adminSecret);
+                                  const secret = ls.get(LS_KEYS.adminSecret);
                                   const res = await fetch(
                                     `/api/admin/room/${room.roomId}`,
                                     {
                                       method: "DELETE",
-                                      headers: { "x-admin-secret": secret || "" },
+                                      headers: {
+                                        "x-admin-secret": secret || "",
+                                      },
                                     },
                                   );
                                   const json = await res.json();
                                   if (json.success) {
                                     fetchStats();
                                   } else {
-                                    alert(json.error || "Failed to terminate room.");
+                                    alert(
+                                      json.error || "Failed to terminate room.",
+                                    );
                                   }
                                 } catch (err) {
                                   alert(err.message);
@@ -553,8 +542,7 @@ function AdminContent() {
                         )
                           return;
                         try {
-                          const secret =
-                            ls.get(LS_KEYS.adminSecret);
+                          const secret = ls.get(LS_KEYS.adminSecret);
                           const res = await fetch("/api/admin/redis", {
                             method: "DELETE",
                             headers: { "x-admin-secret": secret || "" },
@@ -562,7 +550,9 @@ function AdminContent() {
                           const json = await res.json();
                           if (json.success) {
                             ls.remove(LS_KEYS.history);
-                            alert("Redis database and local history flushed successfully.");
+                            alert(
+                              "Redis database and local history flushed successfully.",
+                            );
                             fetchStats();
                           } else {
                             alert(json.error || "Failed to flush Redis.");
