@@ -14,7 +14,7 @@ export function expectedTime(serverState, clockOffset = 0) {
 let _cachedLeader = 0;
 let _cacheTs = 0;
 
-// [Note] Median is robust to outliers; cache reduces sort cost at 5Hz sync
+// [Note] Median for 3+ robust to outliers. Max for 1-2 prevents both oscillating to an average.
 export function getLeaderTime(tsMap) {
   if (!tsMap) return 0;
   const now = Date.now();
@@ -30,9 +30,14 @@ export function getLeaderTime(tsMap) {
     return 0;
   }
 
-  const mid = Math.floor(times.length / 2);
-  _cachedLeader =
-    times.length % 2 !== 0 ? times[mid] : (times[mid - 1] + times[mid]) / 2;
+  if (times.length > 2) {
+    const mid = Math.floor(times.length / 2);
+    _cachedLeader =
+      times.length % 2 !== 0 ? times[mid] : (times[mid - 1] + times[mid]) / 2;
+  } else {
+    _cachedLeader = Math.max(...times);
+  }
+
   _cacheTs = now;
   return _cachedLeader;
 }

@@ -200,10 +200,15 @@ export default function YouTubePlayer({
         return isBufferingRef.current;
       },
       play() {
-        try {
-          playerRef.current?.playVideo?.();
-        } catch {}
-        return Promise.resolve();
+        return new Promise((resolve) => {
+          // [Note] 200ms Pre-roll to compensate for YouTube IFrame API latency
+          setTimeout(() => {
+            try {
+              playerRef.current?.playVideo?.();
+            } catch {}
+            resolve();
+          }, 200);
+        });
       },
       pause() {
         try {

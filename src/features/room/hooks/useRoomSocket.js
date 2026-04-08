@@ -113,7 +113,7 @@ export function useRoomSocket(props) {
 
       // 2. Playback Rate Correction (Speed Sync)
       const targetRate = s.playbackRate || 1;
-      if (v.readyState < 3 || checkBuffering(v) || resultsInWindow) {
+      if (v.readyState < 4 || checkBuffering(v) || resultsInWindow) {
         if (Math.abs(v.playbackRate - targetRate) > 0.005) {
           v.playbackRate = targetRate;
         }
@@ -375,7 +375,30 @@ export function useRoomSocket(props) {
   // Initial connection and lifecycle
   useEffect(() => {
     connect();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        const v = p.current.videoRef?.current;
+        const s = serverLine.current;
+        if (!v || !s) return;
+
+        const lt = tsMap.current._leaderTime_ ?? 0;
+        const leaderTime = lt > 0 ? lt : expectedTime(s, clockOffset.current);
+        if (leaderTime === 0) return;
+
+        const drift = leaderTime - v.currentTime;
+        // [Note] Large drift after backgrounding requires a Hard Sync jump
+        if (Math.abs(drift) > 1.5) {
+          console.log("[Sync] Tab became visible, performing hard resync jump...");
+          v.currentTime = leaderTime;
+          lockSync(1500);
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       const s = socketRef.current;
       if (s) {
         s.removeAllListeners();
@@ -384,7 +407,7 @@ export function useRoomSocket(props) {
       clearInterval(syncTimer.current);
       clearInterval(clockTimerRef.current);
     };
-  }, [connect]);
+  }, [connect, lockSync]);
 
   // Periodic heartbeat reporting local status to the server
   useEffect(() => {

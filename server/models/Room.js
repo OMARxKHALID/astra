@@ -14,6 +14,7 @@ export class Room {
   #lastBcastState = null;
   #tsLockUntil = 0;
   #lastBroadcastTime = Date.now();
+  #tsUpdateMap = new Map();
 
   constructor(roomId, videoUrl = "", hostId = "", hostToken = "") {
     this.roomId = roomId;
@@ -89,6 +90,7 @@ export class Room {
     }
 
     this.tsMap[userId] = normalized;
+    this.#tsUpdateMap.set(userId, Date.now());
   }
 
   changeVideo(videoUrl, videoTS = 0, paused = false, subtitleUrl = "") {
@@ -138,17 +140,25 @@ export class Room {
       if (this.socketIds.size === 0) return;
 
       const validUsers = new Set(this.joinOrder);
+      const now = Date.now();
       for (const uid of Object.keys(this.tsMap)) {
-        if (!validUsers.has(uid)) delete this.tsMap[uid];
+        const lastUpd = this.#tsUpdateMap.get(uid) || 0;
+        if (!validUsers.has(uid) || now - lastUpd > 5000) {
+          delete this.tsMap[uid];
+          this.#tsUpdateMap.delete(uid);
+        }
       }
 
       const times = Object.values(this.tsMap)
         .filter((t) => typeof t === "number")
         .sort((a, b) => a - b);
 
-      const leaderTime = times.length
-        ? times[Math.floor(times.length / 2)]
-        : this.videoTS;
+      let leaderTime = this.videoTS;
+      if (times.length > 2) {
+        leaderTime = times[Math.floor(times.length / 2)];
+      } else if (times.length > 0) {
+        leaderTime = Math.max(...times);
+      }
 
       io.to(this.roomId).emit("REC:tsMap", {
         ...this.tsMap,
