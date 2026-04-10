@@ -102,7 +102,6 @@ export default function InfoView({ initialData, type, id }) {
         className="absolute top-6 left-6 lg:top-8 lg:left-10 z-[100]"
       />
 
-      {/* Left: backdrop image panel */}
       <div className="flex-[3] relative z-[80] flex flex-col h-[40vh] lg:h-screen transition-all duration-1000 ease lg:pl-4">
         <div className="flex-1 relative w-full h-full lg:h-[95vh] lg:my-[2.5vh] lg:rounded-[var(--radius-panel)] bg-void">
           <div className="absolute inset-0 rounded-b-[var(--radius-panel)] lg:rounded-[var(--radius-panel)] overflow-hidden pointer-events-none">

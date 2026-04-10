@@ -1,4 +1,5 @@
-// Server-side constants (mirrors lib/constants.js for Next.js side)
+// Server-side constants (mirrors src/constants/config.js for Next.js side)
+// [Note] Keeping duplicates for now - server runs separately and needs these
 export const DEBUG = process.env.NODE_ENV !== "production";
 
 export const HOST_RECONNECT_GRACE_MS = 6_000;

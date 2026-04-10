@@ -14,7 +14,6 @@ export default function NotificationCard({
     <div
       className={`w-[230px] glass-card border border-white/10 rounded-xl overflow-hidden shadow-2xl ${className}`}
     >
-      {/* Progress Bar */}
       <div className="h-[1.5px] bg-white/5 relative">
         <div
           className={`absolute inset-y-0 right-0 ${progressBarColor} transition-all duration-1000 ease-linear fill-mode-forwards`}

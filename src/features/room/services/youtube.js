@@ -25,7 +25,6 @@ export function normalizeYouTubeVideo(item) {
 }
 
 export async function searchYouTube(query, pageToken = null) {
-  const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
   if (!YOUTUBE_API_KEY) return { items: [], nextPageToken: null };
 
   const sanitizedQuery = query?.trim().slice(0, 200) || "";

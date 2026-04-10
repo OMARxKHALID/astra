@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { DEBUG } from "@/constants/config";
 
 const ICE_CONFIG = {
   iceServers: [
@@ -13,18 +12,6 @@ const ICE_CONFIG = {
 
 const TAG = "[call]";
 const pcTag = (uid) => `${TAG}[PC:${String(uid).slice(0, 6)}]`;
-
-const debug = (...args) => {
-  if (DEBUG) console.log(...args);
-};
-
-const warn = (...args) => {
-  if (DEBUG) console.warn(...args);
-};
-
-const error = (...args) => {
-  if (DEBUG) console.error(...args);
-};
 
 export function useVideoCall({ roomId, userId, socketRef, addToast }) {
   const [localStream, setLocalStream] = useState(null);
@@ -228,9 +215,7 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
       };
 
       pc.onsignalingstatechange = () =>
-        debug(
-          `${pcTag(targetUserId)} signalingState → ${pc.signalingState}`,
-        );
+        debug(`${pcTag(targetUserId)} signalingState → ${pc.signalingState}`);
       pc.onicegatheringstatechange = () =>
         debug(
           `${pcTag(targetUserId)} iceGatheringState → ${pc.iceGatheringState}`,
@@ -426,11 +411,7 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
         }
         debug(`${pcTag(from)} ICE queue drained`);
       } catch (err) {
-        error(
-          `${pcTag(from)} handleOffer ERROR:`,
-          err.name,
-          err.message,
-        );
+        error(`${pcTag(from)} handleOffer ERROR:`, err.name, err.message);
       }
     },
     [userId, getOrCreatePC, roomId, socketRef],
@@ -457,11 +438,7 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
       }
       debug(`${pcTag(from)} ICE queue drained`);
     } catch (err) {
-      error(
-        `${pcTag(from)} handleAnswer ERROR:`,
-        err.name,
-        err.message,
-      );
+      error(`${pcTag(from)} handleAnswer ERROR:`, err.name, err.message);
     }
   }, []);
 

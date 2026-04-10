@@ -142,7 +142,7 @@ export default function RoomView({ roomId, initialMeta, initialPreferences }) {
   const tokenSub = extractJwtSub(hostToken);
   const isHost =
     room.serverState?.hostId === identity.userId ||
-    (!!hostToken && tokenSub === identity.userId);
+    (!!hostToken && !room.serverState && tokenSub === identity.userId);
 
   const [localVideoOverride, setLocalVideoOverride] = useState("");
 

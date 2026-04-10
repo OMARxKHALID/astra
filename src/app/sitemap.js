@@ -1,15 +1,15 @@
-export default async function sitemap() {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://astra-sync.vercel.app";
+import { NEXT_PUBLIC_SITE_URL } from "@/constants/config";
 
+export default async function sitemap() {
   return [
     {
-      url: baseUrl,
+      url: NEXT_PUBLIC_SITE_URL,
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 1,
     },
     {
-      url: `${baseUrl}/watch`,
+      url: `${NEXT_PUBLIC_SITE_URL}/watch`,
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.8,

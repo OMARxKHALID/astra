@@ -1,7 +1,6 @@
 import { apiResponse } from "@/utils/apiResponse";
 import { roomStore } from "@/lib/roomStore";
-
-const WS_HTTP_URL = process.env.WS_HTTP_URL || "http://localhost:3001";
+import { WS_HTTP_URL } from "@/constants/config";
 
 export async function POST(_req, { params }) {
   const { id } = await params;

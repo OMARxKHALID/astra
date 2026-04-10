@@ -3,6 +3,7 @@ import { Outfit, Geist_Mono } from "next/font/google";
 import PwaUpdateToast from "@/components/PwaUpdateToast";
 import PwaOnboarding from "@/components/PwaOnboarding";
 import SessionProvider from "@/providers/SessionProvider";
+import { NEXT_PUBLIC_SITE_URL } from "@/constants/config";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -27,9 +28,7 @@ export const metadata = {
     statusBarStyle: "black-translucent",
     capable: true,
   },
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL || "https://astra-sync.vercel.app",
-  ),
+  metadataBase: new URL(NEXT_PUBLIC_SITE_URL),
   alternates: {
     canonical: "/",
   },
@@ -56,7 +55,7 @@ export const metadata = {
     title: "Astra — Premium Streaming & Content Discovery",
     description:
       "A feature-rich portal to browse and stream movies, series, and anime with global real-time synchronization.",
-    url: "https://astra-sync.vercel.app",
+    url: NEXT_PUBLIC_SITE_URL,
     siteName: "Astra",
     images: [
       {

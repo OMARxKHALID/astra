@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { notFound } from "next/navigation";
+import { NEXT_PUBLIC_SITE_URL } from "@/constants/config";
 import InfoView from "@/features/content/InfoView";
 
 import {
@@ -54,7 +55,7 @@ export async function generateMetadata({ params }) {
       description,
       images: [image],
       type: type === "movie" ? "video.movie" : "video.tv_show",
-      url: `https://astra-sync.vercel.app/info/${type}/${id}`,
+      url: `${NEXT_PUBLIC_SITE_URL}/info/${type}/${id}`,
     },
     twitter: {
       card: "summary_large_image",

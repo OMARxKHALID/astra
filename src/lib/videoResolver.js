@@ -60,22 +60,23 @@ export function classifyUrl(raw) {
   }
 
   const hostname = parsed.hostname.replace(/^www\./, "");
-  
+
   // Check if it's a proxy URL that needs to be converted
-  const isProxyUrl = PROXY_DOMAINS.some(d => hostname.includes(d));
+  const isProxyUrl = PROXY_DOMAINS.some((d) => hostname.includes(d));
   const proxyParams = ["url", "video", "src", "file", "path"];
-  const hasProxyParam = proxyParams.some(p => parsed.searchParams.has(p));
-  
+  const hasProxyParam = proxyParams.some((p) => parsed.searchParams.has(p));
+
   if (isProxyUrl && hasProxyParam) {
     // Extract the inner URL from the proxy and route through our internal proxy
-    const innerUrlParam = proxyParams.find(p => parsed.searchParams.get(p));
+    const innerUrlParam = proxyParams.find((p) => parsed.searchParams.get(p));
     const innerUrl = parsed.searchParams.get(innerUrlParam);
     if (innerUrl) {
       try {
         const decodedInnerUrl = decodeURIComponent(innerUrl);
-        const appUrl = typeof window !== "undefined" 
-          ? window.location.origin 
-          : "http://localhost:3000";
+        const appUrl =
+          typeof window !== "undefined"
+            ? window.location.origin
+            : "http://localhost:3000";
         const proxiedUrl = `${appUrl}/api/proxy?url=${encodeURIComponent(decodedInnerUrl)}`;
         return { type: "mp4", url: proxiedUrl };
       } catch (e) {
@@ -115,11 +116,15 @@ export const SOURCE_LABELS = {
 
 export function extractMeta(rawUrl) {
   if (!rawUrl) return { id: "", s: "1", e: "1", type: "movie" };
-  
+
   // Strip query params for path matching, but keep the full URL for param search
   const url = rawUrl.split("?")[0].split("#")[0];
   let urlObj = null;
-  try { urlObj = new URL(rawUrl); } catch { /* not a valid URL */ }
+  try {
+    urlObj = new URL(rawUrl);
+  } catch {
+    /* not a valid URL */
+  }
 
   // 1. Vidlink: /tv/id/s/e or /movie/id
   if (url.includes("vidlink.pro")) {
@@ -130,15 +135,20 @@ export function extractMeta(rawUrl) {
       const isTV = type === "tv";
       return {
         id,
-        s: isTV ? (vidlinkMatch[3] || "1") : "1",
-        e: isTV ? (vidlinkMatch[4] || "1") : "1",
+        s: isTV ? vidlinkMatch[3] || "1" : "1",
+        e: isTV ? vidlinkMatch[4] || "1" : "1",
         type,
       };
     }
   }
 
   // 2. SuperEmbed: ?video_id=id&tmdb=1
-  if (urlObj && (url.includes("multiembed.mov") || url.includes("superembed") || url.includes("streamingnow.mov"))) {
+  if (
+    urlObj &&
+    (url.includes("multiembed.mov") ||
+      url.includes("superembed") ||
+      url.includes("streamingnow.mov"))
+  ) {
     const vId = urlObj.searchParams.get("video_id");
     if (vId && urlObj.searchParams.get("tmdb") === "1") {
       const s = urlObj.searchParams.get("s");
@@ -153,7 +163,9 @@ export function extractMeta(rawUrl) {
   }
 
   // 3. MoviesAPI: /tv/id-s-e or /movie/id
-  const apiMatch = url.match(/\/(?:moviesapi\.(?:to|club)|streamingnow\.mov)\/(tv|movie)\/(\d+)(?:-(\d+)-(\d+))?/);
+  const apiMatch = url.match(
+    /\/(?:moviesapi\.(?:to|club)|streamingnow\.mov)\/(tv|movie)\/(\d+)(?:-(\d+)-(\d+))?/,
+  );
   if (apiMatch) {
     return {
       id: apiMatch[2],
@@ -169,7 +181,8 @@ export function extractMeta(rawUrl) {
     const qS = urlObj.searchParams.get("s");
     const qE = urlObj.searchParams.get("e");
     const qType = urlObj.searchParams.get("type");
-    if (qId) return { id: qId, s: qS || "1", e: qE || "1", type: qType || "movie" };
+    if (qId)
+      return { id: qId, s: qS || "1", e: qE || "1", type: qType || "movie" };
   }
 
   return { id: "", s: "1", e: "1", type: "movie" };
@@ -199,16 +212,20 @@ export function detectServer(url) {
   if (!url) return null;
   let host;
   try {
-    host = new URL(url).hostname.toLowerCase().replace(/^www\.|^player\.|^embed\./, "");
+    host = new URL(url).hostname
+      .toLowerCase()
+      .replace(/^www\.|^player\.|^embed\./, "");
   } catch {
     return null;
   }
 
   for (const [server, domains] of Object.entries(SERVER_DOMAINS)) {
-    if (domains.some(d => {
-      const normalizedD = d.replace(/^www\.|^player\.|^embed\./, "");
-      return host === normalizedD || host.endsWith("." + normalizedD);
-    })) {
+    if (
+      domains.some((d) => {
+        const normalizedD = d.replace(/^www\.|^player\.|^embed\./, "");
+        return host === normalizedD || host.endsWith("." + normalizedD);
+      })
+    ) {
       return server;
     }
   }
@@ -216,28 +233,15 @@ export function detectServer(url) {
   return null;
 }
 
-/**
- * Intelligently increments the episode/file index in a URL for binge-watching.
- * Supports:
- * - Vidlink: /tv/id/s/e
- * - SuperEmbed: ?s=S&e=E
- * - MoviesAPI: /tv/id-s-e
- * - Generic: &fileIndex=X or ?fileIndex=X
- * - Static: file-1.mp4 -> file-2.mp4
- */
 export function getNextEpisode(currentUrl) {
   if (!currentUrl) return null;
-  console.log("[Binge] Calculating next for:", currentUrl);
-
   // 1. Check for Embed Servers first via extractMeta + buildEmbedUrl
   const server = detectServer(currentUrl);
   if (server) {
     const meta = extractMeta(currentUrl);
-    console.log("[Binge] Detected server:", server, "Meta:", meta);
     if (meta.type === "tv") {
       const nextEp = Number(meta.e) + 1;
       const next = buildEmbedUrl(server, meta.id, "tv", meta.s, nextEp);
-      console.log("[Binge] Success! Next TV URL:", next);
       return next;
     }
   }
@@ -252,7 +256,6 @@ export function getNextEpisode(currentUrl) {
         if (!isNaN(val)) {
           urlObj.searchParams.set(p, String(val + 1));
           const next = urlObj.toString();
-          console.log("[Binge] Success! Next Param URL:", next);
           return next;
         }
       }
@@ -270,14 +273,10 @@ export function getNextEpisode(currentUrl) {
     const numStr = match[2];
     const ext = match[3] || "";
     const nextNum = Number(numStr) + 1;
-    // Preserve padding (e.g. 01 -> 02)
     const padded = String(nextNum).padStart(numStr.length, "0");
     const next = currentUrl.replace(EP_REGEX, `${prefix}${padded}${ext}`);
-    console.log("[Binge] Success! Next Regex URL:", next);
     return next;
   }
-
-  console.log("[Binge] No next episode found.");
   return null;
 }
 

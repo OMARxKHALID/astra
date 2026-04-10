@@ -20,6 +20,9 @@ export const YT_AD_POLL_MS = 800;
 export const SOCKET_PING_INTERVAL = 20_000;
 export const SOCKET_PING_TIMEOUT = 30_000;
 
+export const WS_HTTP_URL = process.env.WS_HTTP_URL || "http://localhost:3001";
+export const NEXT_PUBLIC_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
 export const LS_KEYS = {
   userId: "as_userId",
   displayName: "as_displayName",

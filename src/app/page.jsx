@@ -1,4 +1,5 @@
 import { getBrowseData } from "@/features/content/services/tmdb";
+import { NEXT_PUBLIC_SITE_URL } from "@/constants/config";
 import HomeView from "@/features/content/HomeView";
 
 export const metadata = {
@@ -14,10 +15,10 @@ export default async function HomePage() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "Astra",
-    "url": "https://astra-sync.vercel.app",
+    "url": NEXT_PUBLIC_SITE_URL,
     "potentialAction": {
       "@type": "SearchAction",
-      "target": "https://astra-sync.vercel.app/?q={search_term_string}",
+      "target": `${NEXT_PUBLIC_SITE_URL}/?q={search_term_string}`,
       "query-input": "required name=search_term_string"
     }
   };

@@ -1,8 +1,6 @@
 import { apiResponse } from "@/utils/apiResponse";
-import { NextResponse } from "next/server";
 import { roomStore } from "@/lib/roomStore";
-
-const WS_HTTP_URL = process.env.WS_HTTP_URL || "http://localhost:3001";
+import { WS_HTTP_URL } from "@/constants/config";
 
 async function queryWsSidecar(id) {
   try {

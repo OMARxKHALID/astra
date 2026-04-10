@@ -2,7 +2,6 @@
 
 @theme {
   --font-display: var(--font-body);
-  --font-body: var(--font-body);
   --font-mono: var(--font-mono);
 
   --color-void: #07090d;

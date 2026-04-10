@@ -215,7 +215,6 @@ function AdminContent() {
         <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-jade/4 rounded-full blur-[140px]" />
       </div>
 
-      {/* Navbar */}
       <nav className="relative z-10 flex items-center justify-between px-6 lg:px-12 h-[72px] bg-gradient-to-b from-black/60 to-transparent">
         <div className="flex items-center gap-5">
           <Button
@@ -365,7 +364,6 @@ function AdminContent() {
                             </p>
                           </div>
 
-                          {/* Meta & Actions */}
                           <div className="flex items-center gap-4 shrink-0">
                             <div className="hidden sm:flex flex-col items-end gap-1">
                               <span

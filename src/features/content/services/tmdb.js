@@ -1,6 +1,6 @@
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
-const IMG_BASE_URL = "https://image.tmdb.org/t/p";
+export const IMG_BASE_URL = "https://image.tmdb.org/t/p";
 
 export function getTMDBImageUrl(path, size = "w500") {
   return path ? `${IMG_BASE_URL}/${size}${path}` : null;

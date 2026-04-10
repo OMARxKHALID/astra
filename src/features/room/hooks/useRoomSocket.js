@@ -5,7 +5,7 @@ import {
   SYNC_CHECK_INTERVAL,
   SYNC_TOLERANCE_S,
 } from "@/lib/syncManager";
-import { CLOCK_RECAL_INTERVAL } from "@/constants/config";
+import { CLOCK_RECAL_INTERVAL, DEBUG } from "@/constants/config";
 
 const WS_URL =
   process.env.NEXT_PUBLIC_WS_URL ||
@@ -122,7 +122,11 @@ export function useRoomSocket(props) {
       const drift = leaderTime - v.currentTime;
 
       // 2. Initial alignment (Requires HAVE_FUTURE_DATA)
-      if (!initialSeekDone.current && v.readyState >= 3 && Math.abs(drift) > 1.5) {
+      if (
+        !initialSeekDone.current &&
+        v.readyState >= 3 &&
+        Math.abs(drift) > 1.5
+      ) {
         v.currentTime = leaderTime;
         initialSeekDone.current = true;
       }
@@ -367,8 +371,7 @@ export function useRoomSocket(props) {
         p.current.onCallEvent?.({ type: "call_user_joined", ...m }),
       "CALL:user_left": (m) =>
         p.current.onCallEvent?.({ type: "call_user_left", ...m }),
-      "CALL:status": (m) =>
-        p.current.onCallEvent?.({ type: "status", ...m }),
+      "CALL:status": (m) => p.current.onCallEvent?.({ type: "status", ...m }),
       "CALL:offer": (m) => p.current.onCallEvent?.({ type: "offer", ...m }),
       "CALL:answer": (m) => p.current.onCallEvent?.({ type: "answer", ...m }),
       "CALL:ice": (m) => p.current.onCallEvent?.({ type: "ice", ...m }),
@@ -394,7 +397,6 @@ export function useRoomSocket(props) {
         const drift = leaderTime - v.currentTime;
         // [Note] Large drift after backgrounding requires a Hard Sync jump
         if (Math.abs(drift) > 1.5) {
-          console.log("[Sync] Tab became visible, performing hard resync jump...");
           v.currentTime = leaderTime;
           lockSync(1500);
         }

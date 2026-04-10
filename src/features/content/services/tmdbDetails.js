@@ -1,6 +1,4 @@
-import { fetchTMDB } from "./tmdb";
-
-const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
+import { fetchTMDB, IMG_BASE_URL } from "./tmdb";
 
 const getImageUrl = (path, size = "original") => 
   path ? `${TMDB_IMAGE_BASE}/${size}${path}` : null;

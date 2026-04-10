@@ -5,21 +5,10 @@ import {
   verifyPassword,
 } from "../utils/auth.js";
 import {
-  DEBUG,
   EMPTY_ROOM_CLEANUP_MS,
   HOST_RECONNECT_GRACE_MS,
 } from "../constants.js";
 import { redis } from "../utils/redis.js";
-
-const log = (...args) => {
-  if (DEBUG) console.log(...args);
-};
-const warn = (...args) => {
-  if (DEBUG) console.warn(...args);
-};
-const error = (...args) => {
-  if (DEBUG) console.error(...args);
-};
 
 export default function registerRoomHandlers(
   io,

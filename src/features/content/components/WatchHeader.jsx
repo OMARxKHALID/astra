@@ -116,7 +116,6 @@ const WatchHeader = memo(function WatchHeader({
           </div>
         </div>
 
-        {/* Dropdown rendered outside the overflow-hidden pill */}
         {cloudOpen && (
           <ServerDropdown
             activeServer={detectServer(url)}

@@ -196,7 +196,6 @@ export default function CreateRoomForm({ onResultsChange }) {
 
   return (
     <div className="glass-card p-7 relative rounded-[var(--radius-panel)] shadow-2xl border-border bg-white/[0.03]">
-      {/* Header + mode toggle */}
       <div className="mb-6 flex flex-col gap-4">
         <div>
           <h2
@@ -299,7 +298,6 @@ export default function CreateRoomForm({ onResultsChange }) {
             )}
           </div>
 
-          {/* YouTube search results — infinite scroll, no scrollbar, no fixed height cap on card */}
           {mode === "search" && ytResults.length > 0 && (
             <div className="mt-4 animate-in slide-in-from-top-4 fade-in duration-500 fill-mode-both">
               <div
@@ -309,7 +307,6 @@ export default function CreateRoomForm({ onResultsChange }) {
                 <Sparkles className="w-3 h-3 text-amber-500/40" />
                 Select a video to start instantly
               </div>
-              {/* 60vh cap so the list scrolls without extending the page; no-scrollbar hides the track */}
               <div
                 ref={scrollRef}
                 className="flex flex-col gap-1 overflow-y-auto no-scrollbar"
@@ -351,7 +348,6 @@ export default function CreateRoomForm({ onResultsChange }) {
                   </Button>
                 ))}
 
-                {/* Infinite scroll sentinel */}
                 <div
                   ref={bottomTriggerRef}
                   className="h-10 flex items-center justify-center shrink-0"
@@ -380,7 +376,6 @@ export default function CreateRoomForm({ onResultsChange }) {
           </div>
         )}
 
-        {/* Submit button — hidden while search results are showing, or if in upload mode */}
         {((!ytResults.length && mode !== "upload") || mode === "url") && (
           <Button
             type="submit"
