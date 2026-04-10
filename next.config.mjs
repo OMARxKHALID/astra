@@ -14,7 +14,7 @@ const nextConfig = {
   ],
 
   images: {
-    unoptimized: true,
+    // disabled: unoptimized was causing LCP issues - using default image optimization
     remotePatterns: [
       { protocol: "https", hostname: "api.dicebear.com" },
       { protocol: "https", hostname: "img.youtube.com" },

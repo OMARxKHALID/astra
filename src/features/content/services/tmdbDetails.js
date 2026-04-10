@@ -1,7 +1,7 @@
 import { fetchTMDB, IMG_BASE_URL } from "./tmdb";
 
 const getImageUrl = (path, size = "original") => 
-  path ? `${TMDB_IMAGE_BASE}/${size}${path}` : null;
+  path ? `${IMG_BASE_URL}/${size}${path}` : null;
 
 /**
  * Parses watch providers for a given TMDB response.

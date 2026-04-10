@@ -1,6 +1,7 @@
 // Server-side constants (mirrors src/constants/config.js for Next.js side)
-// [Note] Keeping duplicates for now - server runs separately and needs these
 export const DEBUG = process.env.NODE_ENV !== "production";
+
+export const NEXT_PUBLIC_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 export const HOST_RECONNECT_GRACE_MS = 6_000;
 export const EMPTY_ROOM_CLEANUP_MS = 30_000;

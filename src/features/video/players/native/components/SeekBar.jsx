@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Image from "next/image";
 import { formatTime } from "../../../utils";
 
 export default function SeekBar({
@@ -57,13 +58,15 @@ export default function SeekBar({
             transform: "translateX(-50%)",
           }}
         >
-          <div className="flex flex-col items-center gap-1.5">
+            <div className="flex flex-col items-center gap-1.5">
             <div className="w-40 h-[90px] rounded-lg overflow-hidden bg-black/70 border border-white/15 shadow-2xl">
               {preview.img ? (
-                <img
+                <Image
                   src={preview.img}
                   alt=""
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
+                  sizes="160px"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">

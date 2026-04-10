@@ -111,7 +111,7 @@ export default function EpisodeSelector({
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto scrollbar-none pr-2 flex flex-col gap-3 relative z-10 pointer-events-auto">
+        <div className="flex-1 overflow-y-auto no-scrollbar pr-2 flex flex-col gap-3 relative z-10 pointer-events-auto">
           {loading ? (
             <div className="flex items-center justify-center h-40">
               <Loading size="sm" full={false} />
@@ -138,6 +138,7 @@ export default function EpisodeSelector({
                       src={ep.still || poster}
                       alt={ep.name}
                       fill
+                      sizes="(max-width: 768px) 100vw, 33vw"
                       className={`object-cover absolute inset-0 z-0 transition-transform duration-700 ${isActive ? "scale-105" : "group-hover:scale-105"}`}
                     />
                   )}

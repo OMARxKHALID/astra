@@ -8,11 +8,13 @@ import { NEXT_PUBLIC_SITE_URL } from "@/constants/config";
 const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-body",
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
+  display: "swap",
 });
 
 export const metadata = {

@@ -1,5 +1,6 @@
 import { saveRoom } from "../models/Room.js";
 import { isStrictVideoUrl } from "../utils/auth.js";
+import { NEXT_PUBLIC_SITE_URL } from "../constants.js";
 
 export default function registerVideoHandlers(
   io,
@@ -133,8 +134,7 @@ export default function registerVideoHandlers(
     let finalUrl = inputUrl;
     if (/^\d+$/.test(inputUrl)) {
       const fileId = inputUrl;
-      const serverUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-      finalUrl = `${serverUrl}/api/subtitles/download?url=${fileId}`;
+      finalUrl = `${NEXT_PUBLIC_SITE_URL}/api/subtitles/download?url=${fileId}`;
     } else if (inputUrl.startsWith("blob:") || inputUrl.startsWith("data:") || inputUrl.startsWith("http")) {
       try { new URL(inputUrl); }
       catch { finalUrl = ""; }

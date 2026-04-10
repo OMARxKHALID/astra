@@ -1,4 +1,7 @@
+"use client";
+
 import { memo, useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { createPortal } from "react-dom";
 import { SYSTEM_ICONS } from "../constants";
 import { VoiceNote } from "./VoiceNote";
@@ -216,10 +219,12 @@ function ChatMessageInner({
       <div
         className={`shrink-0 mt-0.5 transition-transform duration-300 group-hover:scale-110 ${isOwn ? "order-2" : "order-1"}`}
       >
-        <img
+        <Image
           src={`https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(name)}`}
           alt={name}
-          className="w-5 h-5 object-contain rounded-[var(--radius-pill)] bg-white/10 p-1 border border-white/10 shadow-sm"
+          width={20}
+          height={20}
+          className="object-contain rounded-[var(--radius-pill)] bg-white/10 p-1 border border-white/10 shadow-sm"
           loading="lazy"
         />
       </div>
@@ -235,22 +240,24 @@ function ChatMessageInner({
           </div>
         )}
 
-        {msg.dataUrl && (
-          <div
-            className={`${msg.text ? "mb-1" : ""} transition-transform duration-300 group-hover:scale-[1.01]`}
-          >
-            {isAudio ? (
-              <VoiceNote src={msg.dataUrl} isOwn={isOwn} />
-            ) : (
-              <img
-                src={msg.dataUrl}
-                alt="Screenshot"
-                className="max-w-full rounded-[var(--radius-panel)] border shadow-lg"
-                style={{ borderColor: "var(--color-border)" }}
-              />
-            )}
-          </div>
-        )}
+          {msg.dataUrl && (
+            <div
+              className={`${msg.text ? "mb-1" : ""} transition-transform duration-300 group-hover:scale-[1.01]`}
+            >
+              {isAudio ? (
+                <VoiceNote src={msg.dataUrl} isOwn={isOwn} />
+              ) : (
+                <Image
+                  src={msg.dataUrl}
+                  alt="Screenshot"
+                  width={300}
+                  height={200}
+                  className="max-w-full rounded-[var(--radius-panel)] border shadow-lg"
+                  style={{ borderColor: "var(--color-border)" }}
+                />
+              )}
+            </div>
+          )}
         {msg.text && (
           <div
             className={`px-3 py-1.5 rounded-[var(--radius-pill)] text-[13px] font-mono leading-tight break-words shadow-sm relative border transition-all duration-300 group-hover:shadow-lg

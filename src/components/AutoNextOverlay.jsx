@@ -38,12 +38,13 @@ export default function AutoNextOverlay({ episodeLabel, onConfirm, onCancel }) {
   const progress = ((COUNTDOWN_S - remaining) / COUNTDOWN_S) * 100;
 
   return (
-    <div className="fixed bottom-8 right-6 z-[90]">
+    <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[90]">
       <NotificationCard
         label={`Up Next in ${remaining}s`}
         message={episodeLabel}
         progress={progress}
-        className="animate-in slide-in-from-bottom-4 fade-in duration-300"
+        progressBarColor="bg-jade"
+        className="animate-in slide-in-from-top-4 fade-in duration-300"
       >
         <button
           onClick={handleCancel}

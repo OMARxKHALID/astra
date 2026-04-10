@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -321,10 +322,12 @@ export default function CreateRoomForm({ onResultsChange }) {
                   >
                     {item.thumb && (
                       <div className="w-24 aspect-video rounded-xl overflow-hidden border border-white/5 shrink-0 bg-black/40 mt-1">
-                        <img
+                        <Image
                           src={item.thumb}
                           alt=""
-                          className="w-full h-full object-cover"
+                          fill
+                          className="object-cover"
+                          sizes="96px"
                         />
                       </div>
                     )}

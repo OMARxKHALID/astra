@@ -111,6 +111,7 @@ export default function InfoView({ initialData, type, id }) {
                 alt={`${data.title} backdrop`}
                 fill
                 priority
+                sizes="100vw"
                 className="w-full h-full object-cover object-[center_20%] opacity-80"
               />
             ) : (
