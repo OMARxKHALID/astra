@@ -27,4 +27,6 @@ public/workbox-*.js
 public/swe-worker-*.js
 
 # Documentation
+
 *.md
+!README.md
