@@ -4,11 +4,6 @@ import { useRouter } from "next/navigation";
 import BackButton from "@/components/ui/BackButton";
 import CreateRoomForm from "@/features/room/components/CreateRoomForm";
 
-export const metadata = {
-  title: "Create Room | Astra",
-  description: "Astra is a real-time video synchronization platform for watch parties. Create a room and invite friends to sync streaming together.",
-};
-
 export default function CreateRoomPage() {
   const router = useRouter();
 
