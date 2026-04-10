@@ -1,0 +1,39 @@
+# Astra - AI Context File
+
+Astra is a real-time video synchronization platform for watch parties. Stream movies, TV shows, and anime with friends while keeping everyone in perfect sync.
+
+## What Astra Does
+
+- **Real-time video sync** — Watch parties with frame-accurate synchronization across all viewers
+- **Multi-platform support** — YouTube, Vimeo, direct video URLs, and HLS streams
+- **Host controls** — Play, pause, seek, and volume control for all participants
+- **Chat with screenshots** — Share moments from the video directly in chat
+- **Video calls** — Face-to-face viewing with up to 9 participants
+
+## Key Features
+
+- Drift correction with 200ms sync loop
+- Cross-platform video playback (native, embed, HLS)
+- Subtitle support with auto-sync
+- Room privacy with password protection
+- Auto-next for continuous episode playback
+
+## Supported Content
+
+- Movies (TMDB integration)
+- TV Shows (TMDB integration)
+- Anime (TMDB integration)
+- Direct video URLs (.mp4, .webm, .m3u8)
+- YouTube videos
+- Vimeo videos
+
+## Links
+
+- Home: https://astra-sync.vercel.app
+- Create Room: https://astra-sync.vercel.app/create
+- Login: https://astra-sync.vercel.app/login
+- API: https://astra-sync.vercel.app/api/
+
+## Pricing
+
+Astra is a free, open-source project.

@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import ProfileView from "./ProfileView";
 
 export const metadata = {
-  title: "Profile",
+  title: "Profile | Astra",
+  robots: { index: false, follow: false },
 };
 
 export default async function ProfilePage() {

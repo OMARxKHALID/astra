@@ -20,10 +20,10 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: {
     template: "%s | Astra",
-    default: "Astra | Stream Movies, TV Shows & Anime",
+    default: "Astra | Watch Parties with Friends",
   },
   description:
-    "Explore a massive library of movies, TV shows, and anime. Stream content in high quality with a premium, social viewing experience.",
+    "Astra is a real-time video synchronization platform for watch parties. Stream movies, TV shows, and anime with friends while keeping everyone in perfect sync.",
   applicationName: "Astra",
   appleWebApp: {
     title: "Astra",
@@ -54,9 +54,9 @@ export const metadata = {
     shortcut: "/favicon.svg",
   },
   openGraph: {
-    title: "Astra — Premium Streaming & Content Discovery",
+    title: "Astra | Watch Parties with Friends",
     description:
-      "A feature-rich portal to browse and stream movies, series, and anime with global real-time synchronization.",
+      "Astra is a real-time video synchronization platform for watch parties. Stream movies, TV shows, and anime with friends while keeping everyone in perfect sync.",
     url: NEXT_PUBLIC_SITE_URL,
     siteName: "Astra",
     images: [
@@ -64,7 +64,7 @@ export const metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Astra Premium Streaming Portal",
+        alt: "Astra - Watch Parties with Friends",
       },
     ],
     locale: "en_US",
@@ -72,9 +72,9 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Astra | Premium Streaming & Content Discovery",
+    title: "Astra | Watch Parties with Friends",
     description:
-      "A feature-rich portal to browse and stream movies, series, and anime with global real-time synchronization.",
+      "Astra is a real-time video synchronization platform for watch parties. Stream movies, TV shows, and anime with friends while keeping everyone in perfect sync.",
     images: ["/og-image.png"],
   },
 };

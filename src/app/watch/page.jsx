@@ -17,7 +17,7 @@ export async function generateMetadata({ searchParams }) {
   const data = activeType === "tv" ? await getTVDetails(activeId) : await getMovieDetails(activeId);
   return {
     title: data ? `Watching ${data.title || data.name}` : "Watch | Astra",
-    description: data?.overview || "Stream content on Astra",
+    description: data?.overview || "Astra is a real-time video synchronization platform for watch parties.",
     robots: { index: false }
   };
 }

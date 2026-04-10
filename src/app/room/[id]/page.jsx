@@ -42,8 +42,8 @@ async function getRoomMeta(id) {
 export async function generateMetadata({ params }) {
   const { id } = await params;
   return {
-    title: `Room ${id.slice(0, 6).toUpperCase()}`,
-    description: "Join this Astra room for a private synchronized viewing experience with friends.",
+    title: `Room ${id.slice(0, 6).toUpperCase()} | Astra`,
+    description: "Astra is a real-time video synchronization platform for watch parties. Stream with friends while keeping everyone in perfect sync.",
     robots: { index: false },
   };
 }

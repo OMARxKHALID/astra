@@ -219,14 +219,16 @@ function ChatMessageInner({
       <div
         className={`shrink-0 mt-0.5 transition-transform duration-300 group-hover:scale-110 ${isOwn ? "order-2" : "order-1"}`}
       >
-        <Image
-          src={`https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(name)}`}
-          alt={name}
-          width={20}
-          height={20}
-          className="object-contain rounded-[var(--radius-pill)] bg-white/10 p-1 border border-white/10 shadow-sm"
-          loading="lazy"
-        />
+        <div className="relative w-5 h-5 flex items-center justify-center shrink-0 select-none">
+          <Image
+            src={`https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(name)}`}
+            alt={name}
+            fill
+            sizes="20px"
+            className="w-full h-full object-contain"
+            unoptimized
+          />
+        </div>
       </div>
       <div
         className={`flex flex-col gap-0.5 max-w-[85%] sm:max-w-[75%] transition-all duration-300 ${isOwn ? "items-end order-1" : "items-start order-2"}`}

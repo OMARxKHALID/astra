@@ -107,6 +107,12 @@ function LoginContent() {
   );
 }
 
+export const metadata = {
+  title: "Login | Astra",
+  description: "Astra is a real-time video synchronization platform for watch parties. Sign in to create watch parties and sync streaming with friends.",
+  robots: { index: false, follow: false },
+};
+
 export default function LoginPage() {
   return (
     <Suspense

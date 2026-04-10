@@ -7,8 +7,12 @@ import {
 import {
   EMPTY_ROOM_CLEANUP_MS,
   HOST_RECONNECT_GRACE_MS,
+  DEBUG,
 } from "../constants.js";
 import { redis } from "../utils/redis.js";
+
+const log = DEBUG ? console.log : () => {};
+const warn = DEBUG ? console.warn : () => {};
 
 export default function registerRoomHandlers(
   io,

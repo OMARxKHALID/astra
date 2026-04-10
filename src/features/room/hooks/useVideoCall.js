@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { DEBUG } from "@/constants/config";
 
 const ICE_CONFIG = {
   iceServers: [
@@ -11,6 +12,8 @@ const ICE_CONFIG = {
 };
 
 const TAG = "[call]";
+const debug = DEBUG ? console.log : () => {};
+const warn = DEBUG ? console.warn : () => {};
 const pcTag = (uid) => `${TAG}[PC:${String(uid).slice(0, 6)}]`;
 
 export function useVideoCall({ roomId, userId, socketRef, addToast }) {

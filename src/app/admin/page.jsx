@@ -586,6 +586,11 @@ function AdminContent() {
   );
 }
 
+export const metadata = {
+  title: "Admin Dashboard",
+  robots: { index: false, follow: false },
+};
+
 export default function AdminPage() {
   return (
     <Suspense fallback={<div className="bg-void h-screen" />}>

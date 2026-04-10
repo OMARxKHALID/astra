@@ -3,9 +3,9 @@ import { NEXT_PUBLIC_SITE_URL } from "@/constants/config";
 import HomeView from "@/features/content/HomeView";
 
 export const metadata = {
-  title: "Astra | Stream Movies, TV Shows & Anime",
-  description: "Explore a massive library of movies, TV shows, and anime. Stream content in high quality with a premium, social viewing experience.",
-  keywords: ["streaming portal", "movies online", "tv shows", "watch anime", "watch party", "synced viewing", "Astra"],
+  title: "Astra | Watch Parties with Friends",
+  description: "Astra is a real-time video synchronization platform for watch parties. Stream movies, TV shows, and anime with friends while keeping everyone in perfect sync.",
+  keywords: ["watch party", "sync streaming", "movie streaming", "anime", "tv shows", "Astra", "real-time sync", "watch together"],
 };
 
 export default async function HomePage() {
