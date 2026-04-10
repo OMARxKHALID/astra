@@ -117,8 +117,8 @@ export default function ControlBar({
             </span>
           )}
 
-          <span className="text-[11px] font-mono text-white/60 tabular-nums shrink-0 hidden sm:inline">
-            {formatTime(localTime)} <span className="text-white/30">/</span>{" "}
+          <span className="text-[11px] font-mono text-white/40 tabular-nums shrink-0 hidden sm:inline bg-white/10 px-2.5 py-1 rounded-[var(--radius-pill)] border border-white/10">
+            {formatTime(localTime)} <span className="text-white/20">/</span>{" "}
             {formatTime(duration)}
           </span>
 

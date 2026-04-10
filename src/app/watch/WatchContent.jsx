@@ -5,13 +5,17 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import ToastContainer, { useToast } from "@/components/Toast";
+import AutoNextOverlay from "@/components/AutoNextOverlay";
 import Button from "@/components/ui/Button";
 import {
   buildEmbedUrl,
   detectServer,
   extractMeta,
+  getNextEpisode,
 } from "@/lib/videoResolver";
 import { createRoom } from "@/features/room/services/createRoom";
+import { ls } from "@/utils/localStorage";
+import { LS_KEYS } from "@/constants/config";
 
 const VideoPlayer = dynamic(() => import("@/features/video"), { ssr: false });
 const EpisodeSelector = dynamic(
@@ -42,7 +46,10 @@ export default function WatchContent({ initialMeta }) {
   const [cloudOpen, setCloudOpen] = useState(false);
   const [episodesOpen, setEpisodesOpen] = useState(false);
   const [seasonCache, setSeasonCache] = useState({});
-  const [bingeWatchEnabled, setBingeWatchEnabled] = useState(false);
+  const [bingeWatchEnabled, setBingeWatchEnabled] = useState(
+    () => ls.get(LS_KEYS.bingeWatch) === "1",
+  );
+  const [autoNextUrl, setAutoNextUrl] = useState(null);
 
   const derivedMeta = useMemo(() => {
     const meta = extractMeta(url);
@@ -128,11 +135,22 @@ export default function WatchContent({ initialMeta }) {
 
   const handleSelectEpisode = useCallback(
     (newSeason, newEpisode) => {
+      setAutoNextUrl(null);
       navigateToEpisode(newSeason, newEpisode);
       setEpisodesOpen(false);
     },
     [navigateToEpisode],
   );
+
+  const handleToggleBinge = useCallback(() => {
+    setBingeWatchEnabled((prev) => {
+      const next = !prev;
+      ls.set(LS_KEYS.bingeWatch, next ? "1" : "0");
+      return next;
+    });
+    const current = ls.get(LS_KEYS.bingeWatch) === "1";
+    addToast(`Binge watch ${current ? "enabled" : "disabled"}`, "info");
+  }, [addToast]);
 
   const handleCreateRoom = useCallback(async () => {
     setCreating(true);
@@ -166,18 +184,25 @@ export default function WatchContent({ initialMeta }) {
 
   const handleVideoEnded = useCallback(() => {
     if (!bingeWatchEnabled || !isActiveTv || !activeTmdbId) return;
-    const nextEpisode = Number(activeE) + 1;
-    const server = detectServer(url) || "vidlink";
-    const nextUrl = buildEmbedUrl(server, activeTmdbId, "tv", Number(activeS), nextEpisode);
-    if (nextUrl) {
-      addToast(`Starting Episode ${nextEpisode} in 2 seconds...`, "info");
-      setTimeout(() => {
-        router.replace(
-          `/watch?url=${encodeURIComponent(nextUrl)}&tmdb=${activeTmdbId}&type=tv&s=${activeS}&e=${nextEpisode}`,
-        );
-      }, 2000);
+    const next = getNextEpisode(url);
+    if (next) {
+      setAutoNextUrl(next);
     }
-  }, [bingeWatchEnabled, isActiveTv, activeTmdbId, activeE, activeS, url, router, addToast]);
+  }, [bingeWatchEnabled, isActiveTv, activeTmdbId, url, addToast]);
+
+  const handleAutoNextConfirm = useCallback(() => {
+    if (!autoNextUrl) return;
+    const next = autoNextUrl;
+    setAutoNextUrl(null);
+    const nextMeta = extractMeta(next);
+    router.replace(
+      `/watch?url=${encodeURIComponent(next)}&tmdb=${activeTmdbId}&type=tv&s=${nextMeta.s || activeS}&e=${nextMeta.e || Number(activeE) + 1}`,
+    );
+  }, [autoNextUrl, activeTmdbId, activeS, activeE, router]);
+
+  const handleAutoNextCancel = useCallback(() => {
+    setAutoNextUrl(null);
+  }, []);
 
   if (!url) {
     return (
@@ -238,10 +263,18 @@ export default function WatchContent({ initialMeta }) {
             setCache={setSeasonCache}
             poster={meta?.poster || null}
             bingeWatchEnabled={bingeWatchEnabled}
-            onToggleBingeWatch={() => setBingeWatchEnabled(!bingeWatchEnabled)}
+            onToggleBingeWatch={handleToggleBinge}
           />
         )}
       </div>
+
+      {autoNextUrl && (
+        <AutoNextOverlay
+          episodeLabel={`Episode ${Number(activeE) + 1}`}
+          onConfirm={handleAutoNextConfirm}
+          onCancel={handleAutoNextCancel}
+        />
+      )}
       <ToastContainer toasts={toasts} />
     </div>
   );

@@ -5,6 +5,8 @@ import { createPortal } from "react-dom";
 import { Search, X as XIcon } from "lucide-react";
 import Image from "next/image";
 
+const DEBOUNCE_MS = 340;
+
 export default function YouTubeSearch({ onLoad }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
@@ -18,6 +20,8 @@ export default function YouTubeSearch({ onLoad }) {
   const resultsRef = useRef(null);
   const scrollRef = useRef(null);
   const bottomTriggerRef = useRef(null);
+  const debounceRef = useRef(null);
+  const prevQueryRef = useRef("");
 
   useEffect(() => {
     if (!open) return;
@@ -109,7 +113,15 @@ export default function YouTubeSearch({ onLoad }) {
     setResults([]);
     setOpen(false);
     setNextPageToken(null);
+    prevQueryRef.current = "";
+    if (debounceRef.current) clearTimeout(debounceRef.current);
   }
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   return (
     <div className="flex-1 min-w-0">
@@ -130,7 +142,17 @@ export default function YouTubeSearch({ onLoad }) {
           autoFocus
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            const q = e.target.value;
+            setQuery(q);
+            if (debounceRef.current) clearTimeout(debounceRef.current);
+            debounceRef.current = setTimeout(() => {
+              if (q.trim() && q !== prevQueryRef.current) {
+                prevQueryRef.current = q.trim();
+                search(q.trim());
+              }
+            }, DEBOUNCE_MS);
+          }}
           onFocus={() => {
             setFocused(true);
             if (results.length) setOpen(true);
@@ -165,7 +187,6 @@ export default function YouTubeSearch({ onLoad }) {
         )}
       </div>
 
-      {/* [Note] portal avoids clipping by URL bar stacking context */}
       {typeof document !== "undefined" &&
         open &&
         results.length > 0 &&
@@ -176,7 +197,6 @@ export default function YouTubeSearch({ onLoad }) {
               onClick={() => setOpen(false)}
             />
 
-            {/* [Note] resultsRef ignores clicks inside modal */}
             <div
               ref={resultsRef}
               className="relative z-10 w-full max-w-lg glass-card overflow-hidden shadow-[0_32px_120px_rgba(0,0,0,0.5)] animate-in zoom-in-95 fade-in duration-300 flex flex-col"

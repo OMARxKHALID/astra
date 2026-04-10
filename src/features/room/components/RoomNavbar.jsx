@@ -23,8 +23,8 @@ export function RoomNavbar({
   onToggleSidebar,
 }) {
   return (
-    <nav className="room-navbar relative z-30 shrink-0 px-2 sm:px-4 py-2 flex items-center justify-between gap-1 sm:gap-2">
-      <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
+    <nav className="room-navbar relative z-30 shrink-0 px-2 sm:px-4 py-2 flex items-center justify-between gap-1.5 sm:gap-3">
+      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
         {debugMode && (
           <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-danger/20 text-danger/80 border border-danger/30 shrink-0">
             DEBUG
@@ -52,7 +52,7 @@ export function RoomNavbar({
         </div>
       </div>
 
-      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
         <button
           onClick={onToggleCall}
           title="Toggle video call"

@@ -35,6 +35,7 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
   const [micActive, setMicActive] = useState(true);
   const [camActive, setCamActive] = useState(true);
   const [remoteStatus, setRemoteStatus] = useState({});
+  const [peerConnStates, setPeerConnStates] = useState({});
 
   const pcRef = useRef({});
   const iceQueuesRef = useRef({});
@@ -234,10 +235,26 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
         debug(
           `${pcTag(targetUserId)} iceGatheringState → ${pc.iceGatheringState}`,
         );
-      pc.oniceconnectionstatechange = () =>
-        debug(
-          `${pcTag(targetUserId)} iceConnectionState → ${pc.iceConnectionState}`,
-        );
+      pc.oniceconnectionstatechange = () => {
+        const state = pc.iceConnectionState;
+        debug(`${pcTag(targetUserId)} iceConnectionState → ${state}`);
+        setPeerConnStates((prev) => ({
+          ...prev,
+          [targetUserId]: state,
+        }));
+        if (["failed", "closed"].includes(state)) {
+          debug(`${pcTag(targetUserId)} terminal — removing`);
+          setRemoteStreams((prev) => {
+            const n = { ...prev };
+            delete n[targetUserId];
+            return n;
+          });
+          delete pcRef.current[targetUserId];
+          delete iceQueuesRef.current[targetUserId];
+          delete pcRoleRef.current[targetUserId];
+          delete isNegotiatingRef.current[targetUserId];
+        }
+      };
 
       return pc;
     },
@@ -552,6 +569,10 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
           const uid = event.userId || event.from;
           debug(`${TAG} user left — cleanup ${String(uid).slice(0, 6)}`);
           setActiveCallers((prev) => {
+            const wasInCall = prev.has(uid);
+            if (wasInCall && addToast) {
+              addToast("A participant left the call", "info");
+            }
             const n = new Set(prev);
             n.delete(uid);
             return n;
@@ -582,6 +603,7 @@ export function useVideoCall({ roomId, userId, socketRef, addToast }) {
     localStream,
     remoteStreams,
     remoteStatus,
+    peerConnStates,
     joinCall,
     leaveCall,
     micActive,

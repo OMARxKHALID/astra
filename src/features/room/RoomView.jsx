@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useRef, useCallback, useEffect, useState } from "react";
 import { getNextEpisode } from "@/lib/videoResolver";
 import { createPortal } from "react-dom";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { MessageSquare as ChatIcon, Users as UsersIcon } from "lucide-react";
 
 import SyncEngine from "@/features/sync/components/SyncEngine";
@@ -14,6 +14,7 @@ import { extractJwtSub } from "@/lib/jwtAuth";
 import URLBar from "./components/URLBar";
 import ReconnectBanner from "./components/ReconnectBanner";
 import ToastContainer, { useToast } from "@/components/Toast";
+import AutoNextOverlay from "@/components/AutoNextOverlay";
 import { SplitView } from "./components/SplitView";
 import { RoomNavbar } from "./components/RoomNavbar";
 import { MobileRoomNav } from "./components/MobileRoomNav";
@@ -62,6 +63,7 @@ export default function RoomView({ roomId, initialMeta, initialPreferences }) {
   const [mounted, setMounted] = useState(false);
   const [fsChatOpen, setFsChatOpen] = useState(false);
   const [passwordError, setPasswordError] = useState("");
+  const [autoNextUrl, setAutoNextUrl] = useState(null);
 
   const sendRef = useRef(null);
   const videoRef = useRef(null);
@@ -142,9 +144,6 @@ export default function RoomView({ roomId, initialMeta, initialPreferences }) {
     room.serverState?.hostId === identity.userId ||
     (!!hostToken && tokenSub === identity.userId);
 
-  // [Note] Local file blob: URLs cannot be broadcast to the room (they are tab-local memory objects).
-  // We keep them in a separate client-only override so the player can use them without
-  // polluting the server state or triggering "Cannot Play Video" for other members on refresh.
   const [localVideoOverride, setLocalVideoOverride] = useState("");
 
   const videoState = useVideoState({
@@ -154,9 +153,9 @@ export default function RoomView({ roomId, initialMeta, initialPreferences }) {
     router,
     sendRef,
     isHost,
+    addToast,
   });
 
-  // [Note] Effective URL: local blob overrides server state while valid
   const effectiveVideoUrl = localVideoOverride || videoState.videoUrl;
   useMediaHistory({
     roomId,
@@ -164,6 +163,31 @@ export default function RoomView({ roomId, initialMeta, initialPreferences }) {
     serverState: room.serverState,
     isHost,
   });
+
+  // URL sync: keep browser address bar in sync with room content
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (!effectiveVideoUrl || !pathname) return;
+    const currentParams = new URLSearchParams(searchParams.toString());
+    const isMovieOrYouTube =
+      !videoState.isActiveTv || effectiveVideoUrl.includes("youtube");
+    if (isMovieOrYouTube) {
+      if (currentParams.has("tmdb")) {
+        const newParams = new URLSearchParams();
+        newParams.set("url", effectiveVideoUrl);
+        router.replace(`${pathname}?${newParams.toString()}`, { scroll: false });
+      }
+    } else if (currentParams.has("url") && !currentParams.has("tmdb")) {
+      const newParams = new URLSearchParams();
+      newParams.set("url", effectiveVideoUrl);
+      newParams.set("tmdb", videoState.id);
+      newParams.set("type", "tv");
+      newParams.set("s", videoState.s);
+      newParams.set("e", videoState.e);
+      router.replace(`${pathname}?${newParams.toString()}`, { scroll: false });
+    }
+  }, [effectiveVideoUrl, videoState, pathname, searchParams, router]);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   useEffect(() => {
@@ -182,25 +206,61 @@ export default function RoomView({ roomId, initialMeta, initialPreferences }) {
     if (times.length)
       videoRef.current.currentTime = times[Math.floor(times.length / 2)];
   }, [room.tsMapState]);
+
+  const handlePlay = useCallback(
+    (t) => sendRef.current?.({ type: "play", currentTime: t }),
+    [],
+  );
+  const handlePause = useCallback(
+    (t) => sendRef.current?.({ type: "pause", currentTime: t }),
+    [],
+  );
+  const handleSeek = useCallback(
+    (t) => sendRef.current?.({ type: "seek", currentTime: t }),
+    [],
+  );
+  const handleSpeed = useCallback(
+    (r) =>
+      sendRef.current?.({
+        type: "speed",
+        rate: r,
+        currentTime: videoRef.current?.currentTime,
+      }),
+    [],
+  );
+  const handleSubtitleChange = useCallback((url) => {
+    if (sendRef?.current) {
+      sendRef.current({ type: "set_subtitle", url });
+    }
+  }, []);
+  const handleLoad = useCallback((videoUrl, subtitleUrl) => {
+    if (subtitleUrl && sendRef?.current) {
+      sendRef.current({ type: "set_subtitle", url: subtitleUrl });
+    }
+  }, []);
   
   const handleVideoEnded = useCallback(() => {
-    console.log("[Room] Video ended event caught. isHost:", isHost);
-    if (!isHost || !sendRef.current) return;
-    
+    if (!isHost || !videoState.bingeWatchEnabled) return;
+
     const nextUrl = getNextEpisode(effectiveVideoUrl);
     if (nextUrl) {
-      addToast("Starting next episode in 2 seconds...", "info");
-      setTimeout(() => {
-        if (sendRef.current) {
-          sendRef.current({
-            type: "change_video",
-            videoUrl: nextUrl,
-            subtitleUrl: "",
-          });
-        }
-      }, 2000);
+      setAutoNextUrl(nextUrl);
     }
-  }, [isHost, effectiveVideoUrl, addToast]);
+  }, [isHost, effectiveVideoUrl, videoState.bingeWatchEnabled]);
+
+  const handleAutoNextConfirm = useCallback(() => {
+    if (!autoNextUrl || !sendRef.current) return;
+    sendRef.current({
+      type: "change_video",
+      videoUrl: autoNextUrl,
+      subtitleUrl: "",
+    });
+    setAutoNextUrl(null);
+  }, [autoNextUrl]);
+
+  const handleAutoNextCancel = useCallback(() => {
+    setAutoNextUrl(null);
+  }, []);
 
   const isTheatre = settings.theatreMode && !isFullscreen;
   const leaderTime = getLeaderTime(room.tsMapState);
@@ -319,34 +379,19 @@ export default function RoomView({ roomId, initialMeta, initialPreferences }) {
               isHost={isHost}
               isRoom={true}
               syncHubEnabled={settings.syncHubEnabled}
+              screenshotEnabled={settings.screenshotEnabled}
+              onSendScreenshot={(dataUrl) => {
+                sendRef.current?.({ type: "chat", text: "📸 Screenshot", dataUrl });
+                addToast("Screenshot sent to chat", "success");
+              }}
               isPlaying={room.serverState?.isPlaying}
               playbackRate={room.serverState?.playbackRate || 1}
-              onPlay={(t) =>
-                sendRef.current?.({ type: "play", currentTime: t })
-              }
-              onPause={(t) =>
-                sendRef.current?.({ type: "pause", currentTime: t })
-              }
-              onSeek={(t) =>
-                sendRef.current?.({ type: "seek", currentTime: t })
-              }
-              onSpeed={(r) =>
-                sendRef.current?.({
-                  type: "speed",
-                  rate: r,
-                  currentTime: videoRef.current?.currentTime,
-                })
-              }
-              onSubtitleChange={(url) => {
-                if (sendRef?.current) {
-                  sendRef.current({ type: "set_subtitle", url });
-                }
-              }}
-              onLoad={(videoUrl, subtitleUrl) => {
-                if (subtitleUrl && sendRef?.current) {
-                  sendRef.current({ type: "set_subtitle", url: subtitleUrl });
-                }
-              }}
+              onPlay={handlePlay}
+              onPause={handlePause}
+              onSeek={handleSeek}
+              onSpeed={handleSpeed}
+              onSubtitleChange={handleSubtitleChange}
+              onLoad={handleLoad}
               canControl={!room.serverState?.hostOnlyControls || isHost}
               onAmbiColors={handleAmbiColors}
               theatreMode={settings.theatreMode}
@@ -372,6 +417,8 @@ export default function RoomView({ roomId, initialMeta, initialPreferences }) {
                 setCache={videoState.setSeasonCache}
                 poster={room.meta?.poster || null}
                 isRoom
+                bingeWatchEnabled={videoState.bingeWatchEnabled}
+                onToggleBingeWatch={isHost ? videoState.toggleBingeWatch : undefined}
               />
             )}
           </>
@@ -485,6 +532,7 @@ export default function RoomView({ roomId, initialMeta, initialPreferences }) {
             sendRef.current?.({ type: "set_password", password: pw })
           }
           identity={identity}
+          addToast={addToast}
           {...settings}
         />
       )}
@@ -530,6 +578,14 @@ export default function RoomView({ roomId, initialMeta, initialPreferences }) {
         onAccept={call.joinCall}
         onDecline={call.leaveCall}
       />
+
+      {autoNextUrl && isHost && (
+        <AutoNextOverlay
+          episodeLabel={`Episode ${Number(videoState.e) + 1}`}
+          onConfirm={handleAutoNextConfirm}
+          onCancel={handleAutoNextCancel}
+        />
+      )}
 
       {mounted &&
         isFullscreen &&

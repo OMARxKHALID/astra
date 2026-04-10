@@ -1,5 +1,9 @@
 import { Room, saveRoom, cleanupRoom } from "../models/Room.js";
-import { verifyHostToken, hashPassword, verifyPassword } from "../utils/auth.js";
+import {
+  verifyHostToken,
+  hashPassword,
+  verifyPassword,
+} from "../utils/auth.js";
 import {
   DEBUG,
   EMPTY_ROOM_CLEANUP_MS,
@@ -82,9 +86,7 @@ export default function registerRoomHandlers(
     const isHost = Boolean(jwtPayload);
 
     if (token && !jwtPayload) {
-      error(
-        `[auth] INVALID host token for room:${roomId} user:${clientId}`,
-      );
+      error(`[auth] INVALID host token for room:${roomId} user:${clientId}`);
       return socket.emit("REC:error", { message: "Invalid host token" });
     }
 
@@ -96,7 +98,6 @@ export default function registerRoomHandlers(
 
     if (!room) {
       if (redis) {
-        // If Redis is healthy and active, the room MUST exist in Redis to be valid.
         warn(`[socket] JOIN_ROOM denied: room:${roomId} not found in Redis`);
         return socket.emit("REC:error", {
           message: "This room does not exist or has expired.",
@@ -106,18 +107,15 @@ export default function registerRoomHandlers(
 
       // Fallback behavior ONLY for environments completely running without Redis
       if (!isHost) {
-        warn(`[socket] JOIN_ROOM denied: room:${roomId} does not exist and caller is not host (Volatile mode)`);
+        warn(
+          `[socket] JOIN_ROOM denied: room:${roomId} does not exist and caller is not host (Volatile mode)`,
+        );
         return socket.emit("REC:error", {
           message: "This room does not exist or has expired.",
           code: "ROOM_NOT_FOUND",
         });
       }
-      room = new Room(
-        roomId,
-        videoUrl || "",
-        jwtPayload.hostId,
-        token,
-      );
+      room = new Room(roomId, videoUrl || "", jwtPayload.hostId, token);
       rooms.set(roomId, room);
       room.startBroadcast(io);
     } else if (isHost && !room.hostToken && token && jwtPayload) {
@@ -287,6 +285,12 @@ export default function registerRoomHandlers(
         userId: meta.userId,
         username: meta.username,
       });
+      // [Note] Also notify the call layer on abrupt disconnect.
+      // CALL:leave is only emitted when leaveCall() is called explicitly by the client,
+      // so an internet drop never triggers it. Emitting CALL:user_left here ensures the
+      // remaining peers clean up the WebRTC peer connection and show the appropriate toast,
+      // rather than the video tile silently vanishing with no explanation.
+      io.to(room.roomId).emit("CALL:user_left", { userId: meta.userId });
       io.to(room.roomId).emit("REC:roster", room.getParticipants());
       if (meta.isHost) {
         setTimeout(() => {

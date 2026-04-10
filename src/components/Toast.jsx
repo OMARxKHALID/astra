@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { generateId } from "@/utils/id";
+import NotificationCard from "./ui/NotificationCard";
 
 const TYPE_MAP = {
   success: {
     icon: (
       <svg
-        className="w-3 h-3 text-jade"
+        className="w-3.5 h-3.5 text-jade"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -20,13 +21,12 @@ const TYPE_MAP = {
         />
       </svg>
     ),
-    bg: "bg-jade/15",
-    border: "border-jade/30",
+    label: "SUCCESS",
   },
   error: {
     icon: (
       <svg
-        className="w-3 h-3 text-danger"
+        className="w-3.5 h-3.5 text-danger"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -39,13 +39,12 @@ const TYPE_MAP = {
         />
       </svg>
     ),
-    bg: "bg-danger/15",
-    border: "border-danger/30",
+    label: "ERROR",
   },
   info: {
     icon: (
       <svg
-        className="w-3 h-3 text-amber"
+        className="w-3.5 h-3.5 text-amber"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -58,8 +57,7 @@ const TYPE_MAP = {
         />
       </svg>
     ),
-    bg: "bg-amber/15",
-    border: "border-amber/30",
+    label: "SYSTEM",
   },
 };
 
@@ -69,7 +67,7 @@ export function useToast() {
   const addToast = useCallback(
     (message, type = "success", duration = 3000, icon = null) => {
       const id = generateId(16);
-      setToasts((prev) => [...prev, { id, message, type, icon }]);
+      setToasts((prev) => [...prev, { id, message, type, icon, duration }]);
       setTimeout(
         () => setToasts((prev) => prev.filter((t) => t.id !== id)),
         duration,
@@ -81,34 +79,45 @@ export function useToast() {
   return { toasts, addToast };
 }
 
+function ToastItem({ toast }) {
+  const theme = TYPE_MAP[toast.type] || TYPE_MAP.success;
+  const [progress, setProgress] = useState(100);
+  const startTimeRef = useRef(Date.now());
+
+  useEffect(() => {
+    const tick = () => {
+      const elapsed = Date.now() - startTimeRef.current;
+      const remaining = Math.max(0, 100 - (elapsed / toast.duration) * 100);
+      setProgress(remaining);
+    };
+    tick();
+    const interval = setInterval(tick, 50);
+    return () => clearInterval(interval);
+  }, [toast.duration]);
+
+  return (
+    <NotificationCard
+      label={theme.label}
+      message={toast.message}
+      progress={progress}
+      duration={toast.duration}
+      icon={toast.icon || theme.icon}
+      className="animate-in slide-in-from-top-4 fade-in duration-300"
+    />
+  );
+}
+
 export default function ToastContainer({ toasts }) {
   if (!toasts.length) return null;
 
   return (
     <div
       aria-live="polite"
-      className="fixed inset-x-0 bottom-0 z-[100] flex flex-col items-center gap-2.5 pb-28 lg:pb-10 pointer-events-none px-4"
+      className="fixed top-8 left-1/2 -translate-x-1/2 z-[1000] flex flex-col gap-2.5 pointer-events-none"
     >
-      {toasts.map((t) => {
-        const theme = TYPE_MAP[t.type] || TYPE_MAP.success;
-        return (
-          <div
-            key={t.id}
-            role="status"
-            style={{
-              animation: "toastIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards",
-            }}
-            className="toast-pill px-5 py-2.5 rounded-full backdrop-blur-2xl border text-[14px] font-semibold flex items-center gap-3 max-w-sm"
-          >
-            <div
-              className={`w-5 h-5 rounded-full border ${theme.bg} ${theme.border} flex items-center justify-center shrink-0`}
-            >
-              {t.icon || theme.icon}
-            </div>
-            <span className="tracking-tight">{t.message}</span>
-          </div>
-        );
-      })}
+      {toasts.map((t) => (
+        <ToastItem key={t.id} toast={t} />
+      ))}
     </div>
   );
 }

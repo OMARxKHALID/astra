@@ -99,8 +99,8 @@ export default function SettingsPanel({
   syncHubEnabled,
   setSyncHubEnabled,
   identity,
+  addToast,
 }) {
-  const { addToast } = useToast();
   const panelRef = useRef(null);
   const [pwInput, setPwInput] = useState("");
   const [pwMode, setPwMode] = useState("idle");

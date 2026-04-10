@@ -3,8 +3,8 @@ import { formatTime } from "@/utils/time";
 export { formatTime };
 
 let ytCbs = new Set();
+let ytPollingInt = null;
 export function onYTReady(cb) {
-  // [Note] rely on actual API presence instead of stale ytReady flag
   if (window.YT?.Player) {
     cb();
     return;
@@ -21,12 +21,31 @@ export function onYTReady(cb) {
     window.onYouTubeIframeAPIReady = () => {
       ytCbs.forEach((f) => f());
       ytCbs.clear();
+      if (ytPollingInt) {
+        clearInterval(ytPollingInt);
+        ytPollingInt = null;
+      }
     };
+  }
+
+  if (!ytPollingInt && !window.YT?.Player) {
+    ytPollingInt = setInterval(() => {
+      if (window.YT?.Player) {
+        ytCbs.forEach((f) => f());
+        ytCbs.clear();
+        clearInterval(ytPollingInt);
+        ytPollingInt = null;
+      }
+    }, 100);
   }
 }
 
 export function cleanupYT() {
   ytCbs.clear();
+  if (ytPollingInt) {
+    clearInterval(ytPollingInt);
+    ytPollingInt = null;
+  }
 }
 
 let vmCbs = new Set();

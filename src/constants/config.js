@@ -41,5 +41,6 @@ export const LS_KEYS = {
   subtitleOffset: "as_subtitleOffset",
   localFileName: "as_localFileName",
   syncHub: "as_synchub",
+  bingeWatch: "as_bingewatch",
   adminSecret: "as_ecret",
 };

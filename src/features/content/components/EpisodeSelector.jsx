@@ -76,7 +76,7 @@ export default function EpisodeSelector({
   }, [totalSeasons]);
 
   const handleSelectEpisode = (ep) => {
-    if (currentSeason === currentSeason && ep.number === currentEpisode) return;
+    if (ep.number === currentEpisode) return;
     onSelectEpisode(currentSeason, ep.number);
   };
 
@@ -92,17 +92,12 @@ export default function EpisodeSelector({
               {seasonMeta?.name || `Season ${currentSeason}`}
             </h2>
           </div>
-          {seasonMeta?.overview && (
-            <p className="text-[11px] text-white/80 text-center mt-3 line-clamp-3 leading-relaxed font-body">
-              {seasonMeta.overview}
-            </p>
-          )}
           {onToggleBingeWatch && (
-            <div className="flex items-center gap-2 mt-4">
+            <div className="flex items-center gap-2 mt-4 pointer-events-auto">
               <span className="text-[10px] text-white/50 font-mono uppercase tracking-wider">Auto-Next</span>
               <button
                 onClick={onToggleBingeWatch}
-                className={`relative w-10 h-5 rounded-full transition-all duration-300 ${
+                className={`relative w-10 h-5 rounded-full transition-all duration-300 cursor-pointer ${
                   bingeWatchEnabled ? "bg-amber" : "bg-white/20"
                 }`}
               >
@@ -124,7 +119,6 @@ export default function EpisodeSelector({
           ) : episodes.length > 0 ? (
             episodes.map((ep) => {
               const isActive =
-                Number(currentSeason) === Number(currentSeason) &&
                 Number(ep.number) === Number(currentEpisode);
 
               return (

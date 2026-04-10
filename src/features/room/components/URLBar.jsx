@@ -39,6 +39,17 @@ export default function URLBar({
     setLocalFileName(ls.get(LS_KEYS.localFileName) || "");
   }, []);
 
+  useEffect(() => {
+    if (currentUrl) {
+      const src = classifyUrl(currentUrl);
+      if (src.type === "youtube") {
+        setMode("youtube");
+      } else if (currentUrl.startsWith("blob:")) {
+        setMode("upload");
+      }
+    }
+  }, [currentUrl]);
+
   const source = classifyUrl(currentUrl);
   const inputSource = classifyUrl(input);
   const showDetected = input.trim() && inputSource.type !== "unsupported";

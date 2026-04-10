@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { LS_KEYS } from "@/constants/config";
 import { ls } from "@/utils/localStorage";
 import { setPreference } from "@/app/actions";
@@ -60,28 +60,43 @@ export default function useSettings(initialPreferences = {}) {
     showSidebar,
   ]);
 
-  return {
-    screenshotEnabled,
-    setScreenshotEnabled,
-    hlsQualityEnabled,
-    setHlsQualityEnabled,
-    scrubPreviewEnabled,
-    setScrubPreviewEnabled,
-    speedSyncEnabled,
-    setSpeedSyncEnabled,
-    ambilightEnabled,
-    setAmbilightEnabled,
-    mirrorCameraEnabled,
-    setMirrorCameraEnabled,
-    syncHubEnabled,
-    setSyncHubEnabled,
-    theatreMode,
-    setTheatreMode,
-    showSidebar,
-    setShowSidebar,
-    showSettings,
-    setShowSettings,
-    showShortcuts,
-    setShowShortcuts,
-  };
+  return useMemo(
+    () => ({
+      screenshotEnabled,
+      setScreenshotEnabled,
+      hlsQualityEnabled,
+      setHlsQualityEnabled,
+      scrubPreviewEnabled,
+      setScrubPreviewEnabled,
+      speedSyncEnabled,
+      setSpeedSyncEnabled,
+      ambilightEnabled,
+      setAmbilightEnabled,
+      mirrorCameraEnabled,
+      setMirrorCameraEnabled,
+      syncHubEnabled,
+      setSyncHubEnabled,
+      theatreMode,
+      setTheatreMode,
+      showSidebar,
+      setShowSidebar,
+      showSettings,
+      setShowSettings,
+      showShortcuts,
+      setShowShortcuts,
+    }),
+    [
+      screenshotEnabled,
+      hlsQualityEnabled,
+      scrubPreviewEnabled,
+      speedSyncEnabled,
+      ambilightEnabled,
+      mirrorCameraEnabled,
+      syncHubEnabled,
+      theatreMode,
+      showSidebar,
+      showSettings,
+      showShortcuts,
+    ],
+  );
 }

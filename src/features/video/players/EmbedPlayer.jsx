@@ -101,7 +101,7 @@ export default function EmbedPlayer({
           onLoad(videoUrl, null, parsed.duration);
         }
         
-        const threshold = parsed.duration - 2;
+        const threshold = parsed.duration - 10;
         const isNearEnd = parsed.current >= threshold;
         const shouldTrigger = (isNearEnd || parsed.isEnded) && parsed.duration > 0 && typeof onEnded === "function" && !hasTriggeredEnd.current;
         
@@ -112,6 +112,16 @@ export default function EmbedPlayer({
       }
 
       if (data?.type === "vidlink_ended" && !hasTriggeredEnd.current) {
+        hasTriggeredEnd.current = true;
+        onEnded?.();
+      }
+
+      if (
+        (data?.type === "finish" ||
+          data?.type === "complete" ||
+          data?.type === "PLAYER_ENDED") &&
+        !hasTriggeredEnd.current
+      ) {
         hasTriggeredEnd.current = true;
         onEnded?.();
       }
