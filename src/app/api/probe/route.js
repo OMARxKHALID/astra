@@ -1,5 +1,4 @@
-import { NextResponse } from "next/server";
-
+import { apiResponse } from "@/utils/apiResponse";
 import { isValidUrl } from "@/lib/ssrf";
 
 
@@ -9,18 +8,12 @@ export async function GET(request) {
     const url = searchParams.get("url")?.slice(0, 1000) || "";
 
     if (!url) {
-      return NextResponse.json(
-        { error: "Missing url parameter" },
-        { status: 400 },
-      );
+      return apiResponse.badRequest("Missing url parameter");
     }
 
     const decodedUrl = decodeURIComponent(url);
-    if (!isValidUrl(decodedUrl)) {
-      return NextResponse.json(
-        { error: "Invalid or disallowed URL" },
-        { status: 400 },
-      );
+    if (!(await isValidUrl(decodedUrl))) {
+      return apiResponse.badRequest("Invalid or disallowed URL");
     }
 
     const res = await fetch(decodedUrl, {
@@ -28,16 +21,13 @@ export async function GET(request) {
       signal: AbortSignal.timeout(10000),
     });
 
-    return NextResponse.json({
+    return apiResponse.success({
       contentType: res.headers.get("content-type") || "",
       contentLength: res.headers.get("content-length") || "",
       status: res.status,
       ok: res.ok,
     });
   } catch (err) {
-    return NextResponse.json(
-      { contentType: "", error: err.message },
-      { status: 500 },
-    );
+    return apiResponse.error(err.message || "Probe failed", 500, "PROBE_ERROR");
   }
 }

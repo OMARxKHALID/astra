@@ -14,6 +14,7 @@ const ICE_CONFIG = {
 const TAG = "[call]";
 const debug = DEBUG ? console.log : () => {};
 const warn = DEBUG ? console.warn : () => {};
+const error = DEBUG ? console.error : () => {};
 const pcTag = (uid) => `${TAG}[PC:${String(uid).slice(0, 6)}]`;
 
 export function useVideoCall({ roomId, userId, socketRef, addToast }) {

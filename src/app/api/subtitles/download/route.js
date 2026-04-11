@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { apiResponse } from "@/utils/apiResponse";
 import { gunzipSync } from "zlib";
 import { withRateLimit } from "@/lib/rateLimit";
 import { isValidUrl } from "@/lib/ssrf";
@@ -13,9 +13,10 @@ export async function GET(request) {
     if (limited) return limited;
 
     if (!API_KEY) {
-      return NextResponse.json(
-        { error: "OpenSubtitles API key not configured" },
-        { status: 503 },
+      return apiResponse.error(
+        "OpenSubtitles API key not configured",
+        503,
+        "SUBTITLE_PROVIDER_NOT_CONFIGURED",
       );
     }
 
@@ -23,10 +24,7 @@ export async function GET(request) {
     const subUrlOrId = searchParams.get("url")?.slice(0, 500) || "";
 
     if (!subUrlOrId) {
-      return NextResponse.json(
-        { error: "Missing url parameter" },
-        { status: 400 },
-      );
+      return apiResponse.badRequest("Missing url parameter");
     }
 
     let finalDownloadUrl = subUrlOrId;
@@ -52,10 +50,7 @@ export async function GET(request) {
     } else {
       // [Note] SSRF guard: direct URLs must pass the same IP blocklist as /api/proxy
       if (!(await isValidUrl(finalDownloadUrl))) {
-        return NextResponse.json(
-          { error: "Invalid or disallowed URL" },
-          { status: 400 },
-        );
+        return apiResponse.badRequest("Invalid or disallowed URL");
       }
     }
 
@@ -87,7 +82,7 @@ export async function GET(request) {
     }
 
     if (contentType.includes("vtt") || finalDownloadUrl.endsWith(".vtt")) {
-      return new NextResponse(rawData, {
+      return apiResponse.response(rawData, {
         status: 200,
         headers: {
           "Content-Type": "text/vtt; charset=utf-8",
@@ -107,7 +102,7 @@ export async function GET(request) {
     text = text.replace(/^\uFEFF/, "");
 
     if (text.trimStart().startsWith("WEBVTT")) {
-      return new NextResponse(text, {
+      return apiResponse.response(text, {
         status: 200,
         headers: {
           "Content-Type": "text/vtt; charset=utf-8",
@@ -127,7 +122,7 @@ export async function GET(request) {
         .replace(/\n(\d+)\n(\d+:\d{2}:\d{2}),(\d{3})/g, "\n$2.$3")
         .replace(/^(\d+)\n(\d+:\d{2}:\d{2}),(\d{3})/gm, "$2.$3");
 
-    return new NextResponse(vtt, {
+    return apiResponse.response(vtt, {
       status: 200,
       headers: {
         "Content-Type": "text/vtt; charset=utf-8",
@@ -136,9 +131,10 @@ export async function GET(request) {
       },
     });
   } catch (err) {
-    return NextResponse.json(
-      { error: err.message || "Download failed" },
-      { status: 500 },
+    return apiResponse.error(
+      err.message || "Download failed",
+      500,
+      "SUBTITLE_DOWNLOAD_ERROR",
     );
   }
 }

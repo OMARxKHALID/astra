@@ -53,12 +53,11 @@ export default function SubtitlePanel({
       const res = await fetch(
         `/api/subtitles/search?q=${encodeURIComponent(searchQuery.trim())}&url=${encodeURIComponent(videoUrl)}`,
       );
-      const data = await res.json();
-      if (data.subtitles) {
-        setSubOptions(data.subtitles);
-      }
-      else {
-        setSearchStatus(data.error || "No results found.");
+      const json = await res.json();
+      if (json.success) {
+        setSubOptions(json.data?.subtitles || []);
+      } else {
+        setSearchStatus(json.error?.message || "No results found.");
       }
     } catch (e) {
       setSearchStatus("Connection failed. Try again.");

@@ -1,22 +1,9 @@
-import { NextResponse } from "next/server";
+import { apiResponse } from "@/utils/apiResponse";
 import { withRateLimit } from "@/lib/rateLimit";
+import { isValidUrl } from "@/lib/ssrf";
 
 const API_KEY = process.env.OPENSUBTITLES_KEY;
 const API_BASE = "https://api.opensubtitles.com/api/v1";
-
-const BLOCKED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", "::1"];
-
-function isValidVideoUrl(urlStr) {
-  try {
-    const url = new URL(urlStr);
-    if (url.protocol !== "http:" && url.protocol !== "https:") return false;
-    if (BLOCKED_HOSTS.includes(url.hostname)) return false;
-    if (url.hostname.startsWith("127.") || url.hostname.startsWith("10.") || url.hostname.startsWith("192.168.")) return false;
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 // [Note] OpenSubtitles Hash algorithm: block-checksum of first and last 64KB + file size
 function computeHash(buffer, size) {
@@ -39,7 +26,7 @@ export async function GET(request) {
     if (limited) return limited;
 
     if (!API_KEY) {
-      return NextResponse.json({ title: "Unknown", subtitles: [] });
+      return apiResponse.success({ title: "Unknown", subtitles: [] });
     }
 
     const { searchParams } = new URL(request.url);
@@ -55,7 +42,7 @@ export async function GET(request) {
         "Content-Type": "application/json"
     };
 
-    if (videoUrl && isValidVideoUrl(videoUrl)) {
+    if (videoUrl && (await isValidUrl(videoUrl))) {
         try {
             const headResp = await fetch(videoUrl, { method: "HEAD", signal: AbortSignal.timeout(10000) });
             if (!headResp.ok) throw new Error(`HEAD request failed: ${headResp.status}`);
@@ -133,11 +120,15 @@ export async function GET(request) {
         }
     }
 
-    return NextResponse.json({
+    return apiResponse.success({
       title: movieTitle,
       subtitles: results,
     });
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return apiResponse.error(
+      err.message || "Subtitle search failed",
+      500,
+      "SUBTITLE_SEARCH_ERROR",
+    );
   }
 }

@@ -56,7 +56,12 @@ import { useMediaHistory } from "./hooks/useMediaHistory";
 import { useVideoState } from "./hooks/useVideoState";
 import { ls } from "@/utils/localStorage";
 
-export default function RoomView({ roomId, initialMeta, initialPreferences }) {
+export default function RoomView({
+  roomId,
+  initialMeta,
+  initialPreferences,
+  initialLocalVideoUrl = "",
+}) {
   const router = useRouter();
   const params = useSearchParams();
   const { toasts, addToast } = useToast();
@@ -144,7 +149,9 @@ export default function RoomView({ roomId, initialMeta, initialPreferences }) {
     room.serverState?.hostId === identity.userId ||
     (!!hostToken && !room.serverState && tokenSub === identity.userId);
 
-  const [localVideoOverride, setLocalVideoOverride] = useState("");
+  const [localVideoOverride, setLocalVideoOverride] = useState(
+    initialLocalVideoUrl,
+  );
 
   const videoState = useVideoState({
     videoUrl: room.serverState?.videoUrl || initialMeta?.videoUrl || "",

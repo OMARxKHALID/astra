@@ -13,6 +13,7 @@ import { redis } from "../utils/redis.js";
 
 const log = DEBUG ? console.log : () => {};
 const warn = DEBUG ? console.warn : () => {};
+const error = console.error;
 
 export default function registerRoomHandlers(
   io,

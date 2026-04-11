@@ -7,6 +7,7 @@ import { LogOut, Shield, Mail, User, Trash2, Database } from "lucide-react";
 import BackButton from "@/components/ui/BackButton";
 import Button from "@/components/ui/Button";
 import { LS_KEYS } from "@/constants/config";
+import { ls } from "@/utils/localStorage";
 
 export default function ProfileView({ user }) {
   const router = useRouter();
@@ -18,7 +19,8 @@ export default function ProfileView({ user }) {
       )
     )
       return;
-    Object.values(LS_KEYS).forEach((key) => localStorage.removeItem(key));
+    Object.values(LS_KEYS).forEach((key) => ls.remove(key));
+    sessionStorage.removeItem(LS_KEYS.userId);
     window.location.reload();
   };
 
@@ -29,7 +31,8 @@ export default function ProfileView({ user }) {
       )
     )
       return;
-    Object.values(LS_KEYS).forEach((key) => localStorage.removeItem(key));
+    Object.values(LS_KEYS).forEach((key) => ls.remove(key));
+    sessionStorage.removeItem(LS_KEYS.userId);
     signOut({ callbackUrl: "/" });
   };
 

@@ -76,16 +76,24 @@ export default async function RoomPage({ params, searchParams }) {
 
   // [Note] Fast-path: Host navigating with ?url=...&h=1 skips DB check (socket server validates token)
   const isHostFastPath = urlParam !== null && urlParam.trim() !== "" && sp?.h === "1";
+  const isLocalOnlyUrl =
+    typeof urlParam === "string" && urlParam.startsWith("blob:");
   if (isHostFastPath) {
     const room = {
       roomId: id,
-      videoUrl: urlParam,
+      videoUrl: isLocalOnlyUrl ? "" : urlParam,
       hasPassword: false,
       isHostHint: true,
       hostId: "",
       createdAt: Date.now(),
     };
-    return <RoomView roomId={id} initialMeta={room} />;
+    return (
+      <RoomView
+        roomId={id}
+        initialMeta={room}
+        initialLocalVideoUrl={isLocalOnlyUrl ? urlParam : ""}
+      />
+    );
   }
 
   const room = await getRoomMeta(id);

@@ -108,6 +108,8 @@ export default function CreateRoomForm({ onResultsChange }) {
 
     const targetUrl = customUrl || url;
     const trimmed = targetUrl.trim();
+    const isLocalOnlyUrl = trimmed.startsWith("blob:");
+    const persistedVideoUrl = isLocalOnlyUrl ? "" : trimmed;
 
     if (trimmed && !isValidUrl(trimmed)) {
       setError("Invalid URL");
@@ -117,38 +119,7 @@ export default function CreateRoomForm({ onResultsChange }) {
     setLoading(true);
     setError("");
 
-    const { roomId, userId, createPromise } = createRoom(trimmed, session);
-
-    // Save hostId for room page to use
-    const { hostId } = await createPromise;
-    localStorage.setItem(`hostId_${roomId}`, hostId || "");
-
-    try {
-      const history = JSON.parse(ls.get(LS_KEYS.history) || "[]");
-      const ytMatch = trimmed.match(
-        /(?:youtube\.com\/watch\?.*v=|youtu\.be\/)([A-Za-z0-9_-]{11})/,
-      );
-      const entry = {
-        roomId,
-        videoUrl: trimmed,
-        thumbnail: ytMatch
-          ? `https://img.youtube.com/vi/${ytMatch[1]}/mqdefault.jpg`
-          : null,
-        title:
-          trimmed.replace(/^https?:\/\//, "").slice(0, 60) ||
-          `Room ${roomId.slice(0, 4)}`,
-        lastVisited: Date.now(),
-      };
-      ls.set(
-        LS_KEYS.history,
-        JSON.stringify(
-          [entry, ...history.filter((h) => h.roomId !== roomId)].slice(
-            0,
-            MAX_HISTORY_ENTRIES,
-          ),
-        ),
-      );
-    } catch {}
+    const { roomId, createPromise } = createRoom(persistedVideoUrl, session);
 
     try {
       await createPromise;
@@ -156,6 +127,35 @@ export default function CreateRoomForm({ onResultsChange }) {
       setError("Failed to create room");
       setLoading(false);
       return;
+    }
+
+    if (!isLocalOnlyUrl) {
+      try {
+        const history = JSON.parse(ls.get(LS_KEYS.history) || "[]");
+        const ytMatch = trimmed.match(
+          /(?:youtube\.com\/watch\?.*v=|youtu\.be\/)([A-Za-z0-9_-]{11})/,
+        );
+        const entry = {
+          roomId,
+          videoUrl: trimmed,
+          thumbnail: ytMatch
+            ? `https://img.youtube.com/vi/${ytMatch[1]}/mqdefault.jpg`
+            : null,
+          title:
+            trimmed.replace(/^https?:\/\//, "").slice(0, 60) ||
+            `Room ${roomId.slice(0, 4)}`,
+          lastVisited: Date.now(),
+        };
+        ls.set(
+          LS_KEYS.history,
+          JSON.stringify(
+            [entry, ...history.filter((h) => h.roomId !== roomId)].slice(
+              0,
+              MAX_HISTORY_ENTRIES,
+            ),
+          ),
+        );
+      } catch {}
     }
 
     router.push(`/room/${roomId}?url=${encodeURIComponent(trimmed)}&h=1`);

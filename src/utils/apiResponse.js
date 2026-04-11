@@ -1,20 +1,33 @@
 import { NextResponse } from "next/server";
 
 export const apiResponse = {
-  success(data = {}, status = 200) {
-    return NextResponse.json(
+  json(payload, { status = 200, headers } = {}) {
+    return NextResponse.json(payload, { status, headers });
+  },
+
+  response(body = null, init = {}) {
+    return new NextResponse(body, init);
+  },
+
+  success(data = {}, status = 200, options = {}) {
+    return this.json(
       {
         success: true,
         data,
         timestamp: new Date().toISOString(),
       },
-      { status }
+      { status, ...options }
     );
   },
 
-  error(message = "An unexpected error occurred", status = 500, code = "INTERNAL_ERROR") {
+  error(
+    message = "An unexpected error occurred",
+    status = 500,
+    code = "INTERNAL_ERROR",
+    options = {},
+  ) {
     console.error(`[API Error] ${status} ${code}: ${message}`);
-    return NextResponse.json(
+    return this.json(
       {
         success: false,
         error: {
@@ -24,7 +37,7 @@ export const apiResponse = {
         },
         timestamp: new Date().toISOString(),
       },
-      { status }
+      { status, ...options }
     );
   },
 

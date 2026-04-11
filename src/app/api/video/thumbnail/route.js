@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { apiResponse } from "@/utils/apiResponse";
 
 function isValidVimeoUrl(urlStr) {
   try {
@@ -15,10 +15,7 @@ export async function GET(request) {
     const url = searchParams.get("url")?.slice(0, 500) || "";
 
     if (!url) {
-      return NextResponse.json(
-        { error: "Missing 'url' parameter" },
-        { status: 400 },
-      );
+      return apiResponse.badRequest("Missing 'url' parameter");
     }
 
     // Vimeo — use oEmbed to get thumbnail_url
@@ -33,8 +30,9 @@ export async function GET(request) {
         );
         if (oembedRes.ok) {
           const data = await oembedRes.json();
-          return NextResponse.json(
+          return apiResponse.success(
             { thumbnailUrl: data.thumbnail_url || null },
+            200,
             {
               headers: {
                 // Thumbnail URLs are stable — cache aggressively
@@ -48,9 +46,9 @@ export async function GET(request) {
       }
     }
 
-    return NextResponse.json({ thumbnailUrl: null });
+    return apiResponse.success({ thumbnailUrl: null });
   } catch (err) {
     console.error(`[thumbnail] Error: ${err.message}`);
-    return NextResponse.json({ thumbnailUrl: null });
+    return apiResponse.success({ thumbnailUrl: null });
   }
 }

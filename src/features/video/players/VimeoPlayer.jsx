@@ -45,8 +45,10 @@ export default function VimeoPlayer({
     const vimeoUrl = `https://vimeo.com/${videoId}`;
     fetch(`/api/video/thumbnail?url=${encodeURIComponent(vimeoUrl)}`)
       .then((r) => r.json())
-      .then((d) => {
-        if (d.thumbnailUrl) setThumbnailUrl(d.thumbnailUrl);
+      .then((json) => {
+        if (json.success && json.data?.thumbnailUrl) {
+          setThumbnailUrl(json.data.thumbnailUrl);
+        }
       })
       .catch(() => {});
   }, [videoId]);

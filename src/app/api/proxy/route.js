@@ -74,14 +74,14 @@ export async function GET(request) {
       return apiResponse.error("File too large", 413, "FILE_TOO_LARGE");
     }
 
-    return new Response(data, { headers });
+    return apiResponse.response(data, { headers });
   } catch (error) {
     return apiResponse.internalError(`Proxy error: ${error.message}`);
   }
 }
 
 export async function OPTIONS() {
-  return new Response(null, {
+  return apiResponse.response(null, {
     headers: {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, OPTIONS",

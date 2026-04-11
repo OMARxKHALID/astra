@@ -42,8 +42,8 @@ export async function searchSubtitles(hash) {
   try {
     const response = await fetch(`/api/subtitles/search?hash=${hash}&lang=en`);
     if (!response.ok) throw new Error(`Search API returned ${response.status}`);
-    const data = await response.json();
-    const results = data.results || [];
+    const json = await response.json();
+    const results = json.success ? json.data?.subtitles || [] : [];
     return results;
   } catch (e) {
     return [];

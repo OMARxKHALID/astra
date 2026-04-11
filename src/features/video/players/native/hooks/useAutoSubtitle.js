@@ -83,9 +83,10 @@ export default function useAutoSubtitle({
         );
         if (ac.signal.aborted) return;
         if (!res.ok) return;
-        const data = await res.json();
-        if (data.subtitles?.length > 0 && onSubtitleChangeRef.current) {
-          const sub = data.subtitles[0];
+        const json = await res.json();
+        const subtitles = json.success ? json.data?.subtitles : [];
+        if (subtitles?.length > 0 && onSubtitleChangeRef.current) {
+          const sub = subtitles[0];
           const baseUrl =
             typeof window !== "undefined" ? window.location.origin : "";
           const dlUrl = `${baseUrl}/api/subtitles/download?url=${encodeURIComponent(sub.url)}`;
