@@ -18,6 +18,9 @@ import TechnicalStats from "./native/components/TechnicalStats";
 import ControlBar from "./native/components/ControlBar";
 import VolumeOsd from "./native/components/VolumeOsd";
 import ErrorOverlay from "./native/components/ErrorOverlay";
+import { memo } from "react";
+
+const MemoControlBar = memo(ControlBar);
 
 export default function NativeVideoPlayer({
   videoRef,
@@ -38,7 +41,7 @@ export default function NativeVideoPlayer({
   hlsQualityEnabled = true,
   scrubPreviewEnabled = true,
   ambilightEnabled = true,
-  onSendScreenshot,
+  onCapture,
   addToast,
   theatreMode = false,
   onToggleTheatre,
@@ -115,10 +118,8 @@ export default function NativeVideoPlayer({
   const containerRef = useRef(null);
   const volumeOsdTimer = useRef(null);
   const seekingRef = useRef(false);
-  // [Note] Mobile double-tap: onDoubleClick unreliable on iOS/Android Chrome,
-  // so we track two taps within 300ms via onTouchEnd timestamps instead.
+  // [Note] Mobile Logic: Track tap timestamps for sophisticated double-tap detection
   const lastTapRef = useRef(0);
-  const singleTapTimerRef = useRef(null);
 
   const { hlsQuality, hlsRef } = useHLS(
     videoRef,
@@ -284,25 +285,44 @@ export default function NativeVideoPlayer({
     [executeDoubleTapAction],
   );
 
-  // [Note] Mobile double-tap: onDoubleClick is unreliable on iOS/Android Chrome.
-  // We detect two taps within 300ms via onTouchEnd timestamps. Single-tap play/pause
-  // is deferred 250ms so it can be cancelled when a double-tap arrives.
+  // [Note] Sophisticated Touch Handler: Eliminates the 250ms delay by using location-aware logic.
+  // Sides (30% L/R): Single-tap shows UI, Double-tap seeks. No playback interruption.
+  // Center (40%): Single-tap toggles Play/Pause IMMEDIATELY. Double-tap toggles Fullscreen.
   const handleTouchEnd = useCallback(
     (e) => {
+      // Bypass browser click delay
+      if (e.cancelable) e.preventDefault();
       showCtrl();
+
       const now = Date.now();
       const since = now - lastTapRef.current;
+      lastTapRef.current = now;
+
+      const touch = e.changedTouches[0];
+      const rect = e.currentTarget.getBoundingClientRect();
+      const xPct = (touch.clientX - rect.left) / rect.width;
+      const isSide = xPct < 0.3 || xPct > 0.7;
+
       if (since < 300 && since > 0) {
-        clearTimeout(singleTapTimerRef.current);
-        lastTapRef.current = 0;
-        const touch = e.changedTouches[0];
-        executeDoubleTapAction(
-          touch.clientX,
-          e.currentTarget.getBoundingClientRect(),
-        );
+        // Double Tap detected
+        lastTapRef.current = 0; // reset to prevent triple-tap detection
+        
+        if (isSide) {
+          // Seek action - Playback state was NOT changed on first tap because it was a side tap
+          executeDoubleTapAction(touch.clientX, rect);
+        } else {
+          // Fullscreen action - Playback state WAS changed on first tap (center).
+          // We toggle it back to restore original state, then toggle fullscreen.
+          handlePlayPause(); 
+          executeDoubleTapAction(touch.clientX, rect);
+        }
       } else {
-        lastTapRef.current = now;
-        singleTapTimerRef.current = setTimeout(handlePlayPause, 250);
+        // First Tap (or single tap)
+        if (!isSide) {
+          // Immediate play/pause for center taps
+          handlePlayPause();
+        }
+        // Side single taps do nothing but showCtrl (already called above)
       }
     },
     [showCtrl, executeDoubleTapAction, handlePlayPause],
@@ -310,7 +330,7 @@ export default function NativeVideoPlayer({
 
   const handleScreenshot = () => {
     const v = videoRef.current;
-    if (!v || !onSendScreenshot) return;
+    if (!v || !onCapture) return;
     try {
       const w = v.videoWidth || 1280,
         h = v.videoHeight || 720;
@@ -320,11 +340,12 @@ export default function NativeVideoPlayer({
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
       ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
-      onSendScreenshot(canvas.toDataURL("image/jpeg", 0.75));
+      onCapture(canvas.toDataURL("image/jpeg", 0.75));
     } catch {
       // cross-origin blocked — silently skip
     }
   };
+
 
   const handlePip = async () => {
     const v = videoRef.current;
@@ -478,7 +499,7 @@ export default function NativeVideoPlayer({
         onDismiss={() => setVideoError(false)}
       />
 
-      <ControlBar
+      <MemoControlBar
         isHost={isHost}
         isPlaying={isPlaying}
         localTime={localTime}
@@ -504,7 +525,7 @@ export default function NativeVideoPlayer({
         isPip={isPip}
         onPipToggle={handlePip}
         screenshotEnabled={screenshotEnabled}
-        onScreenshot={handleScreenshot}
+        onCapture={handleScreenshot}
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}
         ccMenuOpen={ccMenuOpen}

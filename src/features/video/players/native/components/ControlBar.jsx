@@ -44,7 +44,7 @@ export default function ControlBar({
   isPip,
   onPipToggle,
   screenshotEnabled,
-  onScreenshot,
+  onCapture,
   onToggleTheatre,
   theatreMode,
   ccMenuOpen,
@@ -100,7 +100,7 @@ export default function ControlBar({
           <VolumeControl
             volume={volume}
             muted={muted}
-            onVolumeChange={onVolumeChange}
+            onVolumeChange={handleVolumeChange}
             onMuteToggle={onMuteToggle}
           />
 
@@ -209,10 +209,10 @@ export default function ControlBar({
               </button>
             )}
 
-            {screenshotEnabled && onScreenshot && (
+            {screenshotEnabled && onCapture && (
               <button
-                onClick={onScreenshot}
-                title="Screenshot to chat"
+                onClick={onCapture}
+                title="Capture snapshot"
                 className="w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white/40 hover:text-white transition-all active:scale-90"
               >
                 <CameraIcon className="w-3.5 h-3.5" />

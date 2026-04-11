@@ -83,12 +83,6 @@ export class Room {
       : (Date.now() - this.#lastBroadcastTime) / 1000;
     const normalized = Math.max(0, time + (this.paused ? 0 : staleness));
 
-    const canAffectMaster = !this.hostOnlyControls || isHost;
-    if (canAffectMaster && Math.abs(normalized - this.videoTS) > 0.5) {
-      this.videoTS = normalized;
-      this.lastUpdated = Date.now();
-    }
-
     this.tsMap[userId] = normalized;
     this.#tsUpdateMap.set(userId, Date.now());
   }
@@ -156,8 +150,11 @@ export class Room {
       let leaderTime = this.videoTS;
       if (times.length > 2) {
         leaderTime = times[Math.floor(times.length / 2)];
-      } else if (times.length > 0) {
-        leaderTime = Math.max(...times);
+      } else if (times.length === 2) {
+        // [Note] Average for 2 users prevents the 'chase' bias where everyone jumps to the fastest user
+        leaderTime = (times[0] + times[1]) / 2;
+      } else if (times.length === 1) {
+        leaderTime = times[0];
       }
 
       io.to(this.roomId).emit("REC:tsMap", {

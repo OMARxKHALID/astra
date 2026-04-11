@@ -37,7 +37,9 @@ export async function GET(request) {
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) AstraSync/1.0",
         Accept: "*/*",
       },
-      signal: AbortSignal.timeout(30000),
+      // [Note] Prevent buffering the entire response in memory (OOM risk)
+      // fetch() returns a body stream that we pipe directly to the client.
+      signal: AbortSignal.timeout(60000),
     });
 
     if (!response.ok) {
@@ -67,14 +69,10 @@ export async function GET(request) {
       response.headers.get("content-type") || "video/mp4",
     );
     headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
+    if (contentLength) headers.set("Content-Length", contentLength);
 
-    const data = await response.arrayBuffer();
-
-    if (data.byteLength > MAX_RESPONSE_SIZE) {
-      return apiResponse.error("File too large", 413, "FILE_TOO_LARGE");
-    }
-
-    return apiResponse.response(data, { headers });
+    // [Note] Stream the body directly to avoid 100MB+ memory allocations per request
+    return apiResponse.response(response.body, { headers });
   } catch (error) {
     return apiResponse.internalError(`Proxy error: ${error.message}`);
   }

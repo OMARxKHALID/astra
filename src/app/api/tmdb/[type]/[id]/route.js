@@ -1,5 +1,5 @@
 import { apiResponse } from "@/utils/apiResponse";
-import { getMovieDetails, getTVDetails } from "@/features/content/services/tmdbDetails";
+import { getMovieDetails, getTVDetails } from "@/features/content/services/tmdb";
 
 const VALID_ID_PATTERN = /^\d+$/;
 

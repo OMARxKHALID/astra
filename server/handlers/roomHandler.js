@@ -77,7 +77,14 @@ export default function registerRoomHandlers(
     }
 
     const jwtPayload = token ? verifyHostToken(token, roomId) : false;
-    const isHost = Boolean(jwtPayload);
+    let isHost = Boolean(jwtPayload);
+
+    // [Note] Host Persistence: If user is the recorded hostId, grant isHost even without a token.
+    // This ensures hosts promoted via FIFO don't lose status on refresh.
+    if (!isHost && room && room.hostId === clientId) {
+      isHost = true;
+      log(`[auth] Persisted host re-joined: room:${roomId} user:${clientId}`);
+    }
 
     if (token && !jwtPayload) {
       error(`[auth] INVALID host token for room:${roomId} user:${clientId}`);

@@ -34,8 +34,11 @@ export function getLeaderTime(tsMap) {
     const mid = Math.floor(times.length / 2);
     _cachedLeader =
       times.length % 2 !== 0 ? times[mid] : (times[mid - 1] + times[mid]) / 2;
+  } else if (times.length === 2) {
+    // [Note] Average for 2 users prevents the 'chase' bias where everyone jumps to the fastest user
+    _cachedLeader = (times[0] + times[1]) / 2;
   } else {
-    _cachedLeader = Math.max(...times);
+    _cachedLeader = times[0];
   }
 
   _cacheTs = now;

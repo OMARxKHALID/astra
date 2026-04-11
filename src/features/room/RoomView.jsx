@@ -54,6 +54,7 @@ import { useVideoCall } from "./hooks/useVideoCall";
 import { useAmbilight } from "./hooks/useAmbilight";
 import { useMediaHistory } from "./hooks/useMediaHistory";
 import { useVideoState } from "./hooks/useVideoState";
+import { useUrlSync } from "./hooks/useUrlSync";
 import { ls } from "@/utils/localStorage";
 
 export default function RoomView({
@@ -149,9 +150,8 @@ export default function RoomView({
     room.serverState?.hostId === identity.userId ||
     (!!hostToken && !room.serverState && tokenSub === identity.userId);
 
-  const [localVideoOverride, setLocalVideoOverride] = useState(
-    initialLocalVideoUrl,
-  );
+  const [localVideoOverride, setLocalVideoOverride] =
+    useState(initialLocalVideoUrl);
 
   const videoState = useVideoState({
     videoUrl: room.serverState?.videoUrl || initialMeta?.videoUrl || "",
@@ -174,27 +174,13 @@ export default function RoomView({
   // URL sync: keep browser address bar in sync with room content
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  useEffect(() => {
-    if (!effectiveVideoUrl || !pathname) return;
-    const currentParams = new URLSearchParams(searchParams.toString());
-    const isMovieOrYouTube =
-      !videoState.isActiveTv || effectiveVideoUrl.includes("youtube");
-    if (isMovieOrYouTube) {
-      if (currentParams.has("tmdb")) {
-        const newParams = new URLSearchParams();
-        newParams.set("url", effectiveVideoUrl);
-        router.replace(`${pathname}?${newParams.toString()}`, { scroll: false });
-      }
-    } else if (currentParams.has("url") && !currentParams.has("tmdb")) {
-      const newParams = new URLSearchParams();
-      newParams.set("url", effectiveVideoUrl);
-      newParams.set("tmdb", videoState.id);
-      newParams.set("type", "tv");
-      newParams.set("s", videoState.s);
-      newParams.set("e", videoState.e);
-      router.replace(`${pathname}?${newParams.toString()}`, { scroll: false });
-    }
-  }, [effectiveVideoUrl, videoState, pathname, searchParams, router]);
+  useUrlSync({
+    effectiveVideoUrl,
+    videoState,
+    pathname,
+    searchParams,
+    router,
+  });
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   useEffect(() => {
@@ -245,7 +231,7 @@ export default function RoomView({
       sendRef.current({ type: "set_subtitle", url: subtitleUrl });
     }
   }, []);
-  
+
   const handleVideoEnded = useCallback(() => {
     if (!isHost || !videoState.bingeWatchEnabled) return;
 
@@ -387,8 +373,13 @@ export default function RoomView({
               isRoom={true}
               syncHubEnabled={settings.syncHubEnabled}
               screenshotEnabled={settings.screenshotEnabled}
-              onSendScreenshot={(dataUrl) => {
-                sendRef.current?.({ type: "chat", text: "📸 Screenshot", dataUrl });
+              onCapture={(dataUrl) => {
+                sendRef.current?.({
+                  type: "chat",
+                  text: "📸 Screenshot",
+                  dataUrl,
+                });
+
                 addToast("Screenshot sent to chat", "success");
               }}
               isPlaying={room.serverState?.isPlaying}
@@ -425,7 +416,9 @@ export default function RoomView({
                 poster={room.meta?.poster || null}
                 isRoom
                 bingeWatchEnabled={videoState.bingeWatchEnabled}
-                onToggleBingeWatch={isHost ? videoState.toggleBingeWatch : undefined}
+                onToggleBingeWatch={
+                  isHost ? videoState.toggleBingeWatch : undefined
+                }
               />
             )}
           </>

@@ -36,7 +36,7 @@ function VideoPlayer({
   hlsQualityEnabled = true,
   scrubPreviewEnabled = true,
   ambilightEnabled = true,
-  onSendScreenshot,
+  onCapture,
   addToast,
   theatreMode = false,
   onToggleTheatre,
@@ -76,7 +76,7 @@ function VideoPlayer({
         hlsQualityEnabled={hlsQualityEnabled}
         scrubPreviewEnabled={scrubPreviewEnabled}
         ambilightEnabled={ambilightEnabled}
-        onSendScreenshot={onSendScreenshot}
+        onCapture={onCapture}
         addToast={addToast}
         theatreMode={theatreMode}
         onToggleTheatre={onToggleTheatre}

@@ -7,7 +7,7 @@ import {
   getMovieDetails,
   getTVDetails,
   getTVSeasonDetails,
-} from "@/features/content/services/tmdbDetails";
+} from "@/features/content/services/tmdb";
 
 // [Note] React cache: deduplicates getInfoData between generateMetadata and InfoPage within a single render pass
 const getInfoData = cache(async function getInfoData(type, id) {

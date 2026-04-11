@@ -1,5 +1,5 @@
 import { extractMeta } from "@/lib/videoResolver";
-import { getMovieDetails, getTVDetails } from "@/features/content/services/tmdbDetails";
+import { getMovieDetails, getTVDetails } from "@/features/content/services/tmdb";
 import WatchContent from "./WatchContent";
 
 export async function generateMetadata({ searchParams }) {
