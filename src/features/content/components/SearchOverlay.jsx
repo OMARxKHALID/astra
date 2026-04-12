@@ -125,7 +125,16 @@ export default function SearchOverlay({ onClose, onPick }) {
                 onPick(item);
                 onClose();
               }}
-              onMouseEnter={() => setActiveIdx(i)}
+              onMouseEnter={() => {
+                setActiveIdx(i);
+                // [Optimization] Warm up the cache for the detail page before click
+                if (item.type && item.id) {
+                  const url = `/info/${item.type}/${item.id}`;
+                  router.prefetch(url);
+                  // [Note] Prime the Next.js Data Cache by fetching the API route in the background
+                  fetch(`/api/tmdb/${item.type}/${item.id}`).catch(() => {});
+                }
+              }}
               className={`w-full flex gap-4 py-3.5 px-5 bg-transparent border-none cursor-pointer text-left items-center transition-all ${
                 i === activeIdx
                   ? "bg-amber/5 ring-1 ring-inset ring-amber/10"

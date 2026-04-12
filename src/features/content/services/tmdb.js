@@ -2,23 +2,17 @@ const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 export const IMG_BASE_URL = "https://image.tmdb.org/t/p";
 
-/**
- * Normalizes TMDB image paths to full URLs.
- */
 export function getTMDBImageUrl(path, size = "w500") {
   return path ? `${IMG_BASE_URL}/${size}${path}` : null;
 }
 
-/**
- * Standard fetcher for TMDB API with caching.
- */
-export async function fetchTMDB(endpoint, query = "") {
+export async function fetchTMDB(endpoint, query = "", revalidate = 3600) {
   if (!TMDB_API_KEY) return null;
   const sanitizedQuery = query?.slice(0, 500) || "";
   const url = `${TMDB_BASE_URL}/${endpoint}?api_key=${TMDB_API_KEY}${sanitizedQuery}`;
   try {
-    const res = await fetch(url, { 
-      next: { revalidate: 3600 },
+    const res = await fetch(url, {
+      next: { revalidate },
       signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return null;
@@ -28,22 +22,21 @@ export async function fetchTMDB(endpoint, query = "") {
   }
 }
 
-/**
- * Normalizes movie/TV items from list responses into a consistent internal format.
- */
 export function normalizeTMDB(item, forceType) {
   const isTV =
     forceType === "tv" ||
     (!forceType &&
-      (item.media_type === "tv" || item.first_air_date !== undefined || item.name !== undefined));
-  
+      (item.media_type === "tv" ||
+        item.first_air_date !== undefined ||
+        item.name !== undefined));
+
   return {
     id: item.id,
     type: isTV ? "tv" : "movie",
     title: item.title || item.name || "Untitled",
     overview: item.overview || "",
     poster: getTMDBImageUrl(item.poster_path, "w342"),
-    backdrop: getTMDBImageUrl(item.backdrop_path, "original"),
+    backdrop: getTMDBImageUrl(item.backdrop_path, "w1280"),
     backdropMd: getTMDBImageUrl(item.backdrop_path, "w1280"),
     rating: item.vote_average ? parseFloat(item.vote_average.toFixed(1)) : null,
     year: (item.release_date || item.first_air_date || "").slice(0, 4),
@@ -51,9 +44,6 @@ export function normalizeTMDB(item, forceType) {
   };
 }
 
-/**
- * Standard mapping for common details like cast, reviews, and related items.
- */
 function mapCommonDetails(d, type) {
   return {
     credits: (d.credits?.cast || []).slice(0, 10).map((c) => ({
@@ -72,14 +62,14 @@ function mapCommonDetails(d, type) {
       ...normalizeTMDB(hit, hit.media_type || type),
       poster: getTMDBImageUrl(hit.poster_path, "w200"),
     })),
-    trailer: (d.videos?.results || []).find((v) => v.type === "Trailer" && v.site === "YouTube")?.key || null,
+    trailer:
+      (d.videos?.results || []).find(
+        (v) => v.type === "Trailer" && v.site === "YouTube",
+      )?.key || null,
     providers: parseProviders(d),
   };
 }
 
-/**
- * Parses watch providers for a given TMDB response.
- */
 function parseProviders(d) {
   const pRes = d["watch/providers"]?.results || {};
   const localP = pRes.US || Object.values(pRes)[0] || {};
@@ -91,11 +81,11 @@ function parseProviders(d) {
   }));
 }
 
-/**
- * Fetches and maps detailed movie information.
- */
 export async function getMovieDetails(id) {
-  const d = await fetchTMDB(`movie/${id}`, "&append_to_response=credits,recommendations,reviews,videos,watch/providers");
+  const d = await fetchTMDB(
+    `movie/${id}`,
+    "&append_to_response=credits,recommendations,reviews,videos,watch/providers",
+  );
   if (!d) return null;
 
   const runtimeStr = d.runtime
@@ -127,11 +117,11 @@ export async function getMovieDetails(id) {
   };
 }
 
-/**
- * Fetches and maps detailed TV show information.
- */
 export async function getTVDetails(id) {
-  const d = await fetchTMDB(`tv/${id}`, "&append_to_response=credits,recommendations,reviews,videos,watch/providers");
+  const d = await fetchTMDB(
+    `tv/${id}`,
+    "&append_to_response=credits,recommendations,reviews,videos,watch/providers",
+  );
   if (!d) return null;
 
   const seasons = (d.seasons || [])
@@ -161,9 +151,6 @@ export async function getTVDetails(id) {
   };
 }
 
-/**
- * Fetches episodes for a specific TV show season.
- */
 export async function getSeasonData(id, number) {
   const data = await fetchTMDB(`tv/${id}/season/${number}`);
   if (!data) return null;
@@ -188,42 +175,53 @@ export async function getSeasonData(id, number) {
   };
 }
 
-/**
- * Compatibility alias for getSeasonData returning only episodes.
- */
-export async function getTVSeasonDetails(id, seasonNumber) {
-  const res = await getSeasonData(id, seasonNumber);
-  return res ? res.episodes : null;
-}
-
-/**
- * Fetches data for the home/browse view.
- */
 export async function getBrowseData() {
   const [trending, topMovies, topTV, animeTV, animeMovies] = await Promise.all([
-    fetchTMDB("trending/all/week"),
-    fetchTMDB("movie/top_rated"),
-    fetchTMDB("tv/top_rated"),
-    fetchTMDB("discover/tv", "&with_genres=16&with_keywords=210024&sort_by=popularity.desc"),
-    fetchTMDB("discover/movie", "&with_genres=16&with_keywords=210024&sort_by=popularity.desc"),
+    fetchTMDB("trending/all/week", "", 600),
+    fetchTMDB("movie/top_rated", "", 86400),
+    fetchTMDB("tv/top_rated", "", 86400),
+    fetchTMDB(
+      "discover/tv",
+      "&with_genres=16&with_keywords=210024&sort_by=popularity.desc",
+      86400,
+    ),
+    fetchTMDB(
+      "discover/movie",
+      "&with_genres=16&with_keywords=210024&sort_by=popularity.desc",
+      86400,
+    ),
   ]);
 
   const animeAll = [
-    ...(animeTV?.results || []).map((i) => ({ ...normalizeTMDB(i, "tv"), isAnime: true })),
-    ...(animeMovies?.results || []).map((i) => ({ ...normalizeTMDB(i, "movie"), isAnime: true })),
+    ...(animeTV?.results || []).map((i) => ({
+      ...normalizeTMDB(i, "tv"),
+      isAnime: true,
+    })),
+    ...(animeMovies?.results || []).map((i) => ({
+      ...normalizeTMDB(i, "movie"),
+      isAnime: true,
+    })),
   ];
   const seen = new Set();
-  const animeDeduped = animeAll.filter((a) => {
-    if (seen.has(a.id)) return false;
-    seen.add(a.id);
-    return true;
-  }).slice(0, 20);
+  const animeDeduped = animeAll
+    .filter((a) => {
+      if (seen.has(a.id)) return false;
+      seen.add(a.id);
+      return true;
+    })
+    .slice(0, 20);
 
   return {
     hero: (trending?.results || []).slice(0, 8).map((i) => normalizeTMDB(i)),
-    trending: (trending?.results || []).slice(0, 20).map((i) => normalizeTMDB(i)),
-    topMovies: (topMovies?.results || []).slice(0, 20).map((i) => normalizeTMDB(i, "movie")),
-    topSeries: (topTV?.results || []).slice(0, 20).map((i) => normalizeTMDB(i, "tv")),
+    trending: (trending?.results || [])
+      .slice(0, 20)
+      .map((i) => normalizeTMDB(i)),
+    topMovies: (topMovies?.results || [])
+      .slice(0, 20)
+      .map((i) => normalizeTMDB(i, "movie")),
+    topSeries: (topTV?.results || [])
+      .slice(0, 20)
+      .map((i) => normalizeTMDB(i, "tv")),
     anime: animeDeduped,
   };
 }

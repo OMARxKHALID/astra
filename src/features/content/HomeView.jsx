@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import Loading from "@/components/Loading";
 import { useToast } from "@/components/Toast";
 import { persistence } from "@/utils/persistence";
 import ToastContainer from "@/components/Toast";
@@ -20,8 +19,12 @@ export default function HomeView({ initialData }) {
   const { data: session, status } = useSession();
   const { toasts, addToast } = useToast();
 
-  const { handleWatch, handleAstraSync, creating } = useMediaActions(null, null, status === "loading" ? null : session);
-  
+  const { handleWatch, handleAstraSync, creating } = useMediaActions(
+    null,
+    null,
+    status === "loading" ? null : session,
+  );
+
   const [showSearch, setShowSearch] = useState(false);
   const [favorites, setFavorites] = useState([]);
   const [watched, setWatched] = useState([]);
@@ -30,13 +33,13 @@ export default function HomeView({ initialData }) {
   const lastWatchedTitle = watched[0]?.title || "";
 
   useEffect(() => {
-    setFavorites(persistence.getFavorites());
-    setWatched(persistence.getWatched());
-  }, []);
+    const favs = persistence.getFavorites();
+    const history = persistence.getWatched();
+    setFavorites(favs);
+    setWatched(history);
 
-  useEffect(() => {
-    if (watched.length > 0) {
-      const last = watched[0];
+    if (history.length > 0) {
+      const last = history[0];
       fetch(`/api/tmdb/recommendations?id=${last.id}&type=${last.type}`)
         .then((r) => r.json())
         .then((res) => {
@@ -46,7 +49,7 @@ export default function HomeView({ initialData }) {
         })
         .catch(() => {});
     }
-  }, [watched]);
+  }, []);
 
   useEffect(() => {
     const handleKey = (e) => {

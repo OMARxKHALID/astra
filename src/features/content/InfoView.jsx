@@ -43,6 +43,13 @@ export default function InfoView({ initialData, type, id }) {
   useEffect(() => {
     if (type !== "tv" || activeTab !== "episodes" || !id) return;
 
+    // [Note] Skip fetch if we already have this season cached (includes SSR-provided data)
+    if (seasonCache[selectedSeason]?.length > 0) {
+      setEpisodes(seasonCache[selectedSeason]);
+      setEpLoading(false);
+      return;
+    }
+
     setEpLoading(true);
     fetch(`/api/tmdb/tv/${id}/season/${selectedSeason}`)
       .then((r) => r.json())

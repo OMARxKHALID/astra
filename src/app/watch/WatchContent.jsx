@@ -14,6 +14,7 @@ import {
   getNextEpisode,
 } from "@/lib/videoResolver";
 import { createRoom } from "@/features/room/services/createRoom";
+import { useBingeWatch } from "@/features/content/hooks/useBingeWatch";
 import { ls } from "@/utils/localStorage";
 import { LS_KEYS } from "@/constants/config";
 
@@ -46,9 +47,7 @@ export default function WatchContent({ initialMeta }) {
   const [cloudOpen, setCloudOpen] = useState(false);
   const [episodesOpen, setEpisodesOpen] = useState(false);
   const [seasonCache, setSeasonCache] = useState({});
-  const [bingeWatchEnabled, setBingeWatchEnabled] = useState(
-    () => ls.get(LS_KEYS.bingeWatch) === "1",
-  );
+  const [bingeWatchEnabled, handleToggleBinge] = useBingeWatch(addToast);
   const [autoNextUrl, setAutoNextUrl] = useState(null);
 
   const derivedMeta = useMemo(() => {
@@ -142,15 +141,6 @@ export default function WatchContent({ initialMeta }) {
     [navigateToEpisode],
   );
 
-  const handleToggleBinge = useCallback(() => {
-    setBingeWatchEnabled((prev) => {
-      const next = !prev;
-      ls.set(LS_KEYS.bingeWatch, next ? "1" : "0");
-      return next;
-    });
-    const current = ls.get(LS_KEYS.bingeWatch) === "1";
-    addToast(`Binge watch ${current ? "enabled" : "disabled"}`, "info");
-  }, [addToast]);
 
   const handleCreateRoom = useCallback(async () => {
     setCreating(true);

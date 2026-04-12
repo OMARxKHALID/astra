@@ -7,7 +7,7 @@ export async function GET(req) {
     const q = searchParams.get("q")?.slice(0, 200) || "";
     if (!q) return apiResponse.success({ items: [] });
 
-    const data = await fetchTMDB("search/multi", `&query=${encodeURIComponent(q)}&include_adult=false`);
+    const data = await fetchTMDB("search/multi", `&query=${encodeURIComponent(q)}&include_adult=false`, 0);
     const items = (data?.results || [])
       .filter((r) => r.media_type === "movie" || r.media_type === "tv")
       .map((i) => normalizeTMDB(i));

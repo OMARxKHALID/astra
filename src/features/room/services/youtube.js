@@ -51,8 +51,13 @@ export async function searchYouTube(query, pageToken = null) {
     const result = { items, nextPageToken: data.nextPageToken || null };
 
     if (youtubeCache.size >= MAX_CACHE_ENTRIES) {
-      const firstKey = youtubeCache.keys().next().value;
-      youtubeCache.delete(firstKey);
+      const now = Date.now();
+      for (const [key, val] of youtubeCache) {
+        if (now - val.timestamp > CACHE_TTL_MS) youtubeCache.delete(key);
+      }
+      if (youtubeCache.size >= MAX_CACHE_ENTRIES) {
+        youtubeCache.delete(youtubeCache.keys().next().value);
+      }
     }
     youtubeCache.set(cacheKey, { data: result, timestamp: Date.now() });
 

@@ -5,6 +5,7 @@ import { onYTReady } from "../utils";
 import { YT_AD_POLL_MS as AD_POLL_MS } from "@/constants/config";
 import { usePlayerControls } from "../hooks/usePlayerControls";
 import { useVideoHotkeys } from "../hooks/useVideoHotkeys";
+import { useThumbnailColors } from "../hooks/useThumbnailColors";
 import EmbedControls from "../controls/EmbedControls";
 import VideoPoster from "../controls/VideoPoster";
 
@@ -60,27 +61,11 @@ export default function YouTubePlayer({
     ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
     : null;
 
+  const ambiColors = useThumbnailColors(thumbnailUrl, ambilightEnabled);
+
   useEffect(() => {
-    if (!onAmbiColors || !thumbnailUrl || !ambilightEnabled) return;
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = thumbnailUrl;
-    img.onload = () => {
-      try {
-        const canvas = document.createElement("canvas");
-        canvas.width = 1;
-        canvas.height = 1;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, 1, 1);
-        const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
-        onAmbiColors({ r, g, b });
-      } catch {
-        onAmbiColors(null);
-      }
-    };
-    img.onerror = () => onAmbiColors(null);
-    return () => onAmbiColors(null);
-  }, [thumbnailUrl, onAmbiColors, ambilightEnabled]);
+    onAmbiColors?.(ambiColors);
+  }, [ambiColors, onAmbiColors]);
 
   // [Note] Ad Skipper: If getVideoData mismatch → seekTo(9999) to force completion
   const startAdWatch = useCallback(() => {

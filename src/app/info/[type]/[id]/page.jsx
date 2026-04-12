@@ -6,20 +6,20 @@ import InfoView from "@/features/content/InfoView";
 import {
   getMovieDetails,
   getTVDetails,
-  getTVSeasonDetails,
+  getSeasonData,
 } from "@/features/content/services/tmdb";
 
 // [Note] React cache: deduplicates getInfoData between generateMetadata and InfoPage within a single render pass
 const getInfoData = cache(async function getInfoData(type, id) {
   try {
-    const data =
-      type === "tv" ? await getTVDetails(id) : await getMovieDetails(id);
+    // [Note] Parallel fetch: season 1 episodes load simultaneously with details since we already know the ID
+    const [data, season] = await Promise.all([
+      type === "tv" ? getTVDetails(id) : getMovieDetails(id),
+      type === "tv" ? getSeasonData(id, 1) : Promise.resolve(null),
+    ]);
     if (!data) return null;
 
-    if (type === "tv" && data.id) {
-      const eps = await getTVSeasonDetails(data.id, 1);
-      if (eps) data.initialEpisodes = eps;
-    }
+    if (season) data.initialEpisodes = season.episodes;
 
     return data;
   } catch (e) {

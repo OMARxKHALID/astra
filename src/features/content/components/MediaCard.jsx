@@ -1,12 +1,25 @@
 "use client";
 import Image from "next/image";
 import { Film, Play, Star } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { memo } from "react";
 
 function MediaCard({ item, onPick }) {
+  const router = useRouter();
+
+  const handleHover = () => {
+    // [Optimization] Warm up the cache for the info page and prime the TMDB data cache
+    if (item?.id) {
+      const type = item.type || "movie";
+      router.prefetch(`/info/${type}/${item.id}`);
+      fetch(`/api/tmdb/${type}/${item.id}`).catch(() => {});
+    }
+  };
+
   return (
     <button
       onClick={() => onPick(item)}
+      onMouseEnter={handleHover}
       className="shrink-0 w-[160px] bg-transparent border-none p-0 text-left cursor-pointer group outline-none relative hover:z-50"
     >
       <div className="w-[160px] h-[240px] rounded-[1rem] overflow-hidden bg-[var(--color-surface)] relative transition-transform duration-200 group-hover:scale-105 shadow-lg">

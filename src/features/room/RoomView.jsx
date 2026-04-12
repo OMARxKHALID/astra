@@ -171,7 +171,7 @@ export default function RoomView({
     isHost,
   });
 
-  // URL sync: keep browser address bar in sync with room content
+  // [Note] URL sync: keep browser address bar in sync with room content for direct-entry shareability
   const pathname = usePathname();
   const searchParams = useSearchParams();
   useUrlSync({
@@ -345,10 +345,8 @@ export default function RoomView({
           <URLBar
             onLoad={(u, s) => {
               if (u.startsWith("blob:")) {
-                // Local file: play on this client only, do not broadcast to room
                 setLocalVideoOverride(u);
               } else {
-                // Remote URL: clear any local override and sync to room
                 setLocalVideoOverride("");
                 sendRef.current?.({
                   type: "change_video",

@@ -104,7 +104,6 @@ export function useRoomSocket(props) {
       const resultsInWindow = Date.now() < preventSyncUntil.current;
       const hasControl = canControl !== false;
 
-      // 1. Play/Pause state enforcement
       if (!resultsInWindow && hasControl) {
         if (s.isPlaying && v.paused && !checkBuffering(v)) {
           suppressNativeFeedback();
@@ -121,7 +120,6 @@ export function useRoomSocket(props) {
 
       const drift = leaderTime - v.currentTime;
 
-      // 2. Initial alignment (Requires HAVE_FUTURE_DATA)
       if (
         !initialSeekDone.current &&
         v.readyState >= 3 &&
@@ -131,7 +129,6 @@ export function useRoomSocket(props) {
         initialSeekDone.current = true;
       }
 
-      // 3. Playback Rate Correction (Speed Sync) - Requires HAVE_ENOUGH_DATA
       const targetRate = s.playbackRate || 1;
       if (v.readyState < 4 || checkBuffering(v) || resultsInWindow) {
         if (Math.abs(v.playbackRate - targetRate) > 0.005) {
@@ -148,7 +145,6 @@ export function useRoomSocket(props) {
         onDriftStatus?.(syncStatus);
       }
 
-      // Apply dynamic speed correction for drift
       const speedSyncActive = speedSyncEnabled !== false;
       const baseRate =
         speedSyncActive || s?.hostId === userId
@@ -208,7 +204,7 @@ export function useRoomSocket(props) {
       });
       startSyncLoop();
 
-      // Time Synchronization Protocol (Clock Calibration)
+      // [Note] calibrate: simple ping/pong used to record server-to-client clock offset
       const calibrate = () => {
         const t0 = Date.now();
         socket.emit("PING_CLOCK", t0, (serverTime) => {
@@ -264,7 +260,7 @@ export function useRoomSocket(props) {
             p.current.onLateJoin?.(state.currentTime);
         }
 
-        // System messages on state changes
+        // [Note] state diff: notify users about changes to security or playback restrictions
         if (!isInit && prev) {
           const sys = (text) =>
             p.current.onChatMessage?.({
@@ -345,7 +341,6 @@ export function useRoomSocket(props) {
         }
       },
 
-      // Chat and Participants
       chat: (m) => p.current.onChatMessage?.(m),
       chat_update: (m) => p.current.onChatUpdate?.(m),
       chat_history: (m) =>
@@ -366,7 +361,6 @@ export function useRoomSocket(props) {
         );
       },
 
-      // WebRTC Call Signaling
       "CALL:user_joined": (m) =>
         p.current.onCallEvent?.({ type: "call_user_joined", ...m }),
       "CALL:user_left": (m) =>
@@ -380,8 +374,8 @@ export function useRoomSocket(props) {
     Object.entries(handlers).forEach(([ev, fn]) => socket.on(ev, fn));
   }, [startSyncLoop, suppressNativeFeedback]);
 
-  // Initial connection and lifecycle
   useEffect(() => {
+    // [Note] Lifecycle: Room connection and tab visibility sync
     connect();
 
     const handleVisibilityChange = () => {
@@ -395,7 +389,6 @@ export function useRoomSocket(props) {
         if (leaderTime === 0) return;
 
         const drift = leaderTime - v.currentTime;
-        // [Note] Large drift after backgrounding requires a Hard Sync jump
         if (Math.abs(drift) > 1.5) {
           v.currentTime = leaderTime;
           lockSync(1500);
@@ -416,7 +409,6 @@ export function useRoomSocket(props) {
     };
   }, [connect, lockSync]);
 
-  // Periodic heartbeat reporting local status to the server
   useEffect(() => {
     const int = setInterval(() => {
       const v = p.current.videoRef?.current;

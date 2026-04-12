@@ -105,12 +105,10 @@ export default function NativeVideoPlayer({
     } catch {}
   }, []);
 
-  // Persist subStyle to localStorage
   useEffect(() => {
     ls.set(LS_KEYS.subStyle, JSON.stringify(subStyle));
   }, [subStyle]);
 
-  // Persist subtitleOffset to localStorage
   useEffect(() => {
     ls.set(LS_KEYS.subtitleOffset, String(subtitleOffset));
   }, [subtitleOffset]);
@@ -118,6 +116,7 @@ export default function NativeVideoPlayer({
   const containerRef = useRef(null);
   const volumeOsdTimer = useRef(null);
   const seekingRef = useRef(false);
+
   // [Note] Mobile Logic: Track tap timestamps for sophisticated double-tap detection
   const lastTapRef = useRef(0);
 
@@ -290,7 +289,6 @@ export default function NativeVideoPlayer({
   // Center (40%): Single-tap toggles Play/Pause IMMEDIATELY. Double-tap toggles Fullscreen.
   const handleTouchEnd = useCallback(
     (e) => {
-      // Bypass browser click delay
       if (e.cancelable) e.preventDefault();
       showCtrl();
 
@@ -304,25 +302,18 @@ export default function NativeVideoPlayer({
       const isSide = xPct < 0.3 || xPct > 0.7;
 
       if (since < 300 && since > 0) {
-        // Double Tap detected
-        lastTapRef.current = 0; // reset to prevent triple-tap detection
-        
+        lastTapRef.current = 0;
+
         if (isSide) {
-          // Seek action - Playback state was NOT changed on first tap because it was a side tap
           executeDoubleTapAction(touch.clientX, rect);
         } else {
-          // Fullscreen action - Playback state WAS changed on first tap (center).
-          // We toggle it back to restore original state, then toggle fullscreen.
-          handlePlayPause(); 
+          handlePlayPause();
           executeDoubleTapAction(touch.clientX, rect);
         }
       } else {
-        // First Tap (or single tap)
         if (!isSide) {
-          // Immediate play/pause for center taps
           handlePlayPause();
         }
-        // Side single taps do nothing but showCtrl (already called above)
       }
     },
     [showCtrl, executeDoubleTapAction, handlePlayPause],
@@ -341,11 +332,8 @@ export default function NativeVideoPlayer({
       if (!ctx) return;
       ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
       onCapture(canvas.toDataURL("image/jpeg", 0.75));
-    } catch {
-      // cross-origin blocked — silently skip
-    }
+    } catch {}
   };
-
 
   const handlePip = async () => {
     const v = videoRef.current;

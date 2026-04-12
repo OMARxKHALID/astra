@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { buildEmbedUrl, detectServer, extractMeta } from "@/lib/videoResolver";
+import { useBingeWatch } from "@/features/content/hooks/useBingeWatch";
 import { ls } from "@/utils/localStorage";
 import { LS_KEYS } from "@/constants/config";
 
@@ -7,9 +8,7 @@ export function useVideoState({ videoUrl, params, sendRef, isHost, addToast }) {
   const [episodesOpen, setEpisodesOpen] = useState(false);
   const [seasonCache, setSeasonCache] = useState({});
 
-  const [bingeWatchEnabled, setBingeWatchEnabled] = useState(
-    () => ls.get(LS_KEYS.bingeWatch) === "1",
-  );
+  const [bingeWatchEnabled, toggleBingeWatch] = useBingeWatch(addToast);
 
   const parsed = useMemo(() => {
     const meta = extractMeta(videoUrl);
@@ -31,24 +30,13 @@ export function useVideoState({ videoUrl, params, sendRef, isHost, addToast }) {
 
   const isActiveTv = parsed.type === "tv" && !!parsed.id;
 
-  const toggleBingeWatch = useCallback(() => {
-    setBingeWatchEnabled((prev) => {
-      const next = !prev;
-      ls.set(LS_KEYS.bingeWatch, next ? "1" : "0");
-      return next;
-    });
-    const current = ls.get(LS_KEYS.bingeWatch) === "1";
-    if (addToast) {
-      addToast(`Binge watch ${current ? "enabled" : "disabled"}`, "info");
-    }
-  }, [addToast]);
 
   const handleSelectEpisode = useCallback(
     (season, episode) => {
-      // 1. Only allow if we've identified the movie/show ID
+      // [Note] Validation: ID required for episode switching
       if (!parsed.id) return;
 
-      // 2. We trigger the command (Server will definitively authorize since it's the source of truth)
+      // [Note] Remote Dispatch: Server verifies host status before broadcasting change_video
       const server = detectServer(videoUrl) || "vidlink";
       const newUrl = buildEmbedUrl(server, parsed.id, "tv", season, episode);
       if (newUrl && sendRef?.current) {
