@@ -100,7 +100,7 @@ export default function ControlBar({
           <VolumeControl
             volume={volume}
             muted={muted}
-            onVolumeChange={handleVolumeChange}
+            onVolumeChange={onVolumeChange}
             onMuteToggle={onMuteToggle}
           />
 
