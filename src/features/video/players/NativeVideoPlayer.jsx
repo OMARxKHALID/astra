@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback } from "react";
-import { LS_KEYS } from "@/constants/config";
+import { LS_KEYS, DEBUG } from "@/constants/config";
 import { ls } from "@/utils/localStorage";
 import { usePlayerControls } from "../hooks/usePlayerControls";
 import { useVideoHotkeys } from "../hooks/useVideoHotkeys";
@@ -19,6 +19,8 @@ import ControlBar from "./native/components/ControlBar";
 import VolumeOsd from "./native/components/VolumeOsd";
 import ErrorOverlay from "./native/components/ErrorOverlay";
 import { memo } from "react";
+
+const logError = DEBUG ? console.error : () => {};
 
 const MemoControlBar = memo(ControlBar);
 
@@ -82,7 +84,9 @@ export default function NativeVideoPlayer({
   useEffect(() => {
     try {
       setRecentSubs(JSON.parse(ls.get(LS_KEYS.recentSubs) || "[]"));
-    } catch {}
+    } catch (e) {
+      logError(`[native]`, e);
+    }
   }, []);
 
   useEffect(() => {
@@ -98,13 +102,17 @@ export default function NativeVideoPlayer({
           shadow: parsed.shadow || "soft",
         });
       }
-    } catch {}
+    } catch (e) {
+      logError(`[native]`, e);
+    }
   }, []);
 
   useEffect(() => {
     try {
       setSubtitleOffset(parseFloat(ls.get(LS_KEYS.subtitleOffset) || "0"));
-    } catch {}
+    } catch (e) {
+      logError(`[native]`, e);
+    }
   }, []);
 
   useEffect(() => {
@@ -349,7 +357,9 @@ export default function NativeVideoPlayer({
       if (!ctx) return;
       ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
       onCapture(canvas.toDataURL("image/jpeg", 0.75));
-    } catch {}
+    } catch (e) {
+      logError(`[native]`, e);
+    }
   };
 
   const handlePip = async () => {

@@ -1,4 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { DEBUG } from "@/constants/config";
+
+const logError = DEBUG ? console.error : () => {};
 
 export function useRecord(onSend, onError) {
   const [isRecording, setIsRecording] = useState(false);
@@ -120,7 +123,7 @@ export function useRecord(onSend, onError) {
         });
       }, 1000);
     } catch (err) {
-      console.error(`[record] Microphone access denied: ${err.message}`);
+      logError(`[record] Microphone access denied:`, err);
       onError?.(
         "Microphone access denied. Please check your browser permissions.",
       );

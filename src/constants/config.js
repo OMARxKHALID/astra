@@ -16,6 +16,13 @@ export const MAX_HISTORY_ENTRIES = 12;
 export const MAX_RECENT_SUBS = 5;
 
 export const YT_AD_POLL_MS = 800;
+export const YT_POLL_INTERVAL_MS = 250;
+
+export const STREAM_SERVERS = {
+  vidlink: "https://vidlink.pro",
+  multiembed: "https://multiembed.mov",
+  moviesapi: "https://moviesapi.to",
+};
 
 export const SOCKET_PING_INTERVAL = 20_000;
 export const SOCKET_PING_TIMEOUT = 30_000;

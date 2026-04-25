@@ -4,7 +4,7 @@ import {
 } from "@/utils/videoValidation";
 
 import { ls } from "@/utils/localStorage";
-import { LS_KEYS } from "@/constants/config";
+import { LS_KEYS, STREAM_SERVERS } from "@/constants/config";
 
 const YT_PATTERNS = [
   /(?:youtube\.com\/watch\?.*v=|youtu\.be\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/,
@@ -19,9 +19,16 @@ const VIMEO_PATTERNS = [
 
 // Single source of truth for embed servers — used by both classifyUrl and detectServer
 const SERVER_DOMAINS = {
-  vidlink: ["vidlink.pro"],
-  superembed: ["multiembed.mov", "streamingnow.mov", "superembed.stream"],
-  moviesapi: ["moviesapi.to", "moviesapi.club"],
+  vidlink: [STREAM_SERVERS.vidlink.replace("https://", "")],
+  superembed: [
+    STREAM_SERVERS.multiembed.replace("https://", ""),
+    "streamingnow.mov",
+    "superembed.stream",
+  ],
+  moviesapi: [
+    STREAM_SERVERS.moviesapi.replace("https://", ""),
+    "moviesapi.club",
+  ],
 };
 
 const EMBED_DOMAINS = Object.values(SERVER_DOMAINS).flat();
@@ -196,16 +203,16 @@ export function buildEmbedUrl(server, tmdbId, type, season = 1, episode = 1) {
   switch (server) {
     case "vidlink":
       return isTV
-        ? `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}?primaryColor=f59e0b&autoplay=true`
-        : `https://vidlink.pro/movie/${tmdbId}?primaryColor=f59e0b&autoplay=true`;
+        ? `${STREAM_SERVERS.vidlink}/tv/${tmdbId}/${season}/${episode}?primaryColor=f59e0b&autoplay=true`
+        : `${STREAM_SERVERS.vidlink}/movie/${tmdbId}?primaryColor=f59e0b&autoplay=true`;
     case "superembed":
       return isTV
-        ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}`
-        : `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`;
+        ? `${STREAM_SERVERS.multiembed}/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}`
+        : `${STREAM_SERVERS.multiembed}/?video_id=${tmdbId}&tmdb=1`;
     case "moviesapi":
       return isTV
-        ? `https://moviesapi.to/tv/${tmdbId}-${season}-${episode}`
-        : `https://moviesapi.to/movie/${tmdbId}`;
+        ? `${STREAM_SERVERS.moviesapi}/tv/${tmdbId}-${season}-${episode}`
+        : `${STREAM_SERVERS.moviesapi}/movie/${tmdbId}`;
     default:
       return null;
   }

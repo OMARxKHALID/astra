@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { DEBUG } from "@/constants/config";
 import ToastContainer, { useToast } from "@/components/Toast";
 import AutoNextOverlay from "@/components/AutoNextOverlay";
 import Button from "@/components/ui/Button";
@@ -27,6 +28,8 @@ const WatchHeader = dynamic(
   () => import("@/features/content/components/WatchHeader"),
   { ssr: false },
 );
+
+const logError = DEBUG ? console.error : () => {};
 
 export default function WatchContent({ initialMeta }) {
   const params = useSearchParams();
@@ -156,7 +159,7 @@ export default function WatchContent({ initialMeta }) {
         `/room/${roomId}?url=${encodeURIComponent(url)}&tmdb=${tmdbId}&type=${type}&h=1`,
       );
     } catch (err) {
-      console.error("Failed to sync room", err);
+      logError("[watch] Failed to sync room:", err);
       setCreating(false);
     }
   }, [url, tmdbId, type, router, session]);

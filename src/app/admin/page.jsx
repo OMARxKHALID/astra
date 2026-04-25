@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { DEBUG } from "@/constants/config";
 import {
   Users,
   Tv,
@@ -66,6 +67,7 @@ function AdminContent() {
   const [apiStatus, setApiStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const logError = DEBUG ? console.error : () => {};
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [ready, setReady] = useState(false);
   const [secretInput, setSecretInput] = useState("");
@@ -127,7 +129,7 @@ function AdminContent() {
       const json = await res.json();
       if (json.success) setApiStatus(json.data);
     } catch (err) {
-      console.error("Failed to fetch API status", err);
+      logError("[admin] Failed to fetch API status:", err);
     }
   };
 

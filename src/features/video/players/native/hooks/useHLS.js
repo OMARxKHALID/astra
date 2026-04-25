@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { DEBUG } from "@/constants/config";
+
+const logError = DEBUG ? console.error : () => {};
 
 const MAX_RETRIES = 3;
 const RETRY_DELAYS = [1000, 2000, 4000];
@@ -123,7 +126,7 @@ export default function useHLS(videoRef, videoUrl, sourceType, setVideoError) {
           });
         });
       } catch (err) {
-        console.error(`[hls] Error loading hls.js: ${err.message}`);
+        logError("[hls] Error loading hls.js:", err);
       }
     };
 

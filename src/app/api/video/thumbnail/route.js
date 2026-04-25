@@ -48,7 +48,7 @@ export async function GET(request) {
 
     return apiResponse.success({ thumbnailUrl: null });
   } catch (err) {
-    console.error(`[thumbnail] Error: ${err.message}`);
+    console.error("[thumbnail] Error:", err);
     return apiResponse.success({ thumbnailUrl: null });
   }
 }

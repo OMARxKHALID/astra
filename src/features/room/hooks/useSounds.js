@@ -1,6 +1,9 @@
 "use client";
 
 import { useCallback, useRef } from "react";
+import { DEBUG } from "@/constants/config";
+
+const logError = DEBUG ? console.error : () => {};
 
 export function useSounds() {
   const audioCtxRef = useRef(null);
@@ -36,7 +39,7 @@ export function useSounds() {
       osc.start();
       osc.stop(ctx.currentTime + 0.6);
     } catch (err) {
-      console.error(`[sounds] Failed to play ping: ${err.message}`);
+      logError(`[sounds] Failed to play ping:`, err);
     }
   }, []);
 

@@ -2,12 +2,14 @@
 
 import { useRef, useState, useEffect, useCallback } from "react";
 import { onYTReady } from "../utils";
-import { YT_AD_POLL_MS as AD_POLL_MS } from "@/constants/config";
+import { YT_AD_POLL_MS as AD_POLL_MS, YT_POLL_INTERVAL_MS, DEBUG } from "@/constants/config";
 import { usePlayerControls } from "../hooks/usePlayerControls";
 import { useVideoHotkeys } from "../hooks/useVideoHotkeys";
 import { useThumbnailColors } from "../hooks/useThumbnailColors";
 import EmbedControls from "../controls/EmbedControls";
 import VideoPoster from "../controls/VideoPoster";
+
+const logError = DEBUG ? console.error : () => {};
 
 export default function YouTubePlayer({
   videoRef,
@@ -83,23 +85,31 @@ export default function YouTubePlayer({
           try {
             p.mute();
             p.seekTo(9999, true);
-          } catch {}
+          } catch (e) {
+            logError(`[yt]`, e);
+          }
         } else {
           if (isAdPlayingRef.current) {
             setIsAdPlaying(false);
             isAdPlayingRef.current = false;
             try {
               p.unMute();
-            } catch {}
+            } catch (e) {
+            logError(`[yt]`, e);
+          }
             if (pendingSeekRef.current !== null) {
               try {
                 p.seekTo(pendingSeekRef.current, true);
-              } catch {}
+              } catch (e) {
+            logError(`[yt]`, e);
+          }
               pendingSeekRef.current = null;
             }
           }
         }
-      } catch {}
+      } catch (e) {
+            logError(`[yt]`, e);
+          }
     }, AD_POLL_MS);
   }, [videoId]);
 
@@ -114,14 +124,18 @@ export default function YouTubePlayer({
       playerRef.current.setVolume(volume * 100);
       if (muted) playerRef.current.mute();
       else playerRef.current.unMute();
-    } catch {}
+    } catch (e) {
+            logError(`[yt]`, e);
+          }
   }, [volume, muted, ready]);
 
   useEffect(() => {
     if (!ready || !playerRef.current) return;
     try {
       playerRef.current.setPlaybackRate?.(playbackRate);
-    } catch {}
+    } catch (e) {
+            logError(`[yt]`, e);
+          }
   }, [playbackRate, ready]);
 
   useEffect(() => {
@@ -138,7 +152,9 @@ export default function YouTubePlayer({
         try {
           if (playerRef.current) playerRef.current.seekTo?.(t, true);
           else pendingSeekRef.current = t;
-        } catch {}
+        } catch (e) {
+            logError(`[yt]`, e);
+          }
       },
       get duration() {
         try {
@@ -180,7 +196,9 @@ export default function YouTubePlayer({
       set playbackRate(r) {
         try {
           playerRef.current?.setPlaybackRate?.(r);
-        } catch {}
+        } catch (e) {
+            logError(`[yt]`, e);
+          }
       },
       get isBuffering() {
         return isBufferingRef.current;
@@ -191,7 +209,9 @@ export default function YouTubePlayer({
           setTimeout(() => {
             try {
               playerRef.current?.playVideo?.();
-            } catch {}
+            } catch (e) {
+            logError(`[yt]`, e);
+          }
             resolve();
           }, 200);
         });
@@ -199,7 +219,9 @@ export default function YouTubePlayer({
       pause() {
         try {
           playerRef.current?.pauseVideo?.();
-        } catch {}
+        } catch (e) {
+            logError(`[yt]`, e);
+          }
       },
     };
   }, [videoRef, ready]);
@@ -216,8 +238,10 @@ export default function YouTubePlayer({
         setBufferedPct(
           (playerRef.current.getVideoLoadedFraction?.() ?? 0) * 100,
         );
-      } catch {}
-    }, 250);
+      } catch (e) {
+            logError(`[yt]`, e);
+          }
+    }, YT_POLL_INTERVAL_MS);
     return () => clearInterval(t);
   }, []);
 
@@ -249,13 +273,17 @@ export default function YouTubePlayer({
             if (pendingSeekRef.current !== null) {
               try {
                 playerRef.current?.seekTo?.(pendingSeekRef.current, true);
-              } catch {}
+              } catch (e) {
+            logError(`[yt]`, e);
+          }
               pendingSeekRef.current = null;
             }
             if (isPlayingRef.current) {
               try {
                 playerRef.current?.playVideo?.();
-              } catch {}
+              } catch (e) {
+            logError(`[yt]`, e);
+          }
             }
           },
           onStateChange: (e) => {
@@ -280,7 +308,9 @@ export default function YouTubePlayer({
       stopAdWatch();
       try {
         playerRef.current?.destroy?.();
-      } catch {}
+      } catch (e) {
+            logError(`[yt]`, e);
+          }
       playerRef.current = null;
       div.remove();
       setReady(false);
@@ -299,7 +329,9 @@ export default function YouTubePlayer({
       } else {
         playerRef.current.unloadModule?.("captions");
       }
-    } catch {}
+    } catch (e) {
+            logError(`[yt]`, e);
+          }
   }, [ccEnabled, ready]);
 
   function handlePlayPause() {
