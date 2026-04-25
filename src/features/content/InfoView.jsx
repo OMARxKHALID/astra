@@ -158,7 +158,7 @@ export default function InfoView({ initialData, type, id }) {
               </div>
 
               <div className="flex flex-wrap items-center justify-center gap-2 w-full relative p-1.5 lg:p-2 lg:pr-[1rem]">
-                <Button onClick={() => handleWatch(1, 1)} className="flex-1 min-w-[70px] sm:flex-none">
+                <Button onClick={() => handleWatch()} className="flex-1 min-w-[70px] sm:flex-none">
                   <Play size={13} fill="currentColor" />
                   Watch
                 </Button>

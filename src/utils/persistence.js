@@ -1,5 +1,5 @@
 import { ls } from "./localStorage";
-import { LS_KEYS } from "@/constants/config";
+import { LS_KEYS, MAX_HISTORY_ENTRIES } from "@/constants/config";
 
 export const persistence = {
   getWatched: () => {
@@ -68,5 +68,28 @@ export const persistence = {
 
   isFavorite: (id, type) => {
     return persistence.getFavorites().some(f => f.id === id && f.type === type);
-  }
+  },
+
+  saveToHistory: (videoUrl, tmdbId, currentTime = 0) => {
+    if (!videoUrl || !tmdbId) return;
+    try {
+      const history = JSON.parse(ls.get(LS_KEYS.history) || "[]");
+      const entry = {
+        roomId: "watch",
+        videoUrl,
+        tmdbId,
+        title: videoUrl.replace(/^https?:\/\//, "").slice(0, 60),
+        videoTS: currentTime,
+        lastVisited: Date.now(),
+        isHost: true,
+      };
+      const existing = history.findIndex((h) => h.videoUrl === videoUrl);
+      if (existing >= 0) {
+        history[existing] = entry;
+      } else {
+        history.unshift(entry);
+      }
+      ls.set(LS_KEYS.history, JSON.stringify(history.slice(0, MAX_HISTORY_ENTRIES)));
+    } catch {}
+  },
 };

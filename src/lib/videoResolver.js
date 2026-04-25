@@ -3,6 +3,9 @@ import {
   isStrictVideoUrl,
 } from "@/utils/videoValidation";
 
+import { ls } from "@/utils/localStorage";
+import { LS_KEYS } from "@/constants/config";
+
 const YT_PATTERNS = [
   /(?:youtube\.com\/watch\?.*v=|youtu\.be\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/,
   /youtube\.com\/shorts\/([A-Za-z0-9_-]{11})/,
@@ -285,3 +288,29 @@ export const serverOptions = [
   { label: "SuperEmbed", value: "superembed" },
   { label: "MoviesAPI", value: "moviesapi" },
 ];
+
+export function getLastPosition(videoUrl) {
+  if (!videoUrl) return null;
+  try {
+    const history = JSON.parse(ls.get(LS_KEYS.history) || "[]");
+    
+    const entry = history.find((h) => h.videoUrl === videoUrl);
+    if (entry?.videoTS > 10) return entry.videoTS;
+    
+    const urlParts = videoUrl.match(/\/tv\/(\d+)/);
+    const showId = urlParts ? urlParts[1] : null;
+    if (showId) {
+      const showEntries = history.filter(
+        (h) => h.videoUrl && h.videoUrl.includes(`/tv/${showId}/`)
+      );
+      if (showEntries.length > 0) {
+        showEntries.sort((a, b) => (b.lastVisited || 0) - (a.lastVisited || 0));
+        const latestEntry = showEntries[0];
+        if (latestEntry?.videoTS > 10) return latestEntry.videoTS;
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}

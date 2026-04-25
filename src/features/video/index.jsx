@@ -45,6 +45,7 @@ function VideoPlayer({
   onServerChange,
   onEnded,
   onClearVideo,
+  initialTime = 0,
   isHost = true,
   isRoom = false,
   syncHubEnabled = false,
@@ -86,6 +87,7 @@ function VideoPlayer({
         isHost={isHost}
         isRoom={isRoom}
         onClearVideo={onClearVideo}
+        initialTime={initialTime}
       />
     );
 

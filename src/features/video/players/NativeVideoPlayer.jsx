@@ -49,6 +49,7 @@ export default function NativeVideoPlayer({
   onToggleEpisodes,
   onEnded,
   onClearVideo,
+  initialTime = 0,
   isHost = true,
 }) {
   const [localTime, setLocalTime] = useState(0);
@@ -190,6 +191,21 @@ export default function NativeVideoPlayer({
       v.removeEventListener("leavepictureinpicture", leave);
     };
   }, [videoRef]);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || initialTime <= 0) return;
+    if (v.readyState >= 1) {
+      v.currentTime = initialTime;
+    } else {
+      const onCan = () => {
+        v.currentTime = initialTime;
+        v.removeEventListener("loadedmetadata", onCan);
+      };
+      v.addEventListener("loadedmetadata", onCan);
+      return () => v.removeEventListener("loadedmetadata", onCan);
+    }
+  }, [initialTime]);
 
   const handlePlayPause = useCallback(() => {
     if (!canControl) return;

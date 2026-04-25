@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useRef, useCallback, useEffect, useState } from "react";
-import { getNextEpisode } from "@/lib/videoResolver";
+import { getNextEpisode, getLastPosition } from "@/lib/videoResolver";
 import { createPortal } from "react-dom";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { MessageSquare as ChatIcon, Users as UsersIcon } from "lucide-react";
@@ -410,6 +410,7 @@ export default function RoomView({
               onServerChange={videoState.handleServerChange}
               onEnded={handleVideoEnded}
               onClearVideo={handleClearVideo}
+              initialTime={getLastPosition(effectiveVideoUrl) || 0}
               addToast={addToast}
             />
             {videoState.episodesOpen && videoState.id && (

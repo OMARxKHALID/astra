@@ -12,11 +12,11 @@ import {
   detectServer,
   extractMeta,
   getNextEpisode,
+  getLastPosition,
 } from "@/lib/videoResolver";
 import { createRoom } from "@/features/room/services/createRoom";
 import { useBingeWatch } from "@/features/content/hooks/useBingeWatch";
-import { ls } from "@/utils/localStorage";
-import { LS_KEYS } from "@/constants/config";
+import { persistence } from "@/utils/persistence";
 
 const VideoPlayer = dynamic(() => import("@/features/video"), { ssr: false });
 const EpisodeSelector = dynamic(
@@ -65,6 +65,11 @@ export default function WatchContent({ initialMeta }) {
   const isActiveTv = metaType === "tv";
 
   const cloudRef = useRef(null);
+
+  useEffect(() => {
+    if (!url || !activeTmdbId) return;
+    persistence.saveToHistory(url, activeTmdbId, getLastPosition(url) || 0);
+  }, [url, activeTmdbId]);
 
   useEffect(() => {
     const onClickOutside = (ev) => {
@@ -156,6 +161,19 @@ export default function WatchContent({ initialMeta }) {
     }
   }, [url, tmdbId, type, router, session]);
 
+  const handleTimeUpdate = useCallback((currentTime) => {
+    if (!url || currentTime < 5) return;
+    persistence.saveToHistory(url, activeTmdbId, currentTime);
+  }, [url, activeTmdbId]);
+
+  const handlePlay = useCallback((time) => {
+    handleTimeUpdate(time);
+  }, [handleTimeUpdate]);
+
+  const handlePause = useCallback((time) => {
+    handleTimeUpdate(time);
+  }, [handleTimeUpdate]);
+
   const handleServerChange = useCallback((newServerValue) => {
     const newUrl = buildEmbedUrl(
       newServerValue,
@@ -239,6 +257,9 @@ export default function WatchContent({ initialMeta }) {
           hasEpisodes={isActiveTv}
           onToggleEpisodes={() => setEpisodesOpen(!episodesOpen)}
           onEnded={handleVideoEnded}
+          onPlay={handlePlay}
+          onPause={handlePause}
+          initialTime={getLastPosition(url) || 0}
         />
 
         {episodesOpen && activeTmdbId && (
