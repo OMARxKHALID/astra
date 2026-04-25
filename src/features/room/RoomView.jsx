@@ -255,6 +255,15 @@ export default function RoomView({
     setAutoNextUrl(null);
   }, []);
 
+  const handleClearVideo = useCallback(() => {
+    if (!isHost) return;
+    sendRef.current?.({
+      type: "change_video",
+      videoUrl: "",
+      subtitleUrl: "",
+    });
+  }, [isHost]);
+
   const isTheatre = settings.theatreMode && !isFullscreen;
   const leaderTime = getLeaderTime(room.tsMapState);
 
@@ -400,6 +409,7 @@ export default function RoomView({
               }
               onServerChange={videoState.handleServerChange}
               onEnded={handleVideoEnded}
+              onClearVideo={handleClearVideo}
               addToast={addToast}
             />
             {videoState.episodesOpen && videoState.id && (

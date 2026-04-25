@@ -74,6 +74,7 @@ export default function useVideoEvents({
     };
 
     const onErr = () => {
+      if (!v.currentSrc || v.currentSrc === "") return;
       if (!videoUrl && !v.currentSrc) return;
 
       // Sometimes a video tag errors before currentSrc is set (e.g., CORS preflight fail on the src attribute itself)
@@ -168,16 +169,15 @@ export default function useVideoEvents({
         ],
       };
 
-      const [title, detail] = MAP[v.error.code] || [
-        "Playback Failed",
-        isDirectSource
-          ? "This custom URL could not be played. Try a direct .mp4, .m3u8, YouTube, or embed URL."
-          : "Something went wrong playing this video. Try a different URL.",
-      ];
+       const [title, detail] = MAP[v.error.code] || [
+         "Playback Failed",
+         isDirectSource
+           ? "This custom URL could not be played. Try a direct .mp4, .m3u8, YouTube, or embed URL."
+           : "Something went wrong playing this video. Try a different URL.",
+       ];
 
-      setVideoError({ title, detail });
-      addToast?.(`${title}: ${detail}`, "error");
-    };
+setVideoError({ title, detail });
+     };
 
     v.addEventListener("timeupdate", onTime);
     v.addEventListener("loadedmetadata", onMeta);

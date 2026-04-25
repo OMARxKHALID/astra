@@ -48,6 +48,7 @@ export default function NativeVideoPlayer({
   hasEpisodes = false,
   onToggleEpisodes,
   onEnded,
+  onClearVideo,
   isHost = true,
 }) {
   const [localTime, setLocalTime] = useState(0);
@@ -484,7 +485,10 @@ export default function NativeVideoPlayer({
           setVideoError(false);
           videoRef.current?.load();
         }}
-        onDismiss={() => setVideoError(false)}
+        onDismiss={() => {
+          setVideoError(false);
+          onClearVideo?.();
+        }}
       />
 
       <MemoControlBar

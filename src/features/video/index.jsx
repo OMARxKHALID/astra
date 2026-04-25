@@ -44,6 +44,7 @@ function VideoPlayer({
   onToggleEpisodes,
   onServerChange,
   onEnded,
+  onClearVideo,
   isHost = true,
   isRoom = false,
   syncHubEnabled = false,
@@ -84,6 +85,7 @@ function VideoPlayer({
         onToggleEpisodes={onToggleEpisodes}
         isHost={isHost}
         isRoom={isRoom}
+        onClearVideo={onClearVideo}
       />
     );
 
