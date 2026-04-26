@@ -22,6 +22,7 @@ import { MobileRoomSheets } from "./components/MobileRoomSheets";
 import { IncomingCallBanner } from "./components/IncomingCallBanner";
 import CatchUpBanner from "./components/CatchUpBanner";
 import Button from "@/components/ui/Button";
+import RoomErrorBoundary from "@/components/RoomErrorBoundary";
 
 const SettingsPanel = dynamic(() => import("./components/SettingsPanel"), {
   ssr: false,
@@ -448,20 +449,22 @@ export default function RoomView({
                 </span>
               </div>
             </div>
-            <ChatSidebar
-              messages={room.messages}
-              userId={identity.userId}
-              displayNames={room.displayNames}
-              onSend={(t, d) =>
-                sendRef.current?.({ type: "chat", text: t, dataUrl: d })
-              }
-              onReaction={(ts, emoji) =>
-                sendRef.current?.({ type: "reaction", ts, emoji })
-              }
-              typingUsers={room.typingUsers}
-              onTyping={() => sendRef.current?.({ type: "typing" })}
-              addToast={addToast}
-            />
+            <RoomErrorBoundary label="Chat">
+              <ChatSidebar
+                messages={room.messages}
+                userId={identity.userId}
+                displayNames={room.displayNames}
+                onSend={(t, d) =>
+                  sendRef.current?.({ type: "chat", text: t, dataUrl: d })
+                }
+                onReaction={(ts, emoji) =>
+                  sendRef.current?.({ type: "reaction", ts, emoji })
+                }
+                typingUsers={room.typingUsers}
+                onTyping={() => sendRef.current?.({ type: "typing" })}
+                addToast={addToast}
+              />
+            </RoomErrorBoundary>
           </>
         }
         usersContent={
@@ -564,22 +567,24 @@ export default function RoomView({
         />
       )}
 
-      <CallGrid
-        isJoined={call.isJoined}
-        isJoining={call.isJoining}
-        isCalling={call.isCalling}
-        localStream={call.localStream}
-        remoteStreams={call.remoteStreams}
-        remoteStatus={call.remoteStatus}
-        displayNames={room.displayNames}
-        onJoin={call.joinCall}
-        onLeave={call.leaveCall}
-        onToggleMic={call.toggleMic}
-        onToggleCam={call.toggleCam}
-        micActive={call.micActive}
-        camActive={call.camActive}
-        mirrorCameraEnabled={settings.mirrorCameraEnabled}
-      />
+      <RoomErrorBoundary label="Video call">
+        <CallGrid
+          isJoined={call.isJoined}
+          isJoining={call.isJoining}
+          isCalling={call.isCalling}
+          localStream={call.localStream}
+          remoteStreams={call.remoteStreams}
+          remoteStatus={call.remoteStatus}
+          displayNames={room.displayNames}
+          onJoin={call.joinCall}
+          onLeave={call.leaveCall}
+          onToggleMic={call.toggleMic}
+          onToggleCam={call.toggleCam}
+          micActive={call.micActive}
+          camActive={call.camActive}
+          mirrorCameraEnabled={settings.mirrorCameraEnabled}
+        />
+      </RoomErrorBoundary>
 
       <IncomingCallBanner
         visible={call.isCalling && !call.isJoined && !call.isJoining}
@@ -618,20 +623,22 @@ export default function RoomView({
                 ✕
               </Button>
             </div>
-            <ChatSidebar
-              messages={room.messages}
-              userId={identity.userId}
-              displayNames={room.displayNames}
-              onSend={(t, d) =>
-                sendRef.current?.({ type: "chat", text: t, dataUrl: d })
-              }
-              onReaction={(ts, emoji) =>
-                sendRef.current?.({ type: "reaction", ts, emoji })
-              }
-              typingUsers={room.typingUsers}
-              onTyping={() => sendRef.current?.({ type: "typing" })}
-              addToast={addToast}
-            />
+            <RoomErrorBoundary label="Chat">
+              <ChatSidebar
+                messages={room.messages}
+                userId={identity.userId}
+                displayNames={room.displayNames}
+                onSend={(t, d) =>
+                  sendRef.current?.({ type: "chat", text: t, dataUrl: d })
+                }
+                onReaction={(ts, emoji) =>
+                  sendRef.current?.({ type: "reaction", ts, emoji })
+                }
+                typingUsers={room.typingUsers}
+                onTyping={() => sendRef.current?.({ type: "typing" })}
+                addToast={addToast}
+              />
+            </RoomErrorBoundary>
           </div>,
           document.fullscreenElement,
         )}

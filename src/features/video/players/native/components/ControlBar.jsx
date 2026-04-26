@@ -87,7 +87,8 @@ export default function ControlBar({
           <button
             onClick={onPlayPause}
             disabled={!canControl}
-            className={`w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius-pill)] border border-white/10 transition-all active:scale-90 shrink-0
+            aria-label={isPlaying ? "Pause" : "Play"}
+            className={`w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius-pill)] border border-white/10 transition-all active:scale-90 shrink-0 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:outline-none
               ${canControl ? "bg-white/10 hover:bg-white/10 text-white" : "bg-white/10 text-white/40 cursor-not-allowed"}`}
           >
             {isPlaying ? (
@@ -133,7 +134,8 @@ export default function ControlBar({
                 if (!ccMenuOpen) setCcMenuOpen(true);
                 else if (subtitleUrl) setShowSubtitles((s) => !s);
               }}
-              className={`w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] transition-all shrink-0
+              aria-label={showSubtitles ? "Disable subtitles" : "Subtitles"}
+              className={`w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] transition-all shrink-0 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:outline-none
                 ${subtitleUrl && showSubtitles ? "bg-amber text-void" : subtitleUrl ? "bg-amber/20 text-amber" : "text-white/40 hover:text-white"}`}
             >
               <CcIcon className="w-3.5 h-3.5" />
@@ -143,9 +145,10 @@ export default function ControlBar({
               <div className="flex items-center gap-0.5 pl-0.5 animate-in fade-in slide-in-from-left-2 duration-200">
                 <div className="w-px h-4 bg-white/10 mx-0.5 shrink-0" />
                 {[
-                  { id: "search", Icon: SearchIcon },
+                  { id: "search", Icon: SearchIcon, label: "Search subtitles" },
                   {
                     id: "recent",
+                    label: "Recent subtitles",
                     Icon: ({ className }) => (
                       <svg
                         className={className}
@@ -161,12 +164,17 @@ export default function ControlBar({
                       </svg>
                     ),
                   },
-                  { id: "settings", Icon: SettingsIcon },
-                ].map(({ id, Icon }) => (
+                  {
+                    id: "settings",
+                    Icon: SettingsIcon,
+                    label: "Subtitle settings",
+                  },
+                ].map(({ id, Icon, label }) => (
                   <button
                     key={id}
                     onClick={() => setActivePanel(id)}
-                    className={`w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] transition-all hover:bg-white/10 ${activePanel === id ? "text-amber" : "text-white/40 hover:text-white"}`}
+                    aria-label={label}
+                    className={`w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] transition-all hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:outline-none ${activePanel === id ? "text-amber" : "text-white/40 hover:text-white"}`}
                   >
                     <Icon className="w-3.5 h-3.5" />
                   </button>
@@ -176,7 +184,8 @@ export default function ControlBar({
                     setActivePanel(null);
                     setCcMenuOpen(false);
                   }}
-                  className="w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] text-white/40 hover:text-white transition-all hover:bg-white/10 shrink-0"
+                  aria-label="Close subtitle menu"
+                  className="w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] text-white/40 hover:text-white transition-all hover:bg-white/10 shrink-0 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:outline-none"
                 >
                   <svg
                     className="w-3 h-3"
@@ -201,8 +210,11 @@ export default function ControlBar({
             {pipSupported && (
               <button
                 onClick={onPipToggle}
-                title="Picture-in-Picture"
-                className={`w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] border transition-all active:scale-90
+                aria-label={
+                  isPip ? "Exit picture-in-picture" : "Picture-in-picture"
+                }
+                title={isPip ? "Exit picture-in-picture" : "Picture-in-picture"}
+                className={`w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] border transition-all active:scale-90 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:outline-none
                   ${isPip ? "bg-amber/20 text-amber border-amber/30" : "bg-white/10 hover:bg-white/10 border-white/10 text-white/40 hover:text-white"}`}
               >
                 <PipIcon className="w-3.5 h-3.5" />
@@ -212,8 +224,9 @@ export default function ControlBar({
             {screenshotEnabled && onCapture && (
               <button
                 onClick={onCapture}
+                aria-label="Capture snapshot"
                 title="Capture snapshot"
-                className="w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white/40 hover:text-white transition-all active:scale-90"
+                className="w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white/40 hover:text-white transition-all active:scale-90 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:outline-none"
               >
                 <CameraIcon className="w-3.5 h-3.5" />
               </button>
@@ -221,8 +234,9 @@ export default function ControlBar({
             {onToggleTheatre && (
               <button
                 onClick={onToggleTheatre}
+                aria-label={theatreMode ? "Exit theatre mode" : "Theatre mode"}
                 title={theatreMode ? "Exit theatre (T)" : "Theatre mode (T)"}
-                className={`w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] border transition-all active:scale-90
+                className={`w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] border transition-all active:scale-90 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:outline-none
                   ${theatreMode ? "bg-amber/20 text-amber border-amber/30" : "bg-white/10 hover:bg-white/10 border-white/10 text-white/40 hover:text-white"}`}
               >
                 <TheatreIconSvg className="w-3.5 h-3.5" />
@@ -233,8 +247,9 @@ export default function ControlBar({
           {isHost && isRoom && hasEpisodes && onToggleEpisodes && (
             <button
               onClick={onToggleEpisodes}
+              aria-label="Episode list"
               title="Episodes"
-              className="episodes-toggle-btn w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white/40 hover:text-white transition-all active:scale-90"
+              className="episodes-toggle-btn w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white/40 hover:text-white transition-all active:scale-90 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:outline-none"
             >
               <EpisodesIcon className="w-4 h-4" />
             </button>
@@ -242,7 +257,8 @@ export default function ControlBar({
 
           <button
             onClick={onFullscreenToggle}
-            className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white transition-all active:scale-90 shrink-0"
+            aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+            className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white transition-all active:scale-90 shrink-0 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:outline-none"
           >
             {fullscreen ? (
               <CompressIcon className="w-4 h-4" />
@@ -282,7 +298,10 @@ function HlsQualitySelector({ hlsQuality, hlsRef }) {
 
   return (
     <div className="relative group hidden lg:block">
-      <button className="flex items-center h-8 px-3 rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/15 transition-colors border border-white/10 text-[10px] font-mono font-bold text-white/60 hover:text-white shrink-0 cursor-pointer">
+      <button
+        aria-label="Select stream quality"
+        className="flex items-center h-8 px-3 rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/15 transition-colors border border-white/10 text-[10px] font-mono font-bold text-white/60 hover:text-white shrink-0 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:outline-none"
+      >
         {hlsQuality.level}
         <svg className="w-3 h-3 ml-1" viewBox="0 0 12 12" fill="currentColor">
           <path d="M2 4l4 4 4-4" />

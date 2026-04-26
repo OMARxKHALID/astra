@@ -32,7 +32,8 @@ export function RoomNavbar({
         )}
         <button
           onClick={() => router.push("/")}
-          className="flex items-center gap-1.5 px-2 py-1.5 sm:px-3 sm:py-2 rounded-full glass-card hover:border-white/10 transition-all active:scale-95 shrink-0"
+          aria-label="Go to home"
+          className="flex items-center gap-1.5 px-2 py-1.5 sm:px-3 sm:py-2 rounded-full glass-card hover:border-white/10 transition-all active:scale-95 shrink-0 focus-visible:ring-2 focus-visible:ring-amber/70 focus-visible:outline-none"
         >
           <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-amber flex items-center justify-center font-display font-black text-void text-[10px] sm:text-[11.5px] leading-none">
             AS
@@ -55,8 +56,9 @@ export function RoomNavbar({
       <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
         <button
           onClick={onToggleCall}
-          title="Toggle video call"
-          className={`relative w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full glass-card transition-all shrink-0
+          aria-label={isCallJoined ? "Leave video call" : "Join video call"}
+          title={isCallJoined ? "Leave video call" : "Join video call"}
+          className={`relative w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full glass-card transition-all shrink-0 focus-visible:ring-2 focus-visible:ring-amber/70 focus-visible:outline-none
             ${isCallJoined ? "text-amber border-amber/30 bg-amber/10 shadow-[0_0_15px_rgba(var(--color-amber-rgb),0.2)]" : isCalling ? "text-amber/70 border-amber/20" : "text-muted hover:text-white"}`}
         >
           <VideoIcon className="w-3.5 h-3.5 sm:w-4 h-4" />
@@ -70,8 +72,9 @@ export function RoomNavbar({
         {onToggleSidebar && (
           <button
             onClick={onToggleSidebar}
+            aria-label={showSidebar ? "Hide sidebar" : "Show sidebar"}
             title={showSidebar ? "Hide sidebar" : "Show sidebar"}
-            className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full glass-card transition-all shrink-0 ${
+            className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full glass-card transition-all shrink-0 focus-visible:ring-2 focus-visible:ring-amber/70 focus-visible:outline-none ${
               showSidebar ? "text-amber" : "text-muted hover:text-white"
             }`}
           >
@@ -90,8 +93,9 @@ export function RoomNavbar({
               addToast("Video URL copied", "success");
             }
           }}
+          aria-label="Copy video URL"
           title="Copy video URL"
-          className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full glass-card text-muted hover:text-white transition-all shrink-0"
+          className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full glass-card text-muted hover:text-white transition-all shrink-0 focus-visible:ring-2 focus-visible:ring-amber/70 focus-visible:outline-none"
         >
           <LinkIcon className="w-3.5 h-3.5 sm:w-4 h-4" />
         </button>
@@ -100,16 +104,18 @@ export function RoomNavbar({
 
         <button
           onClick={() => settings.setShowShortcuts(true)}
+          aria-label="Keyboard shortcuts"
           title="Keyboard shortcuts"
-          className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full glass-card text-muted hover:text-white transition-all shrink-0"
+          className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full glass-card text-muted hover:text-white transition-all shrink-0 focus-visible:ring-2 focus-visible:ring-amber/70 focus-visible:outline-none"
         >
           <KeyboardIcon className="w-4 h-4" />
         </button>
 
         <button
           onClick={() => settings.setShowSettings(true)}
+          aria-label="Settings"
           title="Settings"
-          className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full glass-card text-muted hover:text-white shrink-0"
+          className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full glass-card text-muted hover:text-white shrink-0 focus-visible:ring-2 focus-visible:ring-amber/70 focus-visible:outline-none"
         >
           <SettingsIcon className="w-3.5 h-3.5 sm:w-4 h-4" />
         </button>
@@ -122,8 +128,9 @@ export function RoomNavbar({
               addToast("Room link copied", "success");
             }
           }}
+          aria-label="Copy room invite link"
           title="Copy room link"
-          className="h-8 sm:h-9 px-2.5 sm:px-4 rounded-full bg-amber text-void font-black text-[10px] sm:text-[11.5px] uppercase tracking-widest hover:brightness-110 transition-all shadow-lg flex items-center gap-1.5 ring-1 ring-amber/40 shrink-0"
+          className="h-8 sm:h-9 px-2.5 sm:px-4 rounded-full bg-amber text-void font-black text-[10px] sm:text-[11.5px] uppercase tracking-widest hover:brightness-110 transition-all shadow-lg flex items-center gap-1.5 ring-1 ring-amber/40 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber"
         >
           <ShareIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
           <span className="hidden sm:inline">Invite</span>

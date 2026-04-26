@@ -8,6 +8,7 @@ import Button from "@/components/ui/Button";
 export default function MediaHero({ items, onPick, onPlay, onSync, loading }) {
   const [idx, setIdx] = useState(0);
   const [fading, setFading] = useState(false);
+  const [paused, setPaused] = useState(false);
   const timer = useRef(null);
 
   const go = useCallback((next) => {
@@ -18,11 +19,19 @@ export default function MediaHero({ items, onPick, onPlay, onSync, loading }) {
     }, 260);
   }, []);
 
+  const goManual = useCallback(
+    (next) => {
+      setPaused(true);
+      go(next);
+    },
+    [go],
+  );
+
   useEffect(() => {
-    if (items.length < 2) return;
+    if (items.length < 2 || paused) return;
     timer.current = setInterval(() => go((i) => (i + 1) % items.length), 8000);
     return () => clearInterval(timer.current);
-  }, [items.length, go]);
+  }, [items.length, go, paused]);
 
   if (!items.length) return <div className="h-[750px] bg-void" />;
 
@@ -128,11 +137,43 @@ export default function MediaHero({ items, onPick, onPlay, onSync, loading }) {
 
       {items.length > 1 && (
         <div className="absolute bottom-[100px] right-6 lg:right-12 flex gap-1.5 items-center z-20">
+          {paused && (
+            <button
+              onClick={() => setPaused(false)}
+              aria-label="Resume auto-advance"
+              className="w-5 h-5 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/40 hover:text-white transition-all mr-1 focus-visible:ring-2 focus-visible:ring-amber/70 focus-visible:outline-none"
+            >
+              <svg
+                className="w-2.5 h-2.5"
+                viewBox="0 0 10 10"
+                fill="currentColor"
+              >
+                <path d="M3 2l5 3-5 3V2z" />
+              </svg>
+            </button>
+          )}
+          {!paused && (
+            <button
+              onClick={() => setPaused(true)}
+              aria-label="Pause auto-advance"
+              className="w-5 h-5 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/40 hover:text-white transition-all mr-1 focus-visible:ring-2 focus-visible:ring-amber/70 focus-visible:outline-none"
+            >
+              <svg
+                className="w-2.5 h-2.5"
+                viewBox="0 0 10 10"
+                fill="currentColor"
+              >
+                <rect x="2" y="2" width="2.5" height="6" rx="0.5" />
+                <rect x="5.5" y="2" width="2.5" height="6" rx="0.5" />
+              </svg>
+            </button>
+          )}
           {items.map((_, i) => (
             <Button
               key={i}
               variant="custom"
-              onClick={() => go(i)}
+              onClick={() => goManual(i)}
+              aria-label={`Go to slide ${i + 1}`}
               className={`!h-1.5 !min-h-0 !min-w-0 !p-0 !rounded-[var(--radius-pill)] !border-none !ring-0 transition-all duration-300 ${i === idx ? "w-[22px] !bg-amber shadow-[0_0_12px_rgba(var(--color-amber-rgb),0.4)]" : "w-1.5 !bg-white/10"}`}
             />
           ))}

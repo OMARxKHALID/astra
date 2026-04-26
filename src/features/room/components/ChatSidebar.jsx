@@ -294,7 +294,16 @@ export default function ChatSidebar({
                 </button>
                 <div className="flex items-center gap-1.5 ml-1">
                   <span className="relative w-1.5 h-1.5 rounded-full bg-danger animate-pulse shrink-0" />
-                  <span className="text-[11.5px] font-mono text-danger font-bold tracking-[0.1em] mt-px">
+                  <span
+                    className="text-[11.5px] font-mono text-danger font-bold tracking-[0.1em] mt-px"
+                    aria-live="polite"
+                    aria-label={`Recording: ${Math.floor(recordingTime / 60)
+                      .toString()
+                      .padStart(
+                        2,
+                        "0",
+                      )}:${(recordingTime % 60).toString().padStart(2, "0")}`}
+                  >
                     {Math.floor(recordingTime / 60)
                       .toString()
                       .padStart(2, "0")}
@@ -305,6 +314,7 @@ export default function ChatSidebar({
 
               <canvas
                 ref={waveformCanvasRef}
+                aria-hidden="true"
                 className="h-3 w-16 shrink-0 opacity-70"
                 style={{ width: "64px", height: "12px" }}
               />

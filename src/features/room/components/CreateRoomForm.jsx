@@ -26,7 +26,7 @@ export default function CreateRoomForm({ onResultsChange }) {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [mode, setMode] = useState("url"); // "url" | "search"
+  const [mode, setMode] = useState("url");
   const [ytResults, setYtResults] = useState([]);
   const [ytLoading, setYtLoading] = useState(false);
   const [ytLoadingMore, setYtLoadingMore] = useState(false);
@@ -272,11 +272,11 @@ export default function CreateRoomForm({ onResultsChange }) {
                   type="text"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                   placeholder={
-                     mode === "url"
-                       ? `${EXTERNAL_SERVICES.youtubeWatch}…`
-                       : "Search for a movie, trailer…"
-                   }
+                  placeholder={
+                    mode === "url"
+                      ? `${EXTERNAL_SERVICES.youtubeWatch}…`
+                      : "Search for a movie, trailer…"
+                  }
                   className="w-full h-14 border rounded-[2rem] pl-12 pr-4 text-sm font-sans outline-none transition-all focus:border-[var(--color-amber)] focus:shadow-[0_0_20px_rgba(var(--color-amber-rgb),0.1)]"
                   style={{
                     backgroundColor: "var(--color-surface)",
@@ -387,11 +387,12 @@ export default function CreateRoomForm({ onResultsChange }) {
             loading={loading}
             className="w-full mt-2 !font-bold uppercase tracking-widest"
           >
-            {!loading && (mode === "url" ? (
-              <PlusIcon className="w-4 h-4" />
-            ) : (
-              <Search className="w-4 h-4" />
-            ))}
+            {!loading &&
+              (mode === "url" ? (
+                <PlusIcon className="w-4 h-4" />
+              ) : (
+                <Search className="w-4 h-4" />
+              ))}
             {mode === "url"
               ? url.trim()
                 ? "Create Room"

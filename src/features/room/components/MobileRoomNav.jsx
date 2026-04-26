@@ -1,7 +1,19 @@
 import React from "react";
-import { MessageSquare as ChatIcon, Users as UsersIcon, Video as VideoIcon } from "lucide-react";
+import {
+  MessageSquare as ChatIcon,
+  Users as UsersIcon,
+  Video as VideoIcon,
+} from "lucide-react";
 
-export function MobileRoomNav({ room, isTheatre, isFullscreen, isCallJoined, isCalling, onToggleCall, inCallCount = 0 }) {
+export function MobileRoomNav({
+  room,
+  isTheatre,
+  isFullscreen,
+  isCallJoined,
+  isCalling,
+  onToggleCall,
+  inCallCount = 0,
+}) {
   if (isFullscreen || isTheatre) return null;
 
   return (
@@ -11,12 +23,14 @@ export function MobileRoomNav({ room, isTheatre, isFullscreen, isCallJoined, isC
         active={isCallJoined}
         icon={
           <div className="relative">
-             <VideoIcon className={`w-5 h-5 ${isCallJoined || isCalling ? "text-amber" : ""}`} />
-             {isCallJoined ? (
-               <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber rounded-full animate-pulse border border-void" />
-             ) : isCalling ? (
-               <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-amber/60 rounded-full animate-pulse" />
-             ) : null}
+            <VideoIcon
+              className={`w-5 h-5 ${isCallJoined || isCalling ? "text-amber" : ""}`}
+            />
+            {isCallJoined ? (
+              <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber rounded-full animate-pulse border border-void" />
+            ) : isCalling ? (
+              <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-amber/60 rounded-full animate-pulse" />
+            ) : null}
           </div>
         }
         onClick={onToggleCall}
@@ -38,7 +52,7 @@ export function MobileRoomNav({ room, isTheatre, isFullscreen, isCallJoined, isC
         }}
       />
       <MobileTabBtn
-        label={`People${inCallCount > 0 ? ` (${inCallCount}🎥)` : ""}`}
+        label={inCallCount > 0 ? `People (${inCallCount})` : "People"}
         active={room.mobileSheet === "users"}
         icon={
           <div className="relative">
@@ -60,7 +74,7 @@ function MobileTabBtn({ label, active, onClick, icon }) {
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center gap-1 px-4 py-1.5 rounded-[var(--radius-pill)] transition-all text-[10px] font-bold uppercase tracking-wider ${active ? "text-amber bg-amber/10" : "text-muted hover:text-white/40"}`}
+      className={`flex flex-col items-center gap-1 px-4 py-1.5 rounded-[var(--radius-pill)] transition-all text-[10px] font-bold uppercase tracking-wider focus-visible:ring-2 focus-visible:ring-amber/70 focus-visible:outline-none ${active ? "text-amber bg-amber/10" : "text-muted hover:text-white/40"}`}
     >
       {icon}
       {label}

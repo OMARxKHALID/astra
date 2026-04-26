@@ -18,16 +18,16 @@ import {
   Check,
   Pencil,
 } from "lucide-react";
-import { useToast } from "@/components/Toast";
 import Button from "@/components/ui/Button";
 
-function Toggle({ enabled, onToggle, disabled = false }) {
+function Toggle({ enabled, onToggle, disabled = false, label }) {
   return (
     <button
       onClick={onToggle}
       disabled={disabled}
       aria-pressed={enabled}
-      className={`relative w-10 h-5 rounded-full transition-all duration-300 shrink-0
+      aria-label={label}
+      className={`relative w-10 h-5 rounded-full transition-all duration-300 shrink-0 focus-visible:ring-2 focus-visible:ring-amber/70 focus-visible:outline-none
         ${enabled ? "bg-amber shadow-[0_0_10px_rgba(var(--color-amber-rgb), 0.35)]" : "bg-white/10"}
         ${disabled ? "opacity-30 cursor-not-allowed" : "cursor-pointer"}`}
     >
@@ -61,7 +61,12 @@ function Row({ label, description, enabled, onToggle, disabled, icon }) {
           )}
         </div>
       </div>
-      <Toggle enabled={enabled} onToggle={onToggle} disabled={disabled} />
+      <Toggle
+        enabled={enabled}
+        onToggle={onToggle}
+        disabled={disabled}
+        label={label}
+      />
     </div>
   );
 }

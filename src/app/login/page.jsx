@@ -14,7 +14,7 @@ const providers = [
     id: "google",
     name: "Google",
     icon: <GoogleIcon />,
-    style: "bg-white hover:bg-gray-100 text-[#1f2937] border-white/20",
+    style: "bg-white hover:bg-gray-100 text-void border-white/20",
   },
   {
     id: "discord",
