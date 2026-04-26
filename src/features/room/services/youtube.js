@@ -12,6 +12,8 @@ const decodeHtmlEntities = (str) =>
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">");
 
+import { EXTERNAL_SERVICES } from "@/constants/config";
+
 export function normalizeYouTubeVideo(item) {
   return {
     id: item.id.videoId,
@@ -20,7 +22,7 @@ export function normalizeYouTubeVideo(item) {
     thumb:
       item.snippet.thumbnails?.medium?.url ||
       item.snippet.thumbnails?.default?.url,
-    url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+    url: `${EXTERNAL_SERVICES.youtubeWatch}${item.id.videoId}`,
   };
 }
 

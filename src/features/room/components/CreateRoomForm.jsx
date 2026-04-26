@@ -18,6 +18,7 @@ import { useSession } from "next-auth/react";
 import { createRoom } from "../services/createRoom";
 import { ls } from "@/utils/localStorage";
 import { LS_KEYS, MAX_HISTORY_ENTRIES } from "@/constants/config";
+import { EXTERNAL_SERVICES } from "@/constants/config";
 
 export default function CreateRoomForm({ onResultsChange }) {
   const router = useRouter();
@@ -271,11 +272,11 @@ export default function CreateRoomForm({ onResultsChange }) {
                   type="text"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  placeholder={
-                    mode === "url"
-                      ? "https://youtube.com/watch?v=…"
-                      : "Search for a movie, trailer…"
-                  }
+                   placeholder={
+                     mode === "url"
+                       ? `${EXTERNAL_SERVICES.youtubeWatch}…`
+                       : "Search for a movie, trailer…"
+                   }
                   className="w-full h-14 border rounded-[2rem] pl-12 pr-4 text-sm font-sans outline-none transition-all focus:border-[var(--color-amber)] focus:shadow-[0_0_20px_rgba(var(--color-amber-rgb),0.1)]"
                   style={{
                     backgroundColor: "var(--color-surface)",

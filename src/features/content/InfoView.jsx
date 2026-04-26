@@ -14,6 +14,7 @@ import Loading from "@/components/Loading";
 import YoutubeIcon from "@/components/icons/YoutubeIcon";
 import BackButton from "@/components/ui/BackButton";
 import Button from "@/components/ui/Button";
+import { EXTERNAL_SERVICES } from "@/constants/config";
 
 import CustomSelect from "./components/CustomSelect";
 import { useMediaActions } from "./hooks/useMediaActions";
@@ -179,10 +180,10 @@ export default function InfoView({ initialData, type, id }) {
                   disabled={!data.trailer}
                   onClick={() =>
                     data.trailer &&
-                    window.open(
-                      `https://www.youtube.com/watch?v=${data.trailer}`,
-                      "_blank",
-                    )
+                     window.open(
+                       `${EXTERNAL_SERVICES.youtubeWatch}${data.trailer}`,
+                       "_blank",
+                     )
                   }
                   className="flex-1 min-w-[80px] sm:flex-none"
                 >

@@ -24,6 +24,11 @@ export const STREAM_SERVERS = {
   moviesapi: "https://moviesapi.to",
 };
 
+export const EXTERNAL_SERVICES = {
+  youtubeWatch: "https://www.youtube.com/watch?v=",
+  avatarService: "https://api.dicebear.com/9.x/bottts/svg?seed=",
+};
+
 export const SOCKET_PING_INTERVAL = 20_000;
 export const SOCKET_PING_TIMEOUT = 30_000;
 

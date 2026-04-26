@@ -5,6 +5,7 @@ import Image from "next/image";
 import { createPortal } from "react-dom";
 import { SYSTEM_ICONS } from "../constants";
 import { VoiceNote } from "./VoiceNote";
+import { EXTERNAL_SERVICES } from "@/constants/config";
 
 function ChatMessageInner({
   msg,
@@ -220,14 +221,14 @@ function ChatMessageInner({
         className={`shrink-0 mt-0.5 transition-transform duration-300 group-hover:scale-110 ${isOwn ? "order-2" : "order-1"}`}
       >
         <div className="relative w-5 h-5 flex items-center justify-center shrink-0 select-none">
-          <Image
-            src={`https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(name)}`}
-            alt={name}
-            fill
-            sizes="20px"
-            className="w-full h-full object-contain"
-            unoptimized
-          />
+           <Image
+             src={`${EXTERNAL_SERVICES.avatarService}${encodeURIComponent(name)}`}
+             alt={name}
+             fill
+             sizes="20px"
+             className="w-full h-full object-contain"
+             unoptimized
+           />
         </div>
       </div>
       <div

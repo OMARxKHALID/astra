@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Crown, Mic, MicOff, X as XIcon } from "lucide-react";
 import Image from "next/image";
 import Button from "@/components/ui/Button";
+import { EXTERNAL_SERVICES } from "@/constants/config";
 
 function QualityDot({ deviation }) {
   const base = "w-2 h-2 rounded-full shrink-0 flex-none";
@@ -64,7 +65,7 @@ function Avatar({ name, isHost, inCall, micActive, camActive }) {
   return (
     <div className="relative w-8 h-8 flex items-center justify-center shrink-0 select-none">
       <Image
-        src={`https://api.dicebear.com/9.x/bottts/svg?seed=${seed}`}
+        src={`${EXTERNAL_SERVICES.avatarService}${seed}`}
         alt={name}
         fill
         sizes="48px"
