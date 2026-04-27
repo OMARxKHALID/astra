@@ -20,7 +20,7 @@ export default function CreateRoomPage() {
         </h1>
       </nav>
 
-      <div className="relative z-10 w-full max-w-[600px] mx-auto px-6 pt-8 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="relative z-10 w-full max-w-[600px] mx-auto px-4 sm:px-6 pt-4 sm:pt-8 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <CreateRoomForm />
       </div>
     </div>

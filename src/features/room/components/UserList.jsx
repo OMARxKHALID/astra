@@ -160,7 +160,7 @@ export default function UserList({
                 </div>
                 <div className="flex items-center gap-2">
                   {isThisHost && (
-                    <span className="text-[8px] font-mono text-amber/70 uppercase tracking-[0.15em] leading-none">
+                    <span className="text-[9px] font-mono font-bold text-amber/80 uppercase tracking-[0.15em] leading-none">
                       host
                     </span>
                   )}

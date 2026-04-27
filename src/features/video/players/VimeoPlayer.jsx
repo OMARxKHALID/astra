@@ -4,9 +4,12 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import { onVMReady } from "../utils";
 import { usePlayerControls } from "../hooks/usePlayerControls";
 import { useVideoHotkeys } from "../hooks/useVideoHotkeys";
+import { useVideoTouchControls } from "../hooks/useVideoTouchControls";
 import { useThumbnailColors } from "../hooks/useThumbnailColors";
 import EmbedControls from "../controls/EmbedControls";
 import VideoPoster from "../controls/VideoPoster";
+
+
 
 export default function VimeoPlayer({
   videoRef,
@@ -209,10 +212,19 @@ export default function VimeoPlayer({
     setMuted(v === 0);
   }
 
-  function handleFullscreen() {
+  const handleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) containerRef.current?.requestFullscreen();
     else document.exitFullscreen();
-  }
+  }, []);
+
+  const { handlePointerUp, handleDoubleClick } = useVideoTouchControls({
+    videoRef,
+    canControl,
+    handlePlayPause,
+    handleFullscreen,
+    onSeek,
+    showCtrl,
+  });
 
   useVideoHotkeys({
     videoRef,
@@ -237,9 +249,10 @@ export default function VimeoPlayer({
         allowFullScreen
       />
       <div
-        className="absolute inset-0 z-10 cursor-pointer"
+        className="absolute inset-0 z-10 cursor-pointer touch-none"
         onClick={handlePlayPause}
         onDoubleClick={handleFullscreen}
+        onTouchEnd={handleTouchEnd}
       />
       {!ready && (
         <div className="absolute inset-0 flex items-center justify-center bg-void pointer-events-none">

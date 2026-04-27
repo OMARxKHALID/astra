@@ -22,7 +22,7 @@ function MediaCard({ item, onPick }) {
       onMouseEnter={handleHover}
       className="shrink-0 w-[160px] bg-transparent border-none p-0 text-left cursor-pointer group outline-none relative hover:z-50"
     >
-      <div className="w-[160px] h-[240px] rounded-[1rem] overflow-hidden bg-[var(--color-surface)] relative transition-transform duration-200 group-hover:scale-105 shadow-lg">
+      <div className="w-[160px] h-[240px] rounded-[var(--radius-card)] overflow-hidden bg-[var(--color-surface)] relative transition-transform duration-200 group-hover:scale-105 shadow-lg">
         {item.poster ? (
           <Image
             src={item.poster}
@@ -42,14 +42,14 @@ function MediaCard({ item, onPick }) {
           </div>
         </div>
         {item.rating && (
-          <div className="absolute top-2 right-2 bg-void/80 px-1.5 py-0.5 rounded-md text-[11px] font-bold text-amber font-mono flex items-center gap-1 shadow-md">
+          <div className="absolute top-2 right-2 bg-void/80 px-2 py-0.5 rounded-[var(--radius-pill)] text-[10px] font-bold text-amber font-mono flex items-center gap-1 shadow-md">
             <Star className="w-2.5 h-2.5 fill-current" />
             {item.rating}
           </div>
         )}
         {item.type && (
           <div
-            className={`absolute top-2 left-2 px-2 py-0.5 border rounded-full text-[9px] font-bold font-mono uppercase tracking-wider shadow-md backdrop-blur-sm ${
+            className={`absolute top-2 left-2 px-2 py-0.5 border rounded-[var(--radius-pill)] text-[9px] font-bold font-mono uppercase tracking-[0.15em] shadow-md backdrop-blur-sm ${
               item.isAnime
                 ? "bg-danger/20 border-danger/30 text-danger"
                 : item.type === "tv"

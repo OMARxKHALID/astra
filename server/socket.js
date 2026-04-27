@@ -23,6 +23,18 @@ const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
     )
   : ["http://localhost:3000"];
 
+function isOriginAllowed(origin) {
+  if (!origin || process.env.NODE_ENV !== "production") return true;
+  const normalized = origin.replace(/\/$/, "");
+  
+  // Allow localhost, local IPs, and configured origins
+  const isLocal = normalized.includes("localhost") || 
+                  normalized.includes("127.0.0.1") ||
+                  /^http:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/.test(normalized);
+
+  return isLocal || ALLOWED_ORIGINS.includes(normalized);
+}
+
 const rooms = new Map();
 const clientMeta = new Map();
 const tsLastSent = new Map();
@@ -35,8 +47,7 @@ const httpServer = http.createServer();
 const io = new Server(httpServer, {
   cors: {
     origin: (origin, callback) => {
-      const normalized = origin?.replace(/\/$/, "");
-      if (ALLOWED_ORIGINS.includes(normalized)) callback(null, true);
+      if (isOriginAllowed(origin)) callback(null, true);
       else callback(new Error("Not allowed by CORS"));
     },
     methods: ["GET", "POST"],
@@ -49,7 +60,7 @@ const io = new Server(httpServer, {
 // [Note] Request handler registered after io is fully initialized
 httpServer.on("request", (req, res) => {
   const origin = req.headers.origin || "";
-  const isAllowed = ALLOWED_ORIGINS.includes(origin.replace(/\/$/, ""));
+  const isAllowed = isOriginAllowed(origin);
 
   if (isAllowed) {
     res.setHeader("Access-Control-Allow-Origin", origin);

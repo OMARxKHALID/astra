@@ -103,7 +103,7 @@ export default function SearchOverlay({ onClose, onPick }) {
             }
           }}
           placeholder="Search movies, series, anime…"
-          className="w-full glass-card !bg-surface/40 border-border !backdrop-blur-3xl rounded-[var(--radius-pill)] py-4 pr-12 pl-[52px] text-bright text-base font-body outline-none focus:border-amber/60 focus:ring-2 focus:ring-amber/20 transition-all placeholder:text-white/30 shadow-2xl"
+          className="w-full glass-card !bg-[var(--color-surface)]/40 border-white/5 !backdrop-blur-3xl rounded-[var(--radius-pill)] py-4 pr-12 pl-[52px] text-bright text-base font-body outline-none focus:border-amber focus:ring-4 focus:ring-amber/5 transition-all placeholder:text-white/20 shadow-2xl"
         />
         {loading ? (
           <div className="absolute right-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] rounded-full border-2 border-amber/20 border-t-amber animate-spin" />
@@ -171,7 +171,7 @@ export default function SearchOverlay({ onClose, onPick }) {
                 </p>
                 <div className="flex gap-2 items-center">
                   <span
-                    className={`text-[9px] font-bold px-[7px] py-[2px] rounded-[var(--radius-pill)] font-mono uppercase tracking-[0.1em] ${
+                    className={`text-[9px] font-bold px-2 py-0.5 rounded-[var(--radius-pill)] font-mono uppercase tracking-[0.15em] ${
                       item.isAnime
                         ? "bg-danger/15 text-danger"
                         : item.type === "tv"

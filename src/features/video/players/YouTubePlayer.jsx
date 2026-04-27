@@ -2,9 +2,14 @@
 
 import { useRef, useState, useEffect, useCallback } from "react";
 import { onYTReady } from "../utils";
-import { YT_AD_POLL_MS as AD_POLL_MS, YT_POLL_INTERVAL_MS, DEBUG } from "@/constants/config";
+import {
+  YT_AD_POLL_MS as AD_POLL_MS,
+  YT_POLL_INTERVAL_MS,
+  DEBUG,
+} from "@/constants/config";
 import { usePlayerControls } from "../hooks/usePlayerControls";
 import { useVideoHotkeys } from "../hooks/useVideoHotkeys";
+import { useVideoTouchControls } from "../hooks/useVideoTouchControls";
 import { useThumbnailColors } from "../hooks/useThumbnailColors";
 import EmbedControls from "../controls/EmbedControls";
 import VideoPoster from "../controls/VideoPoster";
@@ -48,6 +53,7 @@ export default function YouTubePlayer({
   const isBufferingRef = useRef(false);
   const adPollRef = useRef(null);
   const isAdPlayingRef = useRef(false);
+  const lastTapRef = useRef(0);
 
   // [Note] Ref ensures the onReady callback sees live isPlaying (init captures stale closure)
   const isPlayingRef = useRef(isPlaying);
@@ -95,21 +101,21 @@ export default function YouTubePlayer({
             try {
               p.unMute();
             } catch (e) {
-            logError(`[yt]`, e);
-          }
+              logError(`[yt]`, e);
+            }
             if (pendingSeekRef.current !== null) {
               try {
                 p.seekTo(pendingSeekRef.current, true);
               } catch (e) {
-            logError(`[yt]`, e);
-          }
+                logError(`[yt]`, e);
+              }
               pendingSeekRef.current = null;
             }
           }
         }
       } catch (e) {
-            logError(`[yt]`, e);
-          }
+        logError(`[yt]`, e);
+      }
     }, AD_POLL_MS);
   }, [videoId]);
 
@@ -125,8 +131,8 @@ export default function YouTubePlayer({
       if (muted) playerRef.current.mute();
       else playerRef.current.unMute();
     } catch (e) {
-            logError(`[yt]`, e);
-          }
+      logError(`[yt]`, e);
+    }
   }, [volume, muted, ready]);
 
   useEffect(() => {
@@ -134,8 +140,8 @@ export default function YouTubePlayer({
     try {
       playerRef.current.setPlaybackRate?.(playbackRate);
     } catch (e) {
-            logError(`[yt]`, e);
-          }
+      logError(`[yt]`, e);
+    }
   }, [playbackRate, ready]);
 
   useEffect(() => {
@@ -153,8 +159,8 @@ export default function YouTubePlayer({
           if (playerRef.current) playerRef.current.seekTo?.(t, true);
           else pendingSeekRef.current = t;
         } catch (e) {
-            logError(`[yt]`, e);
-          }
+          logError(`[yt]`, e);
+        }
       },
       get duration() {
         try {
@@ -197,31 +203,26 @@ export default function YouTubePlayer({
         try {
           playerRef.current?.setPlaybackRate?.(r);
         } catch (e) {
-            logError(`[yt]`, e);
-          }
+          logError(`[yt]`, e);
+        }
       },
       get isBuffering() {
         return isBufferingRef.current;
       },
       play() {
-        return new Promise((resolve) => {
-          // [Note] 200ms Pre-roll to compensate for YouTube IFrame API latency
-          setTimeout(() => {
-            try {
-              playerRef.current?.playVideo?.();
-            } catch (e) {
-            logError(`[yt]`, e);
-          }
-            resolve();
-          }, 200);
-        });
+        try {
+          playerRef.current?.playVideo?.();
+        } catch (e) {
+          logError(`[yt]`, e);
+        }
+        return Promise.resolve();
       },
       pause() {
         try {
           playerRef.current?.pauseVideo?.();
         } catch (e) {
-            logError(`[yt]`, e);
-          }
+          logError(`[yt]`, e);
+        }
       },
     };
   }, [videoRef, ready]);
@@ -239,8 +240,8 @@ export default function YouTubePlayer({
           (playerRef.current.getVideoLoadedFraction?.() ?? 0) * 100,
         );
       } catch (e) {
-            logError(`[yt]`, e);
-          }
+        logError(`[yt]`, e);
+      }
     }, YT_POLL_INTERVAL_MS);
     return () => clearInterval(t);
   }, []);
@@ -274,16 +275,16 @@ export default function YouTubePlayer({
               try {
                 playerRef.current?.seekTo?.(pendingSeekRef.current, true);
               } catch (e) {
-            logError(`[yt]`, e);
-          }
+                logError(`[yt]`, e);
+              }
               pendingSeekRef.current = null;
             }
             if (isPlayingRef.current) {
               try {
                 playerRef.current?.playVideo?.();
               } catch (e) {
-            logError(`[yt]`, e);
-          }
+                logError(`[yt]`, e);
+              }
             }
           },
           onStateChange: (e) => {
@@ -309,8 +310,8 @@ export default function YouTubePlayer({
       try {
         playerRef.current?.destroy?.();
       } catch (e) {
-            logError(`[yt]`, e);
-          }
+        logError(`[yt]`, e);
+      }
       playerRef.current = null;
       div.remove();
       setReady(false);
@@ -330,12 +331,23 @@ export default function YouTubePlayer({
         playerRef.current.unloadModule?.("captions");
       }
     } catch (e) {
-            logError(`[yt]`, e);
-          }
+      logError(`[yt]`, e);
+    }
   }, [ccEnabled, ready]);
 
-  function handlePlayPause() {
+  const handlePlayPause = useCallback(() => {
     if (!ready || !canControl) return;
+
+    // [Note] Mobile Priming: Brief play/pause on tap satisfies browser gesture requirements
+    // for subsequent programmatic play commands (via socket sync).
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (!isPlaying && isMobile) {
+      try {
+        playerRef.current?.playVideo?.();
+        playerRef.current?.pauseVideo?.();
+      } catch (e) {}
+    }
+
     if (isPlaying) {
       onPause?.(playerRef.current?.getCurrentTime?.() ?? 0);
     } else {
@@ -347,7 +359,7 @@ export default function YouTubePlayer({
         onPlay?.(playerRef.current?.getCurrentTime?.() ?? 0);
       }
     }
-  }
+  }, [ready, canControl, isPlaying, onPause, onPlay]);
 
   function handleSeekCommit(e) {
     if (!ready) return;
@@ -362,10 +374,19 @@ export default function YouTubePlayer({
     setMuted(v === 0);
   }
 
-  function handleFullscreen() {
+  const handleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) containerRef.current?.requestFullscreen();
     else document.exitFullscreen();
-  }
+  }, []);
+
+  const { handlePointerUp, handleDoubleClick } = useVideoTouchControls({
+    videoRef,
+    canControl,
+    handlePlayPause,
+    handleFullscreen,
+    onSeek,
+    showCtrl,
+  });
 
   useVideoHotkeys({
     videoRef,
@@ -378,19 +399,19 @@ export default function YouTubePlayer({
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full bg-void overflow-hidden group/yt"
+      className="relative w-full h-full bg-void overflow-hidden group/yt touch-none"
       onMouseMove={showCtrl}
-      onTouchStart={showCtrl}
+      onPointerDown={showCtrl}
     >
       <div
         ref={iframeContainerRef}
-        className="w-full h-full [&>div]:w-full [&>div]:h-full [&_iframe]:w-full [&_iframe]:h-full"
+        className="w-full h-full [&>div]:w-full [&>div]:h-full [&_iframe]:w-full [&_iframe]:h-full pointer-events-none"
       />
 
       <div
         className="absolute inset-0 z-10 cursor-pointer"
-        onClick={handlePlayPause}
-        onDoubleClick={handleFullscreen}
+        onPointerUp={handlePointerUp}
+        onDoubleClick={handleDoubleClick}
       />
 
       <VideoPoster

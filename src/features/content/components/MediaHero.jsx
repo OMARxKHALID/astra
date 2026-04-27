@@ -62,7 +62,7 @@ export default function MediaHero({ items, onPick, onPlay, onSync, loading }) {
         <div className="max-w-[520px] z-10">
           <div className="flex gap-2 mb-4 items-center flex-wrap">
             <span
-              className={`text-[10px] font-bold px-2.5 py-0.5 rounded-[var(--radius-pill)] uppercase tracking-[0.12em] font-mono border ${
+              className={`text-[9px] font-bold px-2 py-0.5 rounded-[var(--radius-pill)] uppercase tracking-[0.15em] font-mono border ${
                 item.isAnime
                   ? "bg-danger/15 text-danger border-danger/30"
                   : item.type === "tv"

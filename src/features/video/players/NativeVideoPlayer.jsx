@@ -5,6 +5,7 @@ import { LS_KEYS, DEBUG } from "@/constants/config";
 import { ls } from "@/utils/localStorage";
 import { usePlayerControls } from "../hooks/usePlayerControls";
 import { useVideoHotkeys } from "../hooks/useVideoHotkeys";
+import { useVideoTouchControls } from "../hooks/useVideoTouchControls";
 
 import useHLS from "./native/hooks/useHLS";
 import useAmbilight from "./native/hooks/useAmbilight";
@@ -126,9 +127,6 @@ export default function NativeVideoPlayer({
   const containerRef = useRef(null);
   const volumeOsdTimer = useRef(null);
   const seekingRef = useRef(false);
-
-  // [Note] Mobile Logic: Track tap timestamps for sophisticated double-tap detection
-  const lastTapRef = useRef(0);
 
   const { hlsQuality, hlsRef } = useHLS(
     videoRef,
@@ -270,79 +268,15 @@ export default function NativeVideoPlayer({
     else document.exitFullscreen();
   };
 
-  const executeDoubleTapAction = useCallback(
-    (clientX, rect) => {
-      if (!canControl || !videoRef.current) {
-        if (!document.fullscreenElement)
-          containerRef.current?.requestFullscreen();
-        else document.exitFullscreen();
-        return;
-      }
-      const x = clientX - rect.left;
-      const width = rect.width;
-      if (x < width * 0.3) {
-        const t = Math.max(0, videoRef.current.currentTime - 10);
-        videoRef.current.currentTime = t;
-        onSeek?.(t);
-        handleVolumeOsd("rewind");
-      } else if (x > width * 0.7) {
-        const t = Math.min(duration, videoRef.current.currentTime + 10);
-        videoRef.current.currentTime = t;
-        onSeek?.(t);
-        handleVolumeOsd("forward");
-      } else {
-        if (!document.fullscreenElement)
-          containerRef.current?.requestFullscreen();
-        else document.exitFullscreen();
-      }
-    },
-    [canControl, videoRef, duration, onSeek],
-  );
-
-  const handleDoubleClick = useCallback(
-    (e) => {
-      executeDoubleTapAction(
-        e.clientX,
-        e.currentTarget.getBoundingClientRect(),
-      );
-    },
-    [executeDoubleTapAction],
-  );
-
-  // [Note] Sophisticated Touch Handler: Eliminates the 250ms delay by using location-aware logic.
-  // Sides (30% L/R): Single-tap shows UI, Double-tap seeks. No playback interruption.
-  // Center (40%): Single-tap toggles Play/Pause IMMEDIATELY. Double-tap toggles Fullscreen.
-  const handleTouchEnd = useCallback(
-    (e) => {
-      if (e.cancelable) e.preventDefault();
-      showCtrl();
-
-      const now = Date.now();
-      const since = now - lastTapRef.current;
-      lastTapRef.current = now;
-
-      const touch = e.changedTouches[0];
-      const rect = e.currentTarget.getBoundingClientRect();
-      const xPct = (touch.clientX - rect.left) / rect.width;
-      const isSide = xPct < 0.3 || xPct > 0.7;
-
-      if (since < 300 && since > 0) {
-        lastTapRef.current = 0;
-
-        if (isSide) {
-          executeDoubleTapAction(touch.clientX, rect);
-        } else {
-          handlePlayPause();
-          executeDoubleTapAction(touch.clientX, rect);
-        }
-      } else {
-        if (!isSide) {
-          handlePlayPause();
-        }
-      }
-    },
-    [showCtrl, executeDoubleTapAction, handlePlayPause],
-  );
+  const { handlePointerUp, handleDoubleClick } = useVideoTouchControls({
+    videoRef,
+    canControl,
+    handlePlayPause,
+    handleFullscreen,
+    onSeek,
+    showCtrl,
+    handleVolumeOsd,
+  });
 
   const handleScreenshot = () => {
     const v = videoRef.current;
@@ -432,9 +366,8 @@ export default function NativeVideoPlayer({
         autoPlay
         preload="metadata"
         crossOrigin="anonymous"
-        onClick={handlePlayPause}
         onDoubleClick={handleDoubleClick}
-        onTouchEnd={handleTouchEnd}
+        onPointerUp={handlePointerUp}
         style={{ cursor: ctrlVis ? "pointer" : "none" }}
       >
         {subtitleUrl && showSubtitles && (

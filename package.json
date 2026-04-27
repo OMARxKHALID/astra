@@ -7,7 +7,7 @@
     "server"
   ],
   "scripts": {
-    "dev": "concurrently \"next dev --webpack\" \"node server/socket.js\"",
+    "dev": "concurrently \"next dev -H 0.0.0.0 --webpack\" \"NODE_ENV=development node server/socket.js\"",
     "build": "next build",
     "start": "concurrently \"next start\" \"node server/socket.js\"",
     "lint": "eslint ."

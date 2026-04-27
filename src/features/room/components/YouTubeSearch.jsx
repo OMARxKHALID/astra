@@ -143,7 +143,6 @@ export default function YouTubeSearch({ onLoad }) {
           style={{ color: focused ? "var(--color-amber)" : "var(--color-muted)" }}
         />
         <input
-          autoFocus
           type="text"
           value={query}
           onChange={(e) => {

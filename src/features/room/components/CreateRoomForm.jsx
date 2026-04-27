@@ -197,7 +197,7 @@ export default function CreateRoomForm({ onResultsChange }) {
   }
 
   return (
-    <div className="glass-card p-7 relative rounded-[var(--radius-panel)] shadow-2xl border-border bg-white/[0.03]">
+    <div className="glass-card p-5 sm:p-7 relative rounded-[var(--radius-panel)] shadow-2xl border-white/10 bg-white/[0.03]">
       <div className="mb-6 flex flex-col gap-4">
         <div>
           <h2
@@ -211,7 +211,7 @@ export default function CreateRoomForm({ onResultsChange }) {
           </p>
         </div>
 
-        <div className="flex p-1 rounded-[var(--radius-pill)] border shadow-inner bg-surface/50 border-border overflow-hidden w-full mt-1">
+        <div className="flex p-1 rounded-[var(--radius-pill)] border shadow-inner bg-[var(--color-surface)]/50 border-white/10 overflow-hidden w-full mt-1">
           <ModeBtn
             active={mode === "url"}
             onClick={() => switchMode("url")}
@@ -240,7 +240,7 @@ export default function CreateRoomForm({ onResultsChange }) {
         <div>
           <label
             htmlFor="videoUrl"
-            className="block text-[10px] font-mono font-black text-amber-500/80 uppercase tracking-[0.2em] mb-3 ml-2"
+            className="block text-[10px] font-mono font-bold text-amber/80 uppercase tracking-[0.2em] mb-3 ml-2"
           >
             {mode === "url"
               ? "Direct Video Link"
@@ -251,7 +251,7 @@ export default function CreateRoomForm({ onResultsChange }) {
 
           <div className="relative group/input">
             {mode === "upload" ? (
-              <label className="w-full h-14 border rounded-[2rem] flex items-center pl-12 pr-4 text-sm font-sans outline-none transition-all cursor-pointer hover:border-white/20 border-border bg-surface text-white/60 group/upload relative shadow-sm">
+              <label className="w-full h-14 border rounded-[var(--radius-pill)] flex items-center pl-12 pr-4 text-sm font-body outline-none transition-all cursor-pointer hover:border-white/20 border-white/10 bg-[var(--color-surface)] text-white/60 group/upload relative shadow-sm">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40 group-hover/upload:text-amber group-hover/upload:opacity-100 transition-all pointer-events-none">
                   <UploadIcon className="w-4 h-4 ml-1" />
                 </div>
@@ -274,15 +274,10 @@ export default function CreateRoomForm({ onResultsChange }) {
                   onChange={(e) => setUrl(e.target.value)}
                   placeholder={
                     mode === "url"
-                      ? `${EXTERNAL_SERVICES.youtubeWatch}…`
-                      : "Search for a movie, trailer…"
+                      ? "Paste a video link (YouTube, Vimeo, HLS...)"
+                      : "Search for a movie, series, trailer..."
                   }
-                  className="w-full h-14 border rounded-[2rem] pl-12 pr-4 text-sm font-sans outline-none transition-all focus:border-[var(--color-amber)] focus:shadow-[0_0_20px_rgba(var(--color-amber-rgb),0.1)]"
-                  style={{
-                    backgroundColor: "var(--color-surface)",
-                    borderColor: "var(--color-border)",
-                    color: "var(--color-text)",
-                  }}
+                  className="w-full h-14 border rounded-[var(--radius-pill)] pl-12 pr-4 text-sm font-body outline-none transition-all focus:border-amber focus:ring-4 focus:ring-amber/5 bg-[var(--color-surface)] border-white/5 text-[var(--color-text)] placeholder:text-white/20"
                 />
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40 group-focus-within/input:text-[var(--color-amber)] group-focus-within/input:opacity-100 transition-all pointer-events-none">
                   {mode === "url" ? (
@@ -319,10 +314,10 @@ export default function CreateRoomForm({ onResultsChange }) {
                     key={item.id}
                     variant="custom"
                     onClick={() => handleCreate(null, item.url)}
-                    className="flex items-start gap-4 p-2.5 rounded-[1.5rem] hover:bg-white/5 active:bg-white/10 transition-all text-left group border border-transparent !h-auto !bg-transparent !p-2.5 !active:scale-[0.98] outline-none"
+                    className="flex items-start gap-3 sm:gap-4 p-2 sm:p-2.5 rounded-[1.5rem] hover:bg-white/5 active:bg-white/10 transition-all text-left group border border-transparent !h-auto !bg-transparent !active:scale-[0.98] outline-none !whitespace-normal !justify-start"
                   >
                     {item.thumb && (
-                      <div className="w-24 aspect-video rounded-xl overflow-hidden border border-white/5 shrink-0 bg-black/40 mt-1">
+                      <div className="relative w-20 sm:w-24 aspect-video rounded-xl overflow-hidden border border-white/5 shrink-0 bg-black/40 mt-1">
                         <Image
                           src={item.thumb}
                           alt=""
@@ -334,7 +329,7 @@ export default function CreateRoomForm({ onResultsChange }) {
                     )}
                     <div className="min-w-0 flex-1 flex flex-col justify-center h-full">
                       <p
-                        className="text-[13px] font-bold line-clamp-2 leading-snug group-hover:text-amber transition-colors"
+                        className="text-[12px] sm:text-[13px] font-bold line-clamp-2 leading-snug group-hover:text-amber transition-colors"
                         style={{ color: "var(--color-text)" }}
                       >
                         {item.title}
@@ -419,7 +414,7 @@ function ModeBtn({ active, onClick, icon, children }) {
     <Button
       variant="custom"
       onClick={onClick}
-      className={`flex-1 px-3 py-2 rounded-[var(--radius-pill)] text-[10px] sm:text-[11px] font-black uppercase tracking-[0.15em] transition-all duration-300 flex items-center gap-2 border-none justify-center h-auto !p-2 !md:p-2 !lg:p-2 !scale-none active:!scale-95
+      className={`flex-1 px-3 py-2 rounded-[var(--radius-pill)] text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.15em] transition-all duration-300 flex items-center gap-2 border-none justify-center h-auto !p-2 !md:p-2 !lg:p-2 !scale-none active:!scale-95
         ${active ? "bg-amber text-void shadow-lg ring-1 ring-amber/20" : "text-white/40 hover:text-white/60 bg-transparent hover:bg-white/5"}`}
     >
       {icon}

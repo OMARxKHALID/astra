@@ -161,7 +161,6 @@ export default function SubtitlePanel({
           <div className="space-y-2.5">
             <form onSubmit={handleSearch} className="relative">
               <input
-                autoFocus
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
