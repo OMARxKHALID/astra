@@ -100,6 +100,9 @@ export function MobileRoomSheets({
               onSend={(t, d) =>
                 sendRef.current?.({ type: "chat", text: t, dataUrl: d })
               }
+              onReaction={(ts, emoji) =>
+                sendRef.current?.({ type: "reaction", ts, emoji })
+              }
               typingUsers={room.typingUsers}
               onTyping={() => sendRef.current?.({ type: "typing" })}
               addToast={addToast}

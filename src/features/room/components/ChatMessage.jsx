@@ -55,11 +55,22 @@ function ChatMessageInner({
     };
   }, [isHovered]);
 
+  // Dismiss picker on scroll — but skip the first scroll event (caused by
+  // layout reflow when the picker appears) and ignore micro-scrolls on mobile
   useEffect(() => {
     if (!isHovered) return;
-    const hide = () => setIsHovered(false);
+    let armed = false;
+    const armTimer = setTimeout(() => {
+      armed = true;
+    }, 150);
+    const hide = () => {
+      if (armed) setIsHovered(false);
+    };
     window.addEventListener("scroll", hide, true);
-    return () => window.removeEventListener("scroll", hide, true);
+    return () => {
+      clearTimeout(armTimer);
+      window.removeEventListener("scroll", hide, true);
+    };
   }, [isHovered]);
 
   useEffect(() => {
@@ -185,9 +196,9 @@ function ChatMessageInner({
             ref={pickerRef}
             onMouseEnter={handlePickerEnter}
             onMouseLeave={handlePickerLeave}
-            className="fixed flex items-center gap-0.5 p-0.5 bg-void/80 backdrop-blur-xl rounded-xl shadow-[0_30px_90px_rgba(0,0,0,0.6)] z-[999] animate-in fade-in zoom-in-95 duration-200 border border-white/10 touch-manipulation"
+            className="fixed flex items-center gap-1.5 p-1.5 bg-void/90 backdrop-blur-xl rounded-2xl shadow-[0_30px_90px_rgba(0,0,0,0.6)] z-[999] animate-in fade-in zoom-in-95 duration-200 border border-white/10 touch-manipulation"
             style={{
-              top: `${rect.top - 32}px`,
+              top: `${rect.top - 48}px`,
               ...(isOwn
                 ? { right: `${window.innerWidth - rect.right - 4}px` }
                 : { left: `${rect.left - 4}px` }),
@@ -208,7 +219,7 @@ function ChatMessageInner({
                   onReaction?.(emoji);
                   setIsHovered(false);
                 }}
-                className="w-6 h-6 flex items-center justify-center text-[14px] hover:scale-125 active:scale-95 transition-transform touch-manipulation rounded-md hover:bg-white/10"
+                className="w-7 h-7 flex items-center justify-center text-[16px] hover:scale-125 active:scale-95 transition-transform touch-manipulation rounded-xl hover:bg-white/10"
               >
                 {emoji}
               </button>
@@ -241,10 +252,10 @@ function ChatMessageInner({
           }
         }}
         style={{ WebkitTouchCallout: "none" }}
-        className={`flex ${isOwn ? "flex-row-reverse" : "flex-row"} gap-2 group relative cursor-pointer animate-[messageIn_0.35s_cubic-bezier(0.23,1,0.32,1)]`}
+        className={`flex items-start ${isOwn ? "flex-row-reverse" : "flex-row"} gap-2 group relative cursor-pointer animate-[messageIn_0.35s_cubic-bezier(0.23,1,0.32,1)]`}
       >
         <div
-          className={`shrink-0 mt-0.5 transition-transform duration-300 group-hover:scale-110 ${isOwn ? "order-2" : "order-1"}`}
+          className={`self-start shrink-0 mt-1 transition-transform duration-300 group-hover:scale-110`}
         >
           <div className="relative w-5 h-5 flex items-center justify-center shrink-0 select-none">
             <Image
@@ -258,7 +269,7 @@ function ChatMessageInner({
           </div>
         </div>
         <div
-          className={`flex flex-col gap-0.5 max-w-[85%] sm:max-w-[75%] transition-all duration-300 ${isOwn ? "items-end order-1" : "items-start order-2"}`}
+          className={`flex flex-col gap-0.5 max-w-[85%] sm:max-w-[75%] transition-all duration-300 ${isOwn ? "items-end" : "items-start"}`}
         >
           {!isOwn && (
             <div className="flex items-center gap-1.5 px-0.5 mb-px opacity-50 group-hover:opacity-100 transition-opacity">
