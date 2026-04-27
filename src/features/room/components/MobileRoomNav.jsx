@@ -74,7 +74,8 @@ function MobileTabBtn({ label, active, onClick, icon }) {
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center gap-1 px-4 py-1.5 rounded-[var(--radius-pill)] transition-all text-[10px] font-bold uppercase tracking-wider focus-visible:ring-2 focus-visible:ring-amber/70 focus-visible:outline-none ${active ? "text-amber bg-amber/10" : "text-muted hover:text-white/40"}`}
+      aria-label={label}
+      className={`flex flex-col items-center gap-1 px-4 py-1.5 rounded-[var(--radius-pill)] transition-all text-[10px] font-bold uppercase tracking-wider focus-visible:ring-2 focus-visible:ring-amber/70 focus-visible:outline-none touch-manipulation ${active ? "text-amber bg-amber/10" : "text-muted hover:text-white/40"}`}
     >
       {icon}
       {label}

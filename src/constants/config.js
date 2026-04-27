@@ -4,13 +4,10 @@ export const CLOCK_RECAL_INTERVAL = 30_000;
 
 export const DEBUG = process.env.NODE_ENV !== "production";
 
-export const HOST_RECONNECT_GRACE_MS = 6_000;
-export const EMPTY_ROOM_CLEANUP_MS = 30_000;
-export const SAVE_DEBOUNCE_MS = 2_000;
+
 export const REDIS_TTL_S = 86_400;
 export const JWT_EXPIRY_S = 86_400;
 
-export const MAX_DATAURL_BYTES = 500_000;
 export const MAX_CHAT_MESSAGES = 200;
 export const MAX_HISTORY_ENTRIES = 12;
 export const MAX_RECENT_SUBS = 5;
@@ -29,8 +26,6 @@ export const EXTERNAL_SERVICES = {
   avatarService: "https://api.dicebear.com/9.x/bottts/svg?seed=",
 };
 
-export const SOCKET_PING_INTERVAL = 20_000;
-export const SOCKET_PING_TIMEOUT = 30_000;
 
 export const WS_HTTP_URL = process.env.WS_HTTP_URL || "http://localhost:3001";
 export const NEXT_PUBLIC_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
@@ -45,7 +40,6 @@ export const LS_KEYS = {
   history: "as_history",
   recentSubs: "as_recentSubs",
   speedSync: "as_speedsync",
-  urlBarPos: "as_urlbarpos",
   theatreMode: "as_theatremode",
   sidebarOpen: "as_sidebaropen",
   sidebarWidth: "as_sidebarwidth",
@@ -57,5 +51,6 @@ export const LS_KEYS = {
   localFileName: "as_localFileName",
   syncHub: "as_synchub",
   bingeWatch: "as_bingewatch",
+  pwaDismissed: "astra_pwa_dismissed",
   adminSecret: "as_ecret",
 };

@@ -106,7 +106,6 @@ export default function EmbedControls({
 
         <div className="flex items-center gap-1.5 sm:gap-2.5">
           <button
-            variant="custom"
             onClick={onPlayPause}
             aria-label={isPlaying ? "Pause" : "Play"}
             disabled={!canControl}
@@ -123,7 +122,6 @@ export default function EmbedControls({
           {showVolume && (
             <div className="flex items-center group/vol">
               <button
-                variant="custom"
                 onClick={onMuteToggle}
                 aria-label={muted ? "Unmute" : "Mute"}
                 className="w-9 h-9 shrink-0 flex items-center justify-center rounded-[var(--radius-pill)] text-white/40 hover:text-white transition-colors !bg-transparent"
@@ -169,7 +167,6 @@ export default function EmbedControls({
 
           {showCc && onCcToggle && (
             <button
-              variant="custom"
               onClick={onCcToggle}
               aria-label="Toggle subtitles"
               className={`w-9 h-9 shrink-0 flex items-center justify-center rounded-[var(--radius-pill)] border transition-all active:scale-90 backdrop-blur-sm !bg-transparent
@@ -185,7 +182,6 @@ export default function EmbedControls({
 
           {onToggleTheatre && (
             <button
-              variant="custom"
               onClick={onToggleTheatre}
               aria-label={theatreMode ? "Exit theatre mode" : "Theatre mode"}
               title={theatreMode ? "Exit theatre mode (T)" : "Theatre mode (T)"}
@@ -202,8 +198,8 @@ export default function EmbedControls({
 
           {isHost && isRoom && hasEpisodes && onToggleEpisodes && (
             <button
-              variant="custom"
               onClick={onToggleEpisodes}
+              aria-label="Episode list"
               title="Episodes"
               className="episodes-toggle-btn w-9 h-9 shrink-0 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white transition-all active:scale-90 backdrop-blur-sm !bg-transparent"
             >
@@ -213,7 +209,6 @@ export default function EmbedControls({
 
           {onFullscreen && (
             <button
-              variant="custom"
               onClick={onFullscreen}
               aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
               className="w-9 h-9 shrink-0 flex items-center justify-center rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10 border border-white/10 text-white transition-all active:scale-90 backdrop-blur-sm !bg-transparent"

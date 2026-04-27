@@ -16,10 +16,16 @@ export default function UserMenu() {
   useEffect(() => {
     if (!open) return;
     const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      setTimeout(() => {
+        if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      }, 50);
     };
     window.addEventListener("mousedown", handler);
-    return () => window.removeEventListener("mousedown", handler);
+    window.addEventListener("touchstart", handler, { passive: true });
+    return () => {
+      window.removeEventListener("mousedown", handler);
+      window.removeEventListener("touchstart", handler);
+    };
   }, [open]);
 
   const [loading, setLoading] = useState(false);

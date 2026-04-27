@@ -61,14 +61,20 @@ export default function EpisodeSelector({
 
   useEffect(() => {
     const onClickOutside = (ev) => {
-      if (ev.target.closest?.(".episodes-toggle-btn")) return;
-      if (containerRef.current && !containerRef.current.contains(ev.target)) {
-        onClose();
-      }
+      setTimeout(() => {
+        if (ev.target.closest?.(".episodes-toggle-btn")) return;
+        if (containerRef.current && !containerRef.current.contains(ev.target)) {
+          onClose();
+        }
+      }, 50);
     };
 
     document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
+    document.addEventListener("touchstart", onClickOutside, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("touchstart", onClickOutside);
+    };
   }, [onClose]);
 
   const currentIndex = episodes.findIndex(

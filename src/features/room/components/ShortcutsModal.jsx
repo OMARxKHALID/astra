@@ -10,7 +10,18 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }) {
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") { onClose(); return; }
+      if (e.key === "Tab" && ref.current) {
+        const focusable = ref.current.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey ? document.activeElement === first : document.activeElement === last) {
+          e.preventDefault();
+          (e.shiftKey ? last : first)?.focus();
+        }
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -26,11 +37,14 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }) {
       />
       <div
         ref={ref}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="shortcuts-title"
         className="relative z-10 w-full max-w-[600px] glass-card rounded-[var(--radius-panel)] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200"
       >
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/10 bg-white/[0.02]">
           <div>
-            <h2 className="font-display font-bold text-lg text-white/90">
+            <h2 id="shortcuts-title" className="font-display font-bold text-lg text-white/90">
               Keyboard Shortcuts
             </h2>
             <p className="text-[10px] text-white/50 mt-0.5 uppercase tracking-wider font-mono">
@@ -39,6 +53,7 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }) {
           </div>
           <button
             onClick={onClose}
+            aria-label="Close shortcuts"
             className="w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] hover:bg-white/10 text-white/60 hover:text-white transition-colors"
           >
             <XIcon className="w-4 h-4" strokeWidth={2.5} />

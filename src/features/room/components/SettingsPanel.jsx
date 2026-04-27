@@ -130,16 +130,35 @@ export default function SettingsPanel({
 
   useEffect(() => {
     if (!isOpen) return;
-    const handler = (e) => {
-      if (panelRef.current && !panelRef.current.contains(e.target)) onClose();
+    const mouseHandler = (e) => {
+      setTimeout(() => {
+        if (panelRef.current && !panelRef.current.contains(e.target)) onClose();
+      }, 50);
     };
-    const id = setTimeout(
-      () => document.addEventListener("mousedown", handler),
-      0,
-    );
+    const keyHandler = (e) => {
+      if (e.key === "Escape") { onClose(); return; }
+      if (e.key === "Tab" && panelRef.current) {
+        const focusable = panelRef.current.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey ? document.activeElement === first : document.activeElement === last) {
+          e.preventDefault();
+          (e.shiftKey ? last : first)?.focus();
+        }
+      }
+    };
+    const id = setTimeout(() => {
+      document.addEventListener("mousedown", mouseHandler);
+      document.addEventListener("touchstart", mouseHandler, { passive: true });
+      document.addEventListener("keydown", keyHandler);
+    }, 0);
     return () => {
       clearTimeout(id);
-      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("mousedown", mouseHandler);
+      document.removeEventListener("touchstart", mouseHandler);
+      document.removeEventListener("keydown", keyHandler);
     };
   }, [isOpen, onClose]);
 
@@ -165,11 +184,14 @@ export default function SettingsPanel({
 
       <div
         ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="settings-title"
         className="relative z-10 w-full sm:max-w-[520px] glass-card rounded-[var(--radius-panel)] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 border-none"
       >
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border bg-white/[0.03]">
           <div>
-            <h2 className="font-display font-bold text-xl text-bright">
+            <h2 id="settings-title" className="font-display font-bold text-xl text-bright">
               Settings
             </h2>
             <p className="text-[10px] font-mono mt-0.5 uppercase tracking-wider text-muted">

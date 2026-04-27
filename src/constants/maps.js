@@ -1,27 +1,3 @@
-export const STATUS_MAP = {
-  connecting: {
-    dot: "bg-amber-400 animate-pulse",
-    label: "CONNECTING",
-    color: "text-amber-400",
-  },
-  reconnecting: {
-    dot: "bg-danger animate-ping",
-    label: "RECONNECTING",
-    color: "text-danger",
-  },
-  connected: {
-    dot: "bg-jade shadow-[0_0_8px_rgba(16,185,129,0.5)]",
-    label: "LIVE",
-    color: "text-jade",
-  },
-};
-
-export const SYNC_MAP = {
-  synced: { label: "SYNCED", color: "text-white/40" },
-  soft: { label: "ADJUSTING", color: "text-amber-400/60" },
-  hard: { label: "SYNCING", color: "text-danger/60" },
-};
-
 export const KEYBOARD_ROWS = [
   [
     { k: "Q" },

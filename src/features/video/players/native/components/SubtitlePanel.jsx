@@ -25,6 +25,7 @@ export default function SubtitlePanel({
   const [searching, setSearching] = useState(false);
   const [subOptions, setSubOptions] = useState(null);
   const [searchStatus, setSearchStatus] = useState("");
+  const [confirmClearSubs, setConfirmClearSubs] = useState(false);
 
   const getSubSrc = (u) => {
     if (!u) return "";
@@ -118,7 +119,8 @@ export default function SubtitlePanel({
           </div>
           <button
             onClick={() => setActivePanel(null)}
-            className="w-7 h-7 rounded-[var(--radius-pill)] flex items-center justify-center hover:bg-white/5 text-white/20 hover:text-white transition-colors"
+            aria-label="Close subtitles panel"
+            className="w-7 h-7 rounded-[var(--radius-pill)] flex items-center justify-center hover:bg-white/5 text-white/20 hover:text-white transition-colors focus-visible:ring-2"
           >
             ✕
           </button>
@@ -290,14 +292,18 @@ export default function SubtitlePanel({
                 {recentSubs.length > 1 && (
                   <button
                     onClick={() => {
-                      if (window.confirm("Clear history?")) {
+                      if (confirmClearSubs) {
                         setRecentSubs([]);
                         ls.set(LS_KEYS.recentSubs, "[]");
+                        setConfirmClearSubs(false);
+                      } else {
+                        setConfirmClearSubs(true);
+                        setTimeout(() => setConfirmClearSubs(false), 3000);
                       }
                     }}
                     className="w-full mt-2 py-2 text-[9px] font-bold uppercase tracking-widest text-white/20 hover:text-danger/60 transition-colors"
                   >
-                    Clear all
+                    {confirmClearSubs ? "Tap to confirm" : "Clear all"}
                   </button>
                 )}
               </>
@@ -308,7 +314,7 @@ export default function SubtitlePanel({
         {activePanel === "settings" && (
           <div className="space-y-3">
             <section>
-              <label className="text-[8px] font-black text-white/20 uppercase tracking-[0.3em] mb-1.5 block ml-1">
+              <label className="text-[10px] font-black text-white/50 uppercase tracking-[0.3em] mb-1.5 block ml-1">
                 Scale
               </label>
               <div className="grid grid-cols-4 gap-1.5">
@@ -332,7 +338,7 @@ export default function SubtitlePanel({
             </section>
 
             <section>
-              <label className="text-[8px] font-black text-white/20 uppercase tracking-[0.3em] mb-1.5 block ml-1">
+              <label className="text-[10px] font-black text-white/50 uppercase tracking-[0.3em] mb-1.5 block ml-1">
                 Color
               </label>
               <div className="bg-white/5 p-2 rounded-2xl border border-white/5 flex items-center justify-between">
@@ -359,7 +365,7 @@ export default function SubtitlePanel({
             </section>
 
             <section>
-              <label className="text-[8px] font-black text-white/20 uppercase tracking-[0.3em] mb-1.5 block ml-1">
+              <label className="text-[10px] font-black text-white/50 uppercase tracking-[0.3em] mb-1.5 block ml-1">
                 Background
               </label>
               <div className="grid grid-cols-3 gap-1.5">
@@ -387,7 +393,7 @@ export default function SubtitlePanel({
             </section>
 
             <section>
-              <label className="text-[8px] font-black text-white/20 uppercase tracking-[0.3em] mb-1.5 block ml-1">
+              <label className="text-[10px] font-black text-white/50 uppercase tracking-[0.3em] mb-1.5 block ml-1">
                 Position
               </label>
               <div className="grid grid-cols-2 gap-1.5">
@@ -414,7 +420,7 @@ export default function SubtitlePanel({
             </section>
 
             <section>
-              <label className="text-[8px] font-black text-white/20 uppercase tracking-[0.3em] mb-1.5 block ml-1">
+              <label className="text-[10px] font-black text-white/50 uppercase tracking-[0.3em] mb-1.5 block ml-1">
                 Text shadow
               </label>
               <div className="grid grid-cols-3 gap-1.5">
@@ -444,7 +450,7 @@ export default function SubtitlePanel({
             {subtitleUrl && (
               <section className="pt-4 border-t border-white/10">
                 <div className="flex items-center justify-between mb-2.5 ml-1">
-                  <label className="text-[8px] font-black text-white/20 uppercase tracking-[0.3em]">
+                  <label className="text-[10px] font-black text-white/50 uppercase tracking-[0.3em]">
                     Timing offset
                   </label>
                   <div className="flex items-center gap-1.5">

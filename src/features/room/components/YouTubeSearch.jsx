@@ -26,20 +26,24 @@ export default function YouTubeSearch({ onLoad }) {
   useEffect(() => {
     if (!open) return;
     const onMouse = (e) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target) &&
-        (!resultsRef.current || !resultsRef.current.contains(e.target))
-      )
-        setOpen(false);
+      setTimeout(() => {
+        if (
+          containerRef.current &&
+          !containerRef.current.contains(e.target) &&
+          (!resultsRef.current || !resultsRef.current.contains(e.target))
+        )
+          setOpen(false);
+      }, 50);
     };
     const onKey = (e) => {
       if (e.key === "Escape") setOpen(false);
     };
     document.addEventListener("mousedown", onMouse);
+    document.addEventListener("touchstart", onMouse, { passive: true });
     document.addEventListener("keydown", onKey);
     return () => {
       document.removeEventListener("mousedown", onMouse);
+      document.removeEventListener("touchstart", onMouse);
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);

@@ -29,13 +29,15 @@ export function IncomingCallBanner({
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <button
             onClick={onDecline}
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-danger/20 hover:bg-danger/30 flex items-center justify-center text-danger transition-all active:scale-90 border border-danger/20"
+            aria-label="Decline call"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-danger/20 hover:bg-danger/30 flex items-center justify-center text-danger transition-all active:scale-90 border border-danger/20 focus-visible:ring-2 focus-visible:ring-danger/60"
           >
             <PhoneOff className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
           <button
             onClick={onAccept}
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-jade/20 hover:bg-jade/30 flex items-center justify-center text-jade transition-all active:scale-90 border border-jade/20"
+            aria-label="Accept call"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-jade/20 hover:bg-jade/30 flex items-center justify-center text-jade transition-all active:scale-90 border border-jade/20 focus-visible:ring-2 focus-visible:ring-jade/60"
           >
             <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>

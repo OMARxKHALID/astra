@@ -9,10 +9,16 @@ export default function SpeedPicker({ value, onChange }) {
   useEffect(() => {
     if (!open) return;
     const handler = (e) => {
-      if (!ref.current?.contains(e.target)) setOpen(false);
+      setTimeout(() => {
+        if (!ref.current?.contains(e.target)) setOpen(false);
+      }, 50);
     };
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("touchstart", handler);
+    };
   }, [open]);
 
   return (
@@ -20,10 +26,11 @@ export default function SpeedPicker({ value, onChange }) {
       <button
         onClick={() => setOpen((o) => !o)}
         aria-label="Playback speed"
+        aria-haspopup="listbox"
         aria-expanded={open}
         className="flex shrink-0 items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-pill)] bg-white/10 hover:bg-white/10
                    border border-white/10 text-xs font-bold text-white transition-all
-                   active:scale-95 backdrop-blur-sm min-w-[70px] justify-between"
+                   active:scale-95 backdrop-blur-sm min-w-[70px] justify-between focus-visible:ring-2"
       >
         <span className="text-[9px] text-white/50 uppercase tracking-wide font-normal">
           spd
@@ -34,6 +41,7 @@ export default function SpeedPicker({ value, onChange }) {
       {/* [Note] menus aren't pills - rectangular for legibility */}
       {open && (
         <div
+          role="listbox"
           className="absolute bottom-full right-0 mb-1.5 py-1
                         bg-void/60 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl
                         z-50 min-w-[80px] overflow-hidden video-controls"
@@ -41,6 +49,8 @@ export default function SpeedPicker({ value, onChange }) {
           {SPEEDS.map((s) => (
             <button
               key={s}
+              role="option"
+              aria-selected={s === value}
               onClick={() => {
                 onChange(s);
                 setOpen(false);

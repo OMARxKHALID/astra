@@ -1,15 +1,6 @@
 import { apiResponse } from "@/utils/apiResponse";
 import { verifyAdminSecret } from "@/utils/adminAuth";
-
-const getInternalUrl = () => {
-  if (process.env.WS_HTTP_URL) return process.env.WS_HTTP_URL.replace(/\/$/, "");
-  
-  const publicUrl = process.env.NEXT_PUBLIC_WS_URL || "http://127.0.0.1:3001";
-  return publicUrl
-    .replace(/^ws/, "http") // [Note] handles ws -> http and wss -> https
-    .replace(/\/socket\.io\/?$/, "")
-    .replace(/\/$/, "");
-};
+import { WS_HTTP_URL } from "@/constants/config";
 
 export async function GET(request) {
   try {
@@ -20,7 +11,7 @@ export async function GET(request) {
       return apiResponse.unauthorized("Authentication required");
     }
 
-    const baseUrl = getInternalUrl();
+    const baseUrl = WS_HTTP_URL.replace(/\/$/, "");
     const url = `${baseUrl}/stats`;
     
     const res = await fetch(url, {

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Download, X } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { ls } from "@/utils/localStorage";
+import { LS_KEYS } from "@/constants/config";
 
 export default function PwaOnboarding() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -14,7 +15,7 @@ export default function PwaOnboarding() {
       e.preventDefault();
       setDeferredPrompt(e);
       
-      const dismissed = ls.get("astra_pwa_dismissed");
+      const dismissed = ls.get(LS_KEYS.pwaDismissed);
       const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
       
       if (!dismissed && !isStandalone) {
@@ -38,7 +39,7 @@ export default function PwaOnboarding() {
 
   const handleDismiss = () => {
     setShowBanner(false);
-    ls.set("astra_pwa_dismissed", "true");
+    ls.set(LS_KEYS.pwaDismissed, "true");
   };
 
   if (!showBanner) return null;
@@ -58,6 +59,7 @@ export default function PwaOnboarding() {
 
           <button 
             onClick={handleDismiss}
+            aria-label="Dismiss install prompt"
             className="absolute -top-1 -right-1 w-7 h-7 flex items-center justify-center rounded-[var(--radius-pill)] text-white/20 hover:text-white/60 hover:bg-white/5 transition-all outline-none"
           >
             <X className="w-3.5 h-3.5" />

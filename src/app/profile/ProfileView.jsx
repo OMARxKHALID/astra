@@ -1,7 +1,7 @@
 "use client";
 
+import { useState } from "react";
 import { signOut } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { LogOut, Shield, Mail, User, Trash2, Database } from "lucide-react";
 import BackButton from "@/components/ui/BackButton";
@@ -10,27 +10,26 @@ import { LS_KEYS } from "@/constants/config";
 import { ls } from "@/utils/localStorage";
 
 export default function ProfileView({ user }) {
-  const router = useRouter();
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const handleClearData = () => {
-    if (
-      !window.confirm(
-        "This will clear your room history, favorites, and local settings. Continue?",
-      )
-    )
+    if (!confirmClear) {
+      setConfirmClear(true);
+      setTimeout(() => setConfirmClear(false), 3000);
       return;
+    }
     Object.values(LS_KEYS).forEach((key) => ls.remove(key));
     sessionStorage.removeItem(LS_KEYS.userId);
     window.location.reload();
   };
 
   const handleDeleteProfile = () => {
-    if (
-      !window.confirm(
-        "Are you sure you want to delete your Astra profile? This will sign you out and wipe all local data.",
-      )
-    )
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      setTimeout(() => setConfirmDelete(false), 3000);
       return;
+    }
     Object.values(LS_KEYS).forEach((key) => ls.remove(key));
     sessionStorage.removeItem(LS_KEYS.userId);
     signOut({ callbackUrl: "/" });
@@ -126,7 +125,7 @@ export default function ProfileView({ user }) {
               </div>
               <div className="min-w-0 flex-1 transition-all duration-300 group-hover:pl-2">
                 <p className="text-[13px] font-bold text-bright">
-                  Clear App Data
+                  {confirmClear ? "Tap again to confirm" : "Clear App Data"}
                 </p>
                 <p className="text-[11px] text-white/40 mt-0.5">
                   Reset settings, rooms, and cache
@@ -143,7 +142,7 @@ export default function ProfileView({ user }) {
               </div>
               <div className="min-w-0 flex-1 transition-all duration-300 group-hover:pl-2">
                 <p className="text-[13px] font-bold text-danger">
-                  Delete Profile
+                  {confirmDelete ? "Tap again to confirm" : "Delete Profile"}
                 </p>
                 <p className="text-[11px] text-danger/60 mt-0.5">
                   Wipe data and sign out completely

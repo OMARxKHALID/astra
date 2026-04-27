@@ -2,9 +2,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import RoomView from "@/features/room/RoomView";
 import { roomStore } from "@/lib/roomStore";
-
-// [Note] 127.0.0.1: avoids IPv6 resolution lag in Node
-const WS_HTTP_URL = process.env.WS_HTTP_URL || "http://127.0.0.1:3001";
+import { WS_HTTP_URL } from "@/constants/config";
 
 async function getRoomMeta(id) {
   const stored = await roomStore.get(id);

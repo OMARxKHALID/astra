@@ -15,7 +15,7 @@ export default function Button({
   ...props
 }) {
   const baseClasses =
-    "flex items-center justify-center gap-1.5 font-black cursor-pointer transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none outline-none select-none rounded-[var(--radius-pill)] whitespace-nowrap";
+    "flex items-center justify-center gap-1.5 font-black cursor-pointer transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none outline-none select-none rounded-[var(--radius-pill)] whitespace-nowrap focus-visible:ring-2 focus-visible:ring-amber/60 focus-visible:ring-offset-1 focus-visible:ring-offset-void touch-manipulation";
 
   const sizeClasses = {
     sm: "h-8 px-3 text-[11px]",

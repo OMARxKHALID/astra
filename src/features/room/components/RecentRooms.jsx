@@ -14,6 +14,7 @@ export default function RecentRooms() {
   const { addToast } = useToast();
   const [showRecent, setShowRecent] = useState(false);
   const [recentRooms, setRecentRooms] = useState([]);
+  const [confirmClear, setConfirmClear] = useState(false);
 
   useEffect(() => {
     try {
@@ -28,12 +29,18 @@ export default function RecentRooms() {
   useEffect(() => {
     if (!showRecent) return;
     const handler = (e) => {
-      if (!e.target.closest(".recent-rooms-container")) {
-        setShowRecent(false);
-      }
+      setTimeout(() => {
+        if (!e.target.closest(".recent-rooms-container")) {
+          setShowRecent(false);
+        }
+      }, 50);
     };
     window.addEventListener("mousedown", handler);
-    return () => window.removeEventListener("mousedown", handler);
+    window.addEventListener("touchstart", handler, { passive: true });
+    return () => {
+      window.removeEventListener("mousedown", handler);
+      window.removeEventListener("touchstart", handler);
+    };
   }, [showRecent]);
 
   const removeRoom = (id, e) => {
@@ -45,7 +52,12 @@ export default function RecentRooms() {
 
   const clearAll = (e) => {
     e?.stopPropagation();
-    if (!window.confirm("Clear all room history?")) return;
+    if (!confirmClear) {
+      setConfirmClear(true);
+      setTimeout(() => setConfirmClear(false), 3000);
+      return;
+    }
+    setConfirmClear(false);
     setRecentRooms([]);
     ls.set(LS_KEYS.history, "[]");
     addToast("Room history cleared", "success");
@@ -78,7 +90,7 @@ export default function RecentRooms() {
                 onClick={clearAll}
                 className="w-fit !p-0 text-[10px] font-bold text-danger hover:text-danger-bright uppercase tracking-wider text-left !bg-transparent !border-none !rounded-none !h-auto !scale-none active:!scale-95"
               >
-                Clear All
+                {confirmClear ? "Tap to confirm" : "Clear All"}
               </Button>
             </div>
             <button

@@ -12,7 +12,8 @@ export default function VolumeControl({
     <div className="group/volume relative flex items-center gap-2">
       <button
         onClick={onMuteToggle}
-        className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/10 text-white/40 hover:text-white transition-all active:scale-95"
+        aria-label={muted || volume === 0 ? "Unmute" : "Mute"}
+        className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/10 text-white/40 hover:text-white transition-all active:scale-95 focus-visible:ring-2"
       >
         {muted || volume === 0 ? (
           <MuteIcon className="w-5 h-5 text-danger/80" />

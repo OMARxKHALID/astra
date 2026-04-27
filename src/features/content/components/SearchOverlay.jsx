@@ -82,6 +82,9 @@ export default function SearchOverlay({ onClose, onPick }) {
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Search movies and series"
       className="fixed inset-0 z-[100] bg-void/85 backdrop-blur-[24px] flex flex-col items-center pt-[80px] px-6 pb-6 animate-in fade-in duration-300"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
@@ -108,6 +111,7 @@ export default function SearchOverlay({ onClose, onPick }) {
           q && (
             <button
               onClick={() => setQ("")}
+              aria-label="Clear search"
               className="absolute right-4 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-muted flex p-1 hover:text-bright transition-colors"
             >
               <X className="w-4 h-4" />
@@ -121,6 +125,7 @@ export default function SearchOverlay({ onClose, onPick }) {
           {results.map((item, i) => (
             <button
               key={item.id}
+              aria-label={`${item.title}${item.year ? ` (${item.year})` : ''} — ${item.isAnime ? 'Anime' : item.type === 'tv' ? 'Series' : 'Movie'}`}
               onClick={() => {
                 onPick(item);
                 onClose();

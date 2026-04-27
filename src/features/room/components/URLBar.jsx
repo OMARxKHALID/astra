@@ -195,6 +195,7 @@ export default function URLBar({
       <div className="flex items-center gap-0.5 shrink-0 p-0.5 rounded-[var(--radius-pill)] border border-border bg-surface shadow-sm">
         <button
           onClick={() => setMode("url")}
+          aria-label="Paste video URL"
           title="Paste video URL"
           className={`w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] transition-all duration-300
             ${mode === "url" ? "bg-amber text-void shadow-lg shadow-amber/20" : "text-white/20 hover:text-white/60"}`}
@@ -203,6 +204,7 @@ export default function URLBar({
         </button>
         <button
           onClick={() => setMode("youtube")}
+          aria-label="Search YouTube"
           title="Search YouTube"
           className={`w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] transition-all duration-300
             ${mode === "youtube" ? "bg-white/10 text-white shadow-xl border border-white/10" : "text-white/20 hover:text-white/60"}`}
@@ -211,6 +213,7 @@ export default function URLBar({
         </button>
         <button
           onClick={() => setMode("upload")}
+          aria-label="Upload local video"
           title="Upload local video"
           className={`w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] transition-all duration-300
             ${mode === "upload" ? "bg-amber text-void shadow-lg shadow-amber/20" : "text-white/20 hover:text-white/60"}`}

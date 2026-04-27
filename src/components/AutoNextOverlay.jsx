@@ -48,7 +48,8 @@ export default function AutoNextOverlay({ episodeLabel, onConfirm, onCancel }) {
       >
         <button
           onClick={handleCancel}
-          className="absolute top-3.5 right-3 w-7 h-7 rounded-full bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/40 hover:text-white/80 transition-all shrink-0 touch-manipulation"
+          aria-label="Cancel auto-play next episode"
+          className="absolute top-3.5 right-3 w-7 h-7 rounded-full bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/40 hover:text-white/80 transition-all shrink-0 touch-manipulation focus-visible:ring-2"
         >
           <X className="w-3.5 h-3.5" />
         </button>

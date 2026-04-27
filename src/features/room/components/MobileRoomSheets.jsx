@@ -18,16 +18,16 @@ export function MobileRoomSheets({
 
   useEffect(() => {
     const handleResize = () => {
-      const visualHeight = window.visualHeight || window.innerHeight;
+      const visualHeight = window.visualViewport?.height || window.innerHeight;
       const diff = window.innerHeight - visualHeight;
       setKeyboardHeight(diff > 0 ? diff : 0);
     };
     handleResize();
     window.addEventListener("resize", handleResize);
-    window.addEventListener("visualviewport", handleResize);
+    window.visualViewport?.addEventListener("resize", handleResize);
     return () => {
       window.removeEventListener("resize", handleResize);
-      window.removeEventListener("visualviewport", handleResize);
+      window.visualViewport?.removeEventListener("resize", handleResize);
     };
   }, []);
 
@@ -52,9 +52,9 @@ export function MobileRoomSheets({
 
   if (!room.mobileSheet) return null;
 
-  const sheetHeight = keyboardHeight > 0 
-    ? `calc(100dvh - ${keyboardHeight}px)` 
-    : "h-[75dvh]";
+  const dynamicHeight = keyboardHeight > 0
+    ? `calc(100dvh - ${keyboardHeight}px)`
+    : null;
 
   return (
     <>
@@ -63,10 +63,11 @@ export function MobileRoomSheets({
         onClick={() => room.setMobileSheet(null)}
       />
       <div
-        className={`lg:hidden fixed bottom-0 inset-x-0 z-50 ${sheetHeight} flex flex-col glass-card border-t border-border overflow-hidden shadow-[0_-20px_60px_rgba(0,0,0,0.4)]`}
+        className="lg:hidden fixed bottom-0 inset-x-0 z-50 h-[75dvh] flex flex-col glass-card border-t border-border overflow-hidden shadow-[0_-20px_60px_rgba(0,0,0,0.4)]"
         style={{
           transform: `translateY(${dragY}px)`,
           transition: dragY === 0 ? "transform 0.3s cubic-bezier(0.23,1,0.32,1)" : "none",
+          ...(dynamicHeight ? { height: dynamicHeight } : {}),
         }}
       >
         <div
@@ -84,6 +85,7 @@ export function MobileRoomSheets({
           </span>
           <button
             onClick={() => room.setMobileSheet(null)}
+            aria-label="Close panel"
             className="w-8 h-8 flex items-center justify-center rounded-[var(--radius-pill)] glass-card text-white/40 touch-manipulation"
           >
             ✕

@@ -20,15 +20,21 @@ export default function CustomSelect({
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target)
-      ) {
-        setIsOpen(false);
-      }
+      setTimeout(() => {
+        if (
+          containerRef.current &&
+          !containerRef.current.contains(event.target)
+        ) {
+          setIsOpen(false);
+        }
+      }, 50);
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
   }, []);
 
   return (
