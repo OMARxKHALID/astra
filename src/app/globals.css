@@ -321,12 +321,15 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.05);
+    background: transparent;
     border-radius: 10px;
     transition: background 0.3s;
   }
+  *:hover::-webkit-scrollbar-thumb {
+    background: rgba(var(--color-amber-rgb), 0.4);
+  }
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-amber);
+    background: var(--color-amber) !important;
   }
 
   /* Specific utility for thin scrollbars */
@@ -337,15 +340,23 @@
     background: transparent;
   }
   .thin-scrollbar::-webkit-scrollbar-thumb {
-    background: var(--color-border);
+    background: transparent;
     border-radius: 20px;
+    transition: background 0.3s;
+  }
+  .thin-scrollbar:hover::-webkit-scrollbar-thumb {
+    background: rgba(var(--color-amber-rgb), 0.3);
   }
   .thin-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: var(--color-amber);
+    background: var(--color-amber) !important;
   }
   .thin-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: var(--color-border) transparent;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.3s;
+  }
+  .thin-scrollbar:hover {
+    scrollbar-color: rgba(var(--color-amber-rgb), 0.3) transparent;
   }
 
   .pb-safe {

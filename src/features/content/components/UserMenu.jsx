@@ -31,7 +31,9 @@ export default function UserMenu() {
   const [loading, setLoading] = useState(false);
 
   if (status === "loading") {
-    return <div className="w-9 h-9 rounded-full bg-white/5 animate-pulse" />;
+    return (
+      <div className="h-9 w-[30px] sm:w-[100px] rounded-full bg-white/5 border border-white/10 animate-pulse shrink-0" />
+    );
   }
 
   if (!session) {
@@ -44,7 +46,7 @@ export default function UserMenu() {
           setLoading(true);
           router.push("/login");
         }}
-        className="px-5 h-9 !bg-white/5 text-white/80 !border-white/10"
+        className="px-5 h-9"
       >
         {!loading && <LogIn className="w-4 h-4" />}
         <span className="hidden sm:inline">Sign In</span>
@@ -59,7 +61,7 @@ export default function UserMenu() {
       <Button
         variant="custom"
         onClick={() => setOpen(!open)}
-        className={`w-9 h-9 !p-0 rounded-full overflow-hidden border transition-all cursor-pointer shadow-lg !bg-transparent
+        className={`w-[30px] sm:w-9 h-[30px] sm:h-9 !p-0 rounded-full overflow-hidden border transition-all cursor-pointer shadow-lg glass-card
           ${open
             ? "!border-amber shadow-[0_0_24px_rgba(var(--color-amber-rgb),0.4)] scale-105"
             : "!border-white/10 hover:!border-white/30"
@@ -81,7 +83,7 @@ export default function UserMenu() {
       </Button>
 
       {open && (
-        <div className="absolute top-full right-0 mt-3 w-60 glass-card rounded-2xl overflow-hidden shadow-2xl z-50 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300 origin-top-right">
+        <div className="absolute top-full left-1/2 -translate-x-1/2 sm:left-auto sm:right-0 sm:translate-x-0 mt-3 w-60 glass-card rounded-2xl overflow-hidden shadow-2xl z-50 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300 origin-top-right sm:origin-top-right">
           <div className="px-4 py-4 border-b border-white/10 bg-white/[0.02]">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full overflow-hidden p-[2px] bg-gradient-to-br from-amber to-amber/30 shrink-0">

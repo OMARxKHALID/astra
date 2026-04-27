@@ -89,7 +89,7 @@ export default function SearchOverlay({ onClose, onPick }) {
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="w-full max-w-[640px] mb-6 relative animate-in zoom-in-95 duration-300">
-        <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-white/50 pointer-events-none" />
+        <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/80 pointer-events-none" />
         <input
           ref={inputRef}
           value={q}

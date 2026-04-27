@@ -26,7 +26,7 @@ export default function HomeNavbar({ onOpenSearch }) {
         </h1>
       </div>
 
-      <div className="flex items-center gap-5">
+      <div className="flex items-center gap-2 sm:gap-5">
         <Button
           variant="ghost"
           onClick={onOpenSearch}
@@ -38,23 +38,19 @@ export default function HomeNavbar({ onOpenSearch }) {
             ⌘K
           </kbd>
         </Button>
-
         <Button
           variant="ghost"
           onClick={onOpenSearch}
-          className="lg:hidden !w-9 !h-9 !rounded-full text-white/40 !p-0 !border-white/10"
+          className="lg:hidden !w-[30px] !h-[30px] !rounded-full text-white/40 !p-0 !border-white/10"
         >
           <Search className="w-4 h-4" />
         </Button>
-
         <RecentRooms />
-
         <UserMenu />
-
         <Button
           variant="ghost"
           onClick={() => router.push("/create")}
-          className="flex items-center gap-2 px-5 h-9 text-white/80 !border-white/10"
+          className="flex items-center gap-2 px-3 sm:px-5 h-8 sm:h-9 text-white/80 !border-white/10"
         >
           <Users className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Create Room</span>

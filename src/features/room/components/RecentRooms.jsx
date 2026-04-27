@@ -71,15 +71,15 @@ export default function RecentRooms() {
       <Button
         onClick={() => setShowRecent(!showRecent)}
         variant={showRecent ? "primary" : "ghost"}
-        className={`!w-9 !h-9 !p-0 !rounded-full shrink-0 ${
-          showRecent ? "" : "!border-white/10 !bg-white/5 hover:!bg-white/10 !text-white/40 hover:!text-white"
+        className={`!w-[30px] sm:!w-9 !h-[30px] sm:!h-9 !p-0 !rounded-full shrink-0 ${
+          showRecent ? "" : "!text-white/40"
         }`}
       >
         <History className="w-4 h-4" />
       </Button>
 
       {showRecent && (
-        <div className="absolute top-full right-0 mt-3 w-72 glass-card rounded-2xl overflow-hidden shadow-2xl animate-in slide-in-from-top-2 fade-in duration-300 z-50">
+        <div className="absolute top-full left-1/2 -translate-x-1/2 sm:left-auto sm:right-0 sm:translate-x-0 mt-3 w-72 glass-card rounded-2xl overflow-hidden shadow-2xl animate-in slide-in-from-top-2 fade-in duration-300 z-50">
           <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
             <div className="flex flex-col">
               <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/60 mb-0.5">

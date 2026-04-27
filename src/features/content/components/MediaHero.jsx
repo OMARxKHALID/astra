@@ -57,7 +57,7 @@ export default function MediaHero({ items, onPick, onPlay, onSync, loading }) {
       <div className="absolute inset-0 bg-gradient-to-t from-void to-transparent" />
 
       <div
-        className={`absolute inset-0 flex items-end px-6 lg:px-12 pb-[120px] transition-opacity duration-[260ms] ease-in-out ${fading ? "opacity-0" : "opacity-100"}`}
+        className={`absolute inset-0 flex items-end px-6 lg:px-12 pb-[140px] sm:pb-[120px] transition-opacity duration-[260ms] ease-in-out ${fading ? "opacity-0" : "opacity-100"}`}
       >
         <div className="max-w-[520px] z-10">
           <div className="flex gap-2 mb-4 items-center flex-wrap">
@@ -101,14 +101,14 @@ export default function MediaHero({ items, onPick, onPlay, onSync, loading }) {
             {item.overview}
           </p>
 
-          <div className="flex gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar py-1">
             <Button
               size="lg"
               onClick={() => onPlay && onPlay(item)}
               aria-label={`Watch ${item.title}`}
-              className="px-7 border-none shadow-lg"
+              className="px-4 sm:px-7 !h-[40px] sm:!h-[48px] !text-[12px] sm:!text-[14px] border-none shadow-lg shrink-0"
             >
-              <Play className="w-4 h-4 fill-current" />
+              <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current" />
               Play
             </Button>
             <Button
@@ -117,9 +117,9 @@ export default function MediaHero({ items, onPick, onPlay, onSync, loading }) {
               onClick={() => onSync && onSync(item)}
               aria-label={`Watch Together ${item.title}`}
               variant="jade"
-              className="px-7 border-none shadow-lg"
+              className="px-4 sm:px-7 !h-[40px] sm:!h-[48px] !text-[12px] sm:!text-[14px] border-none shadow-lg shrink-0"
             >
-              {!loading && <Users className="w-4 h-4 fill-current text-void" />}
+              {!loading && <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current text-void" />}
               Together
             </Button>
             <Button
@@ -127,7 +127,7 @@ export default function MediaHero({ items, onPick, onPlay, onSync, loading }) {
               size="lg"
               onClick={() => onPick(item)}
               aria-label={`View details for ${item.title}`}
-              className="px-6"
+              className="px-3 sm:px-6 !h-[40px] sm:!h-[48px] !text-[12px] sm:!text-[14px] shrink-0"
             >
               See More
             </Button>
