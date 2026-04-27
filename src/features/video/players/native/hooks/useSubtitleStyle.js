@@ -36,7 +36,7 @@ function parseVTT(text) {
   return cues;
 }
 
-export default function useSubtitleStyle(
+export function useSubtitleStyle(
   videoRef,
   subtitleUrl,
   showSubtitles,

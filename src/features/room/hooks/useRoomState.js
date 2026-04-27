@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 
-export default function useRoomState(initialMeta) {
+export function useRoomState(initialMeta) {
   const searchParams = useSearchParams();
   const [serverState, setServerState] = useState(
     initialMeta?.videoUrl

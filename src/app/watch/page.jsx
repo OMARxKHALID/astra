@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { extractMeta } from "@/lib/videoResolver";
 import { getMovieDetails, getTVDetails } from "@/features/content/services/tmdb";
-import WatchContent from "./WatchContent";
+import { WatchContent } from "./WatchContent";
 
 // [Note] React cache: deduplicates getWatchMeta between generateMetadata and WatchPage within a single render pass
 const getWatchMeta = cache(async (type, id) => {

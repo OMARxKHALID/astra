@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Play as PlayIcon, Pause as PauseIcon } from "lucide-react";
-import { formatTime } from "@/utils/time";
+import { time } from "@/utils/time";
 
 export function VoiceNote({ src, isOwn }) {
   const audioRef = useRef(null);
@@ -105,7 +105,7 @@ export function VoiceNote({ src, isOwn }) {
       </div>
 
       <span className="text-[9px] font-mono tracking-wide shrink-0 font-medium">
-        {formatTime(displayTime)}
+        {time(displayTime)}
       </span>
 
       <audio

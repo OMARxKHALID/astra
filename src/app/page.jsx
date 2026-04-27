@@ -1,6 +1,6 @@
 import { getBrowseData } from "@/features/content/services/tmdb";
 import { NEXT_PUBLIC_SITE_URL } from "@/constants/config";
-import HomeView from "@/features/content/HomeView";
+import { HomeView } from "@/features/content/HomeView";
 import { Suspense } from "react";
 
 export const metadata = {

@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
-import Loading from "@/components/Loading";
+import { Loading } from "@/components/Loading";
 
-export default function EpisodeSelector({
+export function EpisodeSelector({
   tmdbId,
   currentSeason,
   currentEpisode,

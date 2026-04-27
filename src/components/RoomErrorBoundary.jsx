@@ -2,7 +2,7 @@
 
 import { Component } from "react";
 
-export default class RoomErrorBoundary extends Component {
+export class RoomErrorBoundary extends Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false };

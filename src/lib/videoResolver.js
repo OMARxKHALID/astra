@@ -1,9 +1,9 @@
 import {
   KNOWN_VIDEO_EXTENSIONS,
-  isStrictVideoUrl,
+  videoValidation,
 } from "@/utils/videoValidation";
 
-import { ls } from "@/utils/localStorage";
+import { localStorage } from "@/utils/localStorage";
 import { LS_KEYS, STREAM_SERVERS } from "@/constants/config";
 
 const YT_PATTERNS = [
@@ -33,7 +33,7 @@ const SERVER_DOMAINS = {
 
 const EMBED_DOMAINS = Object.values(SERVER_DOMAINS).flat();
 
-export { isStrictVideoUrl };
+export { videoValidation };
 
 const PROXY_DOMAINS = [
   "proxy.valhallastream.dpdns.org",
@@ -299,7 +299,7 @@ export const serverOptions = [
 export function getLastPosition(videoUrl) {
   if (!videoUrl) return null;
   try {
-    const history = JSON.parse(ls.get(LS_KEYS.history) || "[]");
+    const history = JSON.parse(localStorage.get(LS_KEYS.history) || "[]");
     
     const entry = history.find((h) => h.videoUrl === videoUrl);
     if (entry?.videoTS > 10) return entry.videoTS;

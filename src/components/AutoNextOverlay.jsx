@@ -2,11 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
-import NotificationCard from "./ui/NotificationCard";
+import { NotificationCard } from "./ui/NotificationCard";
 
 const COUNTDOWN_S = 5;
 
-export default function AutoNextOverlay({ episodeLabel, onConfirm, onCancel }) {
+export function AutoNextOverlay({ episodeLabel, onConfirm, onCancel }) {
   const [remaining, setRemaining] = useState(COUNTDOWN_S);
   const firedRef = useRef(false);
 

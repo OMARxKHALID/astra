@@ -2,7 +2,7 @@
 
 import { MessageCircle as ChatBubbleIcon } from "lucide-react";
 
-export default function EmptyState({
+export function EmptyState({
   icon: Icon = ChatBubbleIcon,
   title,
   description,

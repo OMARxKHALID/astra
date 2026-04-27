@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { Search as SearchIcon } from "lucide-react";
-import { ls } from "@/utils/localStorage";
+import { localStorage } from "@/utils/localStorage";
 import { LS_KEYS, MAX_RECENT_SUBS } from "@/constants/config";
 
-export default function SubtitlePanel({
+export function SubtitlePanel({
   activePanel,
   setActivePanel,
   subtitleUrl,
@@ -86,7 +86,7 @@ export default function SubtitlePanel({
     ].slice(0, MAX_RECENT_SUBS);
 
     setRecentSubs(updated);
-    ls.set(LS_KEYS.recentSubs, JSON.stringify(updated));
+    localStorage.set(LS_KEYS.recentSubs, JSON.stringify(updated));
 
     setActivePanel(null);
     setSubOptions(null);
@@ -251,7 +251,7 @@ export default function SubtitlePanel({
                             ...recentSubs.filter((s) => s.url !== sub.url),
                           ].slice(0, MAX_RECENT_SUBS);
                           setRecentSubs(updated);
-                          ls.set(LS_KEYS.recentSubs, JSON.stringify(updated));
+                          localStorage.set(LS_KEYS.recentSubs, JSON.stringify(updated));
                           
                           setSelectingId(null);
                           setActivePanel(null);
@@ -278,7 +278,7 @@ export default function SubtitlePanel({
                         onClick={() => {
                           const u = recentSubs.filter((s) => s.url !== sub.url);
                           setRecentSubs(u);
-                          ls.set(LS_KEYS.recentSubs, JSON.stringify(u));
+                          localStorage.set(LS_KEYS.recentSubs, JSON.stringify(u));
                         }}
                         title="Remove"
                         className="opacity-0 group-hover/sub:opacity-100 transition-opacity w-7 h-7 flex items-center justify-center rounded-full bg-danger/10 hover:bg-danger/25 text-danger/60 hover:text-danger border border-danger/15 shrink-0 text-xs"
@@ -293,7 +293,7 @@ export default function SubtitlePanel({
                     onClick={() => {
                       if (confirmClearSubs) {
                         setRecentSubs([]);
-                        ls.set(LS_KEYS.recentSubs, "[]");
+                        localStorage.set(LS_KEYS.recentSubs, "[]");
                         setConfirmClearSubs(false);
                       } else {
                         setConfirmClearSubs(true);

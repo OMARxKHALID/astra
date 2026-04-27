@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import { LS_KEYS } from "@/constants/config";
-import { ls } from "@/utils/localStorage";
+import { localStorage } from "@/utils/localStorage";
 
-export default function useAutoSubtitle({
+export function useAutoSubtitle({
   videoUrl,
   subtitleUrl,
   onSubtitleChange,
@@ -92,12 +92,12 @@ export default function useAutoSubtitle({
           const dlUrl = `${baseUrl}/api/subtitles/download?url=${encodeURIComponent(sub.url)}`;
           onSubtitleChangeRef.current(dlUrl);
           setShowSubtitlesRef.current?.(true);
-          const recentSubs = JSON.parse(ls.get(LS_KEYS.recentSubs) || "[]");
+          const recentSubs = JSON.parse(localStorage.get(LS_KEYS.recentSubs) || "[]");
           const updated = [
             { label: sub.label, url: dlUrl },
             ...recentSubs.filter((s) => s.url !== dlUrl),
           ].slice(0, 5);
-          ls.set(LS_KEYS.recentSubs, JSON.stringify(updated));
+          localStorage.set(LS_KEYS.recentSubs, JSON.stringify(updated));
         }
       } catch (e) {
         // non-critical — auto-subtitle failure should not crash the player

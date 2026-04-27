@@ -10,9 +10,9 @@ import {
 } from "lucide-react";
 import { ChatMessage } from "./ChatMessage";
 import { useRecord } from "../hooks/useRecord";
-import EmptyState from "@/components/EmptyState";
+import { EmptyState } from "@/components/EmptyState";
 
-export default function ChatSidebar({
+export function ChatSidebar({
   messages = [],
   userId,
   displayNames = {},

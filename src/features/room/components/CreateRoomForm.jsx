@@ -12,15 +12,15 @@ import {
   Sparkles,
   Upload as UploadIcon,
 } from "lucide-react";
-import YoutubeIcon from "@/components/icons/YoutubeIcon";
-import Button from "@/components/ui/Button";
+import { YoutubeIcon } from "@/components/icons/YoutubeIcon";
+import { Button } from "@/components/ui/Button";
 import { useSession } from "next-auth/react";
 import { createRoom } from "../services/createRoom";
-import { ls } from "@/utils/localStorage";
+import { localStorage } from "@/utils/localStorage";
 import { LS_KEYS, MAX_HISTORY_ENTRIES } from "@/constants/config";
 import { EXTERNAL_SERVICES } from "@/constants/config";
 
-export default function CreateRoomForm({ onResultsChange }) {
+export function CreateRoomForm({ onResultsChange }) {
   const router = useRouter();
   const { data: session } = useSession();
   const [url, setUrl] = useState("");
@@ -132,7 +132,7 @@ export default function CreateRoomForm({ onResultsChange }) {
 
     if (!isLocalOnlyUrl) {
       try {
-        const history = JSON.parse(ls.get(LS_KEYS.history) || "[]");
+        const history = JSON.parse(localStorage.get(LS_KEYS.history) || "[]");
         const ytMatch = trimmed.match(
           /(?:youtube\.com\/watch\?.*v=|youtu\.be\/)([A-Za-z0-9_-]{11})/,
         );
@@ -147,7 +147,7 @@ export default function CreateRoomForm({ onResultsChange }) {
             `Room ${roomId.slice(0, 4)}`,
           lastVisited: Date.now(),
         };
-        ls.set(
+        localStorage.set(
           LS_KEYS.history,
           JSON.stringify(
             [entry, ...history.filter((h) => h.roomId !== roomId)].slice(
@@ -189,7 +189,7 @@ export default function CreateRoomForm({ onResultsChange }) {
     try {
       const blobUrl = URL.createObjectURL(file);
       setLocalFileName(file.name);
-      ls.set(LS_KEYS.localFileName, file.name);
+      localStorage.set(LS_KEYS.localFileName, file.name);
       await handleCreate(null, blobUrl);
     } catch {
       setError("Failed to create room with local file");

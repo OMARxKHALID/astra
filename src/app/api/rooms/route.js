@@ -1,5 +1,5 @@
 import { apiResponse } from "@/utils/apiResponse";
-import { generateId } from "@/utils/id";
+import { id } from "@/utils/id";
 import { signJwt } from "@/lib/jwtAuth";
 import { roomStore } from "@/lib/roomStore";
 import { withRateLimit } from "@/lib/rateLimit";
@@ -24,11 +24,11 @@ export async function POST(request) {
     const roomId =
       clientRoomId && typeof clientRoomId === "string" && /^[a-zA-Z0-9_-]{4,36}$/.test(clientRoomId.trim())
         ? clientRoomId.trim()
-        : generateId(8);
+        : id.generate(8);
     const hostId =
       typeof userId === "string" && userId.trim()
         ? userId.trim()
-        : generateId(21);
+        : id.generate(21);
 
     const hostToken = signJwt({ sub: hostId, roomId, role: "host" });
 

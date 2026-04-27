@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRoomSocket } from "../../room/hooks/useRoomSocket";
 
-export default function SyncEngine(props) {
+export function SyncEngine(props) {
   const { sendRef, socketRef: externalSocketRef } = props;
   const { send, socketRef } = useRoomSocket(props);
 

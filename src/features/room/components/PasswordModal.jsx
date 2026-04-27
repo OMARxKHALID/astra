@@ -7,7 +7,7 @@ import {
   AlertTriangle as ExclamationIcon,
 } from "lucide-react";
 
-export default function PasswordModal({ roomId, onSubmit, error }) {
+export function PasswordModal({ roomId, onSubmit, error }) {
   const [pw, setPw] = useState("");
   const [show, setShow] = useState(false);
   const inputRef = useRef(null);

@@ -1,7 +1,7 @@
 "use client";
 import { useRef, memo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import MediaCard from "./MediaCard";
+import { MediaCard } from "./MediaCard";
 
 const MediaRow = memo(function MediaRow({
   title,
@@ -52,4 +52,4 @@ const MediaRow = memo(function MediaRow({
   );
 });
 
-export default MediaRow;
+export { MediaRow };

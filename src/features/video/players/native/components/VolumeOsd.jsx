@@ -2,7 +2,7 @@
 
 import { Volume2 as VolumeIcon, VolumeX as MuteIcon } from "lucide-react";
 
-export default function VolumeOsd({ value }) {
+export function VolumeOsd({ value }) {
   if (value === null) return null;
 
   return (

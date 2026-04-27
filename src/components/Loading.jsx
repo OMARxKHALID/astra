@@ -1,6 +1,6 @@
 "use client";
 
-export default function Loading({ full = true, size = "md" }) {
+export function Loading({ full = true, size = "md" }) {
   const sizeClasses = {
     sm: "w-5 h-5 border-2",
     md: "w-9 h-9 border-[3px]",

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 
-export default function PwaUpdateToast() {
+export function PwaUpdateToast() {
   const [show, setShow] = useState(false);
   const [reg, setReg] = useState(null);
 

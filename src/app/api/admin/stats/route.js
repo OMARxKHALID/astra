@@ -1,5 +1,5 @@
 import { apiResponse } from "@/utils/apiResponse";
-import { verifyAdminSecret } from "@/utils/adminAuth";
+import { adminAuth } from "@/utils/adminAuth";
 import { WS_HTTP_URL } from "@/constants/config";
 
 export async function GET(request) {
@@ -7,7 +7,7 @@ export async function GET(request) {
     const secret = request.headers.get("x-admin-secret");
     const configuredSecret = process.env.ADMIN_SECRET;
     
-    if (!verifyAdminSecret(secret)) {
+    if (!adminAuth(secret)) {
       return apiResponse.unauthorized("Authentication required");
     }
 

@@ -17,4 +17,4 @@ const YoutubeIcon = ({ className, size = 16 }) => (
   </svg>
 );
 
-export default YoutubeIcon;
+export { YoutubeIcon };

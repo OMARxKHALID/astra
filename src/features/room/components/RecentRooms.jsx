@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { History, X as XIcon } from "lucide-react";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
 import { LS_KEYS } from "@/constants/config";
-import { ls } from "@/utils/localStorage";
+import { localStorage } from "@/utils/localStorage";
 import { useToast } from "@/components/Toast";
 import Image from "next/image";
 
-export default function RecentRooms() {
+export function RecentRooms() {
   const router = useRouter();
   const { addToast } = useToast();
   const [showRecent, setShowRecent] = useState(false);
@@ -18,7 +18,7 @@ export default function RecentRooms() {
 
   useEffect(() => {
     try {
-      const stored = JSON.parse(ls.get(LS_KEYS.history) || "[]");
+      const stored = JSON.parse(localStorage.get(LS_KEYS.history) || "[]");
       const unique = Array.from(new Map(stored.filter(r => r.roomId).map(r => [r.roomId, r])).values());
       setRecentRooms(unique.slice(0, 10));
     } catch {
@@ -47,7 +47,7 @@ export default function RecentRooms() {
     e?.stopPropagation();
     const updated = recentRooms.filter((r) => r.roomId !== id);
     setRecentRooms(updated);
-    ls.set(LS_KEYS.history, JSON.stringify(updated));
+    localStorage.set(LS_KEYS.history, JSON.stringify(updated));
   };
 
   const clearAll = (e) => {
@@ -59,7 +59,7 @@ export default function RecentRooms() {
     }
     setConfirmClear(false);
     setRecentRooms([]);
-    ls.set(LS_KEYS.history, "[]");
+    localStorage.set(LS_KEYS.history, "[]");
     addToast("Room history cleared", "success");
     setShowRecent(false);
   };

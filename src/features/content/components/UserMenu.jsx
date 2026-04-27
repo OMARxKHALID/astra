@@ -5,9 +5,9 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { LogOut, LogIn, Settings } from "lucide-react";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 
-export default function UserMenu() {
+export function UserMenu() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [open, setOpen] = useState(false);

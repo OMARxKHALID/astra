@@ -1,4 +1,4 @@
-export default function registerCallHandlers(io, socket, rooms, clientMeta) {
+export function registerCallHandlers(io, socket, rooms, clientMeta) {
   function getSocketByUserId(userId, roomId) {
     for (const [sid, meta] of clientMeta.entries()) {
       if (meta.userId === userId && meta.roomId === roomId) return sid;

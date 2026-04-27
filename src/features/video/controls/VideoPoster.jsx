@@ -1,6 +1,6 @@
 "use client";
 
-export default function VideoPoster({
+export function VideoPoster({
   visible,
   thumbnailUrl = null,
   title = null,

@@ -1,6 +1,6 @@
-import { formatTime } from "@/utils/time";
+import { time } from "@/utils/time";
 
-export { formatTime };
+export { time };
 
 let ytCbs = new Set();
 let ytPollingInt = null;

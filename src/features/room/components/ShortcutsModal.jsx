@@ -4,7 +4,7 @@ import { X as XIcon } from "lucide-react";
 
 import { KEYBOARD_ROWS } from "@/constants/maps";
 
-export default function KeyboardShortcutsModal({ isOpen, onClose }) {
+export function KeyboardShortcutsModal({ isOpen, onClose }) {
   const ref = useRef(null);
 
   useEffect(() => {

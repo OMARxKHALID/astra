@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import RoomView from "@/features/room/RoomView";
+import { RoomView } from "@/features/room/RoomView";
 import { roomStore } from "@/lib/roomStore";
 import { WS_HTTP_URL } from "@/constants/config";
 

@@ -1,8 +1,8 @@
 "use client";
 
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 
-export default function CatchUpBanner({ videoTS, onSync, onDismiss }) {
+export function CatchUpBanner({ videoTS, onSync, onDismiss }) {
   const h = Math.floor(videoTS / 3600);
   const m = Math.floor((videoTS % 3600) / 60);
   const s = Math.floor(videoTS % 60);

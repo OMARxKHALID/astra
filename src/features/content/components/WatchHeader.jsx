@@ -2,8 +2,8 @@
 
 import { Star, Users, Cloud, List as ListIcon } from "lucide-react";
 import Image from "next/image";
-import BackButton from "@/components/ui/BackButton";
-import Button from "@/components/ui/Button";
+import { BackButton } from "@/components/ui/BackButton";
+import { Button } from "@/components/ui/Button";
 import { detectServer } from "@/lib/videoResolver";
 import { ServerDropdown } from "@/features/video/controls/ServerPicker";
 import { memo } from "react";
@@ -129,4 +129,4 @@ const WatchHeader = memo(function WatchHeader({
   );
 });
 
-export default WatchHeader;
+export { WatchHeader };

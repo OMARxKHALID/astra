@@ -1,7 +1,7 @@
 import { saveRoom } from "../models/Room.js";
 import { MAX_DATAURL_BYTES, MAX_CHAT_MESSAGES } from "../constants.js";
 
-export default function registerChatHandlers(io, socket, rooms, clientMeta) {
+export function registerChatHandlers(io, socket, rooms, clientMeta) {
   socket.on("CMD:setName", (_rId, msg) => {
     const meta = clientMeta.get(socket.id);
     if (!meta) return;

@@ -2,9 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown, Check } from "lucide-react";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 
-export default function CustomSelect({
+export function CustomSelect({
   label,
   value,
   options,

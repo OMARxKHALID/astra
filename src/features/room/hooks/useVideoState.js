@@ -1,10 +1,8 @@
 import { useState, useMemo, useCallback } from "react";
 import { buildEmbedUrl, detectServer, extractMeta } from "@/lib/videoResolver";
 import { useBingeWatch } from "@/features/content/hooks/useBingeWatch";
-import { ls } from "@/utils/localStorage";
-import { LS_KEYS } from "@/constants/config";
 
-export function useVideoState({ videoUrl, params, sendRef, isHost, addToast }) {
+export function useVideoState({ videoUrl, params, sendRef, addToast }) {
   const [episodesOpen, setEpisodesOpen] = useState(false);
   const [seasonCache, setSeasonCache] = useState({});
 
@@ -29,7 +27,6 @@ export function useVideoState({ videoUrl, params, sendRef, isHost, addToast }) {
   }, [videoUrl, params]);
 
   const isActiveTv = parsed.type === "tv" && !!parsed.id;
-
 
   const handleSelectEpisode = useCallback(
     (season, episode) => {

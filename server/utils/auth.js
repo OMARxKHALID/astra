@@ -91,7 +91,7 @@ export async function verifyPassword(pw, hash) {
   return argon2.verify(hash, pw);
 }
 
-export function verifyAdminSecret(token) {
+export function adminAuth(token) {
   const secret = process.env.ADMIN_SECRET;
   if (!secret || !token || typeof token !== "string") return false;
   try {

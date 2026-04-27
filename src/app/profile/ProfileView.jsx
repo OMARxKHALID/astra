@@ -4,12 +4,12 @@ import { useState } from "react";
 import { signOut } from "next-auth/react";
 import Image from "next/image";
 import { LogOut, Shield, Mail, User, Trash2, Database } from "lucide-react";
-import BackButton from "@/components/ui/BackButton";
-import Button from "@/components/ui/Button";
+import { BackButton } from "@/components/ui/BackButton";
+import { Button } from "@/components/ui/Button";
 import { LS_KEYS } from "@/constants/config";
-import { ls } from "@/utils/localStorage";
+import { localStorage } from "@/utils/localStorage";
 
-export default function ProfileView({ user }) {
+export function ProfileView({ user }) {
   const [confirmClear, setConfirmClear] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -19,7 +19,7 @@ export default function ProfileView({ user }) {
       setTimeout(() => setConfirmClear(false), 3000);
       return;
     }
-    Object.values(LS_KEYS).forEach((key) => ls.remove(key));
+    Object.values(LS_KEYS).forEach((key) => localStorage.remove(key));
     sessionStorage.removeItem(LS_KEYS.userId);
     window.location.reload();
   };
@@ -30,7 +30,7 @@ export default function ProfileView({ user }) {
       setTimeout(() => setConfirmDelete(false), 3000);
       return;
     }
-    Object.values(LS_KEYS).forEach((key) => ls.remove(key));
+    Object.values(LS_KEYS).forEach((key) => localStorage.remove(key));
     sessionStorage.removeItem(LS_KEYS.userId);
     signOut({ callbackUrl: "/" });
   };

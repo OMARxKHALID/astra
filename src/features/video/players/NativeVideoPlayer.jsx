@@ -2,30 +2,30 @@
 
 import { useRef, useState, useEffect, useCallback } from "react";
 import { LS_KEYS, DEBUG } from "@/constants/config";
-import { ls } from "@/utils/localStorage";
+import { localStorage } from "@/utils/localStorage";
 import { usePlayerControls } from "../hooks/usePlayerControls";
 import { useVideoHotkeys } from "../hooks/useVideoHotkeys";
 import { useVideoTouchControls } from "../hooks/useVideoTouchControls";
 
-import useHLS from "./native/hooks/useHLS";
-import useAmbilight from "./native/hooks/useAmbilight";
-import useScrubPreview from "./native/hooks/useScrubPreview";
-import useVideoEvents from "./native/hooks/useVideoEvents";
-import useSubtitleStyle from "./native/hooks/useSubtitleStyle";
-import useAutoSubtitle from "./native/hooks/useAutoSubtitle";
+import { useHLS } from "./native/hooks/useHLS";
+import { useAmbilight } from "./native/hooks/useAmbilight";
+import { useScrubPreview } from "./native/hooks/useScrubPreview";
+import { useVideoEvents } from "./native/hooks/useVideoEvents";
+import { useSubtitleStyle } from "./native/hooks/useSubtitleStyle";
+import { useAutoSubtitle } from "./native/hooks/useAutoSubtitle";
 
-import SubtitlePanel from "./native/components/SubtitlePanel";
-import TechnicalStats from "./native/components/TechnicalStats";
-import ControlBar from "./native/components/ControlBar";
-import VolumeOsd from "./native/components/VolumeOsd";
-import ErrorOverlay from "./native/components/ErrorOverlay";
+import { SubtitlePanel } from "./native/components/SubtitlePanel";
+import { TechnicalStats } from "./native/components/TechnicalStats";
+import { ControlBar } from "./native/components/ControlBar";
+import { VolumeOsd } from "./native/components/VolumeOsd";
+import { ErrorOverlay } from "./native/components/ErrorOverlay";
 import { memo } from "react";
 
 const logError = DEBUG ? console.error : () => {};
 
 const MemoControlBar = memo(ControlBar);
 
-export default function NativeVideoPlayer({
+export function NativeVideoPlayer({
   videoRef,
   videoUrl,
   subtitleUrl,
@@ -84,7 +84,7 @@ export default function NativeVideoPlayer({
 
   useEffect(() => {
     try {
-      setRecentSubs(JSON.parse(ls.get(LS_KEYS.recentSubs) || "[]"));
+      setRecentSubs(JSON.parse(localStorage.get(LS_KEYS.recentSubs) || "[]"));
     } catch (e) {
       logError(`[native]`, e);
     }
@@ -92,7 +92,7 @@ export default function NativeVideoPlayer({
 
   useEffect(() => {
     try {
-      const saved = ls.get(LS_KEYS.subStyle);
+      const saved = localStorage.get(LS_KEYS.subStyle);
       if (saved) {
         const parsed = JSON.parse(saved);
         setSubStyle({
@@ -110,18 +110,18 @@ export default function NativeVideoPlayer({
 
   useEffect(() => {
     try {
-      setSubtitleOffset(parseFloat(ls.get(LS_KEYS.subtitleOffset) || "0"));
+      setSubtitleOffset(parseFloat(localStorage.get(LS_KEYS.subtitleOffset) || "0"));
     } catch (e) {
       logError(`[native]`, e);
     }
   }, []);
 
   useEffect(() => {
-    ls.set(LS_KEYS.subStyle, JSON.stringify(subStyle));
+    localStorage.set(LS_KEYS.subStyle, JSON.stringify(subStyle));
   }, [subStyle]);
 
   useEffect(() => {
-    ls.set(LS_KEYS.subtitleOffset, String(subtitleOffset));
+    localStorage.set(LS_KEYS.subtitleOffset, String(subtitleOffset));
   }, [subtitleOffset]);
 
   const containerRef = useRef(null);

@@ -6,8 +6,8 @@ import { Suspense } from "react";
 import { GoogleIcon } from "@/components/icons/GoogleIcon";
 import { DiscordIcon } from "@/components/icons/DiscordIcon";
 import { GithubIcon } from "@/components/icons/GithubIcon";
-import BackButton from "@/components/ui/BackButton";
-import Button from "@/components/ui/Button";
+import { BackButton } from "@/components/ui/BackButton";
+import { Button } from "@/components/ui/Button";
 
 const providers = [
   {

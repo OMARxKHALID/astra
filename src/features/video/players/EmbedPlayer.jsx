@@ -7,10 +7,10 @@ import {
 } from "lucide-react";
 import { detectServer } from "@/lib/videoResolver";
 import { useState, useRef, useEffect, useMemo } from "react";
-import SyncHub from "../controls/SyncHub";
-import PausedOverlay from "../controls/PausedOverlay";
+import { SyncHub } from "../controls/SyncHub";
+import { PausedOverlay } from "../controls/PausedOverlay";
 import { ServerDropdown } from "../controls/ServerPicker";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 
 // Extracts { current, duration } from provider-specific postMessage time formats.
 function parseTimeMessage(data) {
@@ -54,7 +54,7 @@ function parseTimeMessage(data) {
   return null;
 }
 
-export default function EmbedPlayer({
+export function EmbedPlayer({
   videoUrl,
   theatreMode,
   onToggleTheatre,

@@ -1,6 +1,6 @@
 import { timingSafeEqual } from "crypto";
 
-export function verifyAdminSecret(token) {
+export function adminAuth(token) {
   const secret = process.env.ADMIN_SECRET;
   if (!secret || !token || typeof token !== "string") return false;
   try {

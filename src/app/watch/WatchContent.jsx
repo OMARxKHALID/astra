@@ -5,9 +5,9 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { DEBUG } from "@/constants/config";
-import ToastContainer, { useToast } from "@/components/Toast";
-import AutoNextOverlay from "@/components/AutoNextOverlay";
-import Button from "@/components/ui/Button";
+import { ToastContainer, useToast } from "@/components/Toast";
+import { AutoNextOverlay } from "@/components/AutoNextOverlay";
+import { Button } from "@/components/ui/Button";
 import {
   buildEmbedUrl,
   detectServer,
@@ -19,19 +19,28 @@ import { createRoom } from "@/features/room/services/createRoom";
 import { useBingeWatch } from "@/features/content/hooks/useBingeWatch";
 import { persistence } from "@/utils/persistence";
 
-const VideoPlayer = dynamic(() => import("@/features/video"), { ssr: false });
+const VideoPlayer = dynamic(
+  () => import("@/features/video").then((mod) => mod.VideoPlayer),
+  { ssr: false },
+);
 const EpisodeSelector = dynamic(
-  () => import("@/features/content/components/EpisodeSelector"),
+  () =>
+    import("@/features/content/components/EpisodeSelector").then(
+      (mod) => mod.EpisodeSelector,
+    ),
   { ssr: false },
 );
 const WatchHeader = dynamic(
-  () => import("@/features/content/components/WatchHeader"),
+  () =>
+    import("@/features/content/components/WatchHeader").then(
+      (mod) => mod.WatchHeader,
+    ),
   { ssr: false },
 );
 
 const logError = DEBUG ? console.error : () => {};
 
-export default function WatchContent({ initialMeta }) {
+export function WatchContent({ initialMeta }) {
   const params = useSearchParams();
   const router = useRouter();
   const { data: session } = useSession();

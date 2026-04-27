@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { LS_KEYS } from "@/constants/config";
-import { ls } from "@/utils/localStorage";
+import { localStorage } from "@/utils/localStorage";
 import { setPreference } from "@/app/actions";
 
-export default function useSettings(initialPreferences = {}) {
+export function useSettings(initialPreferences = {}) {
   const [screenshotEnabled, setScreenshotEnabled] = useState(true);
   const [hlsQualityEnabled, setHlsQualityEnabled] = useState(true);
   const [scrubPreviewEnabled, setScrubPreviewEnabled] = useState(true);
@@ -20,29 +20,29 @@ export default function useSettings(initialPreferences = {}) {
   const settingsLoadedRef = useRef(false);
 
   useEffect(() => {
-    setScreenshotEnabled(ls.get(LS_KEYS.screenshot) !== "false");
-    setHlsQualityEnabled(ls.get(LS_KEYS.hlsQuality) !== "false");
-    setScrubPreviewEnabled(ls.get(LS_KEYS.scrubPreview) !== "false");
-    setAmbilightEnabled(ls.get(LS_KEYS.ambilight) !== "false");
-    setSpeedSyncEnabled(ls.get(LS_KEYS.speedSync) !== "false");
-    setMirrorCameraEnabled(ls.get(LS_KEYS.mirrorCamera) !== "false");
-    setSyncHubEnabled(ls.get(LS_KEYS.syncHub) === "true");
-    setTheatreMode(ls.get(LS_KEYS.theatreMode) === "true");
-    setShowSidebar(ls.get(LS_KEYS.sidebarOpen) !== "false");
+    setScreenshotEnabled(localStorage.get(LS_KEYS.screenshot) !== "false");
+    setHlsQualityEnabled(localStorage.get(LS_KEYS.hlsQuality) !== "false");
+    setScrubPreviewEnabled(localStorage.get(LS_KEYS.scrubPreview) !== "false");
+    setAmbilightEnabled(localStorage.get(LS_KEYS.ambilight) !== "false");
+    setSpeedSyncEnabled(localStorage.get(LS_KEYS.speedSync) !== "false");
+    setMirrorCameraEnabled(localStorage.get(LS_KEYS.mirrorCamera) !== "false");
+    setSyncHubEnabled(localStorage.get(LS_KEYS.syncHub) === "true");
+    setTheatreMode(localStorage.get(LS_KEYS.theatreMode) === "true");
+    setShowSidebar(localStorage.get(LS_KEYS.sidebarOpen) !== "false");
     settingsLoadedRef.current = true;
   }, []);
 
   useEffect(() => {
     if (!settingsLoadedRef.current) return;
-    ls.set(LS_KEYS.screenshot, screenshotEnabled ? "true" : "false");
-    ls.set(LS_KEYS.hlsQuality, hlsQualityEnabled ? "true" : "false");
-    ls.set(LS_KEYS.scrubPreview, scrubPreviewEnabled ? "true" : "false");
-    ls.set(LS_KEYS.ambilight, ambilightEnabled ? "true" : "false");
-    ls.set(LS_KEYS.speedSync, speedSyncEnabled ? "true" : "false");
-    ls.set(LS_KEYS.mirrorCamera, mirrorCameraEnabled ? "true" : "false");
-    ls.set(LS_KEYS.syncHub, syncHubEnabled ? "true" : "false");
-    ls.set(LS_KEYS.theatreMode, theatreMode ? "true" : "false");
-    ls.set(LS_KEYS.sidebarOpen, showSidebar ? "true" : "false");
+    localStorage.set(LS_KEYS.screenshot, screenshotEnabled ? "true" : "false");
+    localStorage.set(LS_KEYS.hlsQuality, hlsQualityEnabled ? "true" : "false");
+    localStorage.set(LS_KEYS.scrubPreview, scrubPreviewEnabled ? "true" : "false");
+    localStorage.set(LS_KEYS.ambilight, ambilightEnabled ? "true" : "false");
+    localStorage.set(LS_KEYS.speedSync, speedSyncEnabled ? "true" : "false");
+    localStorage.set(LS_KEYS.mirrorCamera, mirrorCameraEnabled ? "true" : "false");
+    localStorage.set(LS_KEYS.syncHub, syncHubEnabled ? "true" : "false");
+    localStorage.set(LS_KEYS.theatreMode, theatreMode ? "true" : "false");
+    localStorage.set(LS_KEYS.sidebarOpen, showSidebar ? "true" : "false");
 
     // [Note] Client Cookie Pattern: Sync to cookies via Server Action for SSR-safe initial state
     setPreference("astra_theatre_mode", theatreMode ? "true" : "false");

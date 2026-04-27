@@ -1,12 +1,12 @@
 import { apiResponse } from "@/utils/apiResponse";
-import { verifyAdminSecret } from "@/utils/adminAuth";
+import { adminAuth } from "@/utils/adminAuth";
 import { redisCache } from "@/lib/redis";
 
 export async function DELETE(request) {
   try {
     const secret = request.headers.get("x-admin-secret");
 
-    if (!verifyAdminSecret(secret)) {
+    if (!adminAuth(secret)) {
       return apiResponse.unauthorized("Authentication required");
     }
 

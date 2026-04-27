@@ -14,12 +14,12 @@ import {
   Monitor as TheatreIconSvg,
   List as EpisodesIcon,
 } from "lucide-react";
-import { formatTime } from "../../../utils";
-import SpeedPicker from "../../../controls/SpeedPicker";
-import SeekBar from "./SeekBar";
-import VolumeControl from "./VolumeControl";
+import { time } from "../../../utils";
+import { SpeedPicker } from "../../../controls/SpeedPicker";
+import { SeekBar } from "./SeekBar";
+import { VolumeControl } from "./VolumeControl";
 
-export default function ControlBar({
+export function ControlBar({
   isPlaying,
   localTime,
   duration,
@@ -119,8 +119,8 @@ export default function ControlBar({
           )}
 
           <span className="text-[11px] font-mono text-white/40 tabular-nums shrink-0 hidden sm:inline bg-white/10 px-2.5 py-1 rounded-[var(--radius-pill)] border border-white/10">
-            {formatTime(localTime)} <span className="text-white/20">/</span>{" "}
-            {formatTime(duration)}
+            {time(localTime)} <span className="text-white/20">/</span>{" "}
+            {time(duration)}
           </span>
 
           <div className="flex-1 min-w-0" />

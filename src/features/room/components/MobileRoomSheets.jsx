@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
-import ChatSidebar from "./ChatSidebar";
-import UserList from "./UserList";
+import { ChatSidebar } from "./ChatSidebar";
+import { UserList } from "./UserList";
 
 export function MobileRoomSheets({
   room,

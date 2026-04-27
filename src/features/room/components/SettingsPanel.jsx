@@ -18,7 +18,7 @@ import {
   Check,
   Pencil,
 } from "lucide-react";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 
 function Toggle({ enabled, onToggle, disabled = false, label }) {
   return (
@@ -79,7 +79,7 @@ function SectionLabel({ children }) {
   );
 }
 
-export default function SettingsPanel({
+export function SettingsPanel({
   isOpen,
   onClose,
   isHost,

@@ -1,8 +1,8 @@
 import "./globals.css";
 import { Outfit, Geist_Mono } from "next/font/google";
-import PwaUpdateToast from "@/components/PwaUpdateToast";
-import PwaOnboarding from "@/components/PwaOnboarding";
-import SessionProvider from "@/providers/SessionProvider";
+import { PwaUpdateToast } from "@/components/PwaUpdateToast";
+import { PwaOnboarding } from "@/components/PwaOnboarding";
+import { SessionProvider } from "@/providers/SessionProvider";
 import { NEXT_PUBLIC_SITE_URL } from "@/constants/config";
 
 const outfit = Outfit({

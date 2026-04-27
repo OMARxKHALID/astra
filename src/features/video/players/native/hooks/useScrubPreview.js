@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
-export default function useScrubPreview(
+export function useScrubPreview(
   videoUrl,
   sourceType,
   duration,

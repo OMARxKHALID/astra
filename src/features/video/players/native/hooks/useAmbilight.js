@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-export default function useAmbilight(videoRef, videoUrl, onAmbiColors, enabled = true) {
+export function useAmbilight(videoRef, videoUrl, onAmbiColors, enabled = true) {
   const ambiRafRef = useRef(null);
   const ambiCurrentRef = useRef({ r: 0, g: 0, b: 0 });
   const ambiDisabledRef = useRef(false);

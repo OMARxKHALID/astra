@@ -2,7 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 
-export default function Button({
+export function Button({
   children,
   onClick,
   href,

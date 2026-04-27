@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import ProfileView from "./ProfileView";
+import { ProfileView } from "./ProfileView";
 
 export const metadata = {
   title: "Profile | Astra",

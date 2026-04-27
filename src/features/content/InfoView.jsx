@@ -10,16 +10,16 @@ import {
   Users,
   Heart,
 } from "lucide-react";
-import Loading from "@/components/Loading";
-import YoutubeIcon from "@/components/icons/YoutubeIcon";
-import BackButton from "@/components/ui/BackButton";
-import Button from "@/components/ui/Button";
+import { Loading } from "@/components/Loading";
+import { YoutubeIcon } from "@/components/icons/YoutubeIcon";
+import { BackButton } from "@/components/ui/BackButton";
+import { Button } from "@/components/ui/Button";
 import { EXTERNAL_SERVICES } from "@/constants/config";
 
-import CustomSelect from "./components/CustomSelect";
+import { CustomSelect } from "./components/CustomSelect";
 import { useMediaActions } from "./hooks/useMediaActions";
 
-export default function InfoView({ initialData, type, id }) {
+export function InfoView({ initialData, type, id }) {
   const router = useRouter();
   const { data: session } = useSession();
   const data = initialData;

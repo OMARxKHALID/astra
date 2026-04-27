@@ -1,6 +1,6 @@
 "use client";
 
-export default function NotificationCard({
+export function NotificationCard({
   label,
   message,
   progress,

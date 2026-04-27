@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-export default function useVideoEvents({
+export function useVideoEvents({
   videoRef,
   videoUrl,
   sourceType,

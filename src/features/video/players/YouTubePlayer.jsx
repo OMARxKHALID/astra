@@ -11,12 +11,12 @@ import { usePlayerControls } from "../hooks/usePlayerControls";
 import { useVideoHotkeys } from "../hooks/useVideoHotkeys";
 import { useVideoTouchControls } from "../hooks/useVideoTouchControls";
 import { useThumbnailColors } from "../hooks/useThumbnailColors";
-import EmbedControls from "../controls/EmbedControls";
-import VideoPoster from "../controls/VideoPoster";
+import { EmbedControls } from "../controls/EmbedControls";
+import { VideoPoster } from "../controls/VideoPoster";
 
 const logError = DEBUG ? console.error : () => {};
 
-export default function YouTubePlayer({
+export function YouTubePlayer({
   videoRef,
   videoId,
   isPlaying,

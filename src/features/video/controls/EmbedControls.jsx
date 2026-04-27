@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { formatTime } from "../utils";
-import SpeedPicker from "./SpeedPicker";
+import { time } from "../utils";
+import { SpeedPicker } from "./SpeedPicker";
 import {
   Play as PlayIcon,
   Pause as PauseIcon,
@@ -32,7 +32,7 @@ function TheatreIconInline({ className }) {
   );
 }
 
-export default function EmbedControls({
+export function EmbedControls({
   visible,
   isPlaying,
   localTime,
@@ -154,7 +154,7 @@ export default function EmbedControls({
           )}
 
           <span className="text-[11px] font-mono shrink-0 text-white/40 tabular-nums bg-white/10 px-2.5 py-1 rounded-[var(--radius-pill)] border border-white/10">
-            {formatTime(localTime)} / {formatTime(duration)}
+            {time(localTime)} / {time(duration)}
           </span>
 
           {!canControl && (

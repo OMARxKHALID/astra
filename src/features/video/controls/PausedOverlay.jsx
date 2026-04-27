@@ -2,7 +2,7 @@
 
 import { Lock, Play } from "lucide-react";
 
-export default function PausedOverlay({ canControl, onPlay }) {
+export function PausedOverlay({ canControl, onPlay }) {
   return (
     <div
       onClick={() => canControl && onPlay?.(0)}

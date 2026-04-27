@@ -4,11 +4,11 @@ import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 
 import { LS_KEYS } from "@/constants/config";
-import { ls } from "@/utils/localStorage";
-import { generateId, generateGuestId } from "@/utils/id";
+import { localStorage } from "@/utils/localStorage";
+import { id } from "@/utils/id";
 import { setPreference } from "@/app/actions";
 
-export default function useUser(sendRef, initialPreferences = {}) {
+export function useUser(sendRef, initialPreferences = {}) {
   const { data: session, status } = useSession();
   const [userId, setUserId] = useState("");
   const [displayName, setDisplayName] = useState(initialPreferences.guestName || "");
@@ -21,39 +21,39 @@ export default function useUser(sendRef, initialPreferences = {}) {
     if (status === "loading") return;
 
     if (session?.user?.id) {
-      ls.set(LS_KEYS.userId, session.user.id);
+      localStorage.set(LS_KEYS.userId, session.user.id);
       setUserId(session.user.id);
       return;
     }
 
     const key = LS_KEYS.userId;
-    const stored = ls.get(key) || sessionStorage.getItem(key);
+    const stored = localStorage.get(key) || sessionStorage.getItem(key);
     if (stored) {
-      ls.set(key, stored);
+      localStorage.set(key, stored);
       setUserId(stored);
       return;
     }
-    const id = generateGuestId();
-    ls.set(key, id);
-    setUserId(id);
+    const newId = id.generateGuest();
+    localStorage.set(key, newId);
+    setUserId(newId);
   }, [session?.user?.id, status]);
 
   useEffect(() => {
     if (status === "loading") return;
 
-    const stored = ls.get(LS_KEYS.displayName);
+    const stored = localStorage.get(LS_KEYS.displayName);
     const sessionName = session?.user?.name;
     let name = stored;
 
     if (sessionName) {
       if (!stored || stored.startsWith("Guest-")) {
         name = sessionName;
-        ls.set(LS_KEYS.displayName, name);
+        localStorage.set(LS_KEYS.displayName, name);
       }
     } else {
       if (!stored) {
-        name = `Guest-${generateId(4).toUpperCase()}`;
-        ls.set(LS_KEYS.displayName, name);
+        name = `Guest-${id.generate(4).toUpperCase()}`;
+        localStorage.set(LS_KEYS.displayName, name);
       }
     }
     setDisplayName(name);
@@ -71,7 +71,7 @@ export default function useUser(sendRef, initialPreferences = {}) {
       const name = raw.trim().slice(0, 24);
       if (!name) return;
       setDisplayName(name);
-      ls.set(LS_KEYS.displayName, name);
+      localStorage.set(LS_KEYS.displayName, name);
       setPreference("astra_guest_name", name);
       sendRef?.current?.({ type: "set_name", username: name });
       setEditingName(false);

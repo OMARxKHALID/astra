@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { Download, X } from "lucide-react";
-import Button from "@/components/ui/Button";
-import { ls } from "@/utils/localStorage";
+import { Button } from "@/components/ui/Button";
+import { localStorage } from "@/utils/localStorage";
 import { LS_KEYS } from "@/constants/config";
 
-export default function PwaOnboarding() {
+export function PwaOnboarding() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showBanner, setShowBanner] = useState(false);
 
@@ -15,7 +15,7 @@ export default function PwaOnboarding() {
       e.preventDefault();
       setDeferredPrompt(e);
       
-      const dismissed = ls.get(LS_KEYS.pwaDismissed);
+      const dismissed = localStorage.get(LS_KEYS.pwaDismissed);
       const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
       
       if (!dismissed && !isStandalone) {
@@ -39,7 +39,7 @@ export default function PwaOnboarding() {
 
   const handleDismiss = () => {
     setShowBanner(false);
-    ls.set(LS_KEYS.pwaDismissed, "true");
+    localStorage.set(LS_KEYS.pwaDismissed, "true");
   };
 
   if (!showBanner) return null;

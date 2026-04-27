@@ -3,22 +3,26 @@
 import dynamic from "next/dynamic";
 import { memo } from "react";
 import { classifyUrl } from "@/lib/videoResolver";
-import ErrorOverlay from "./players/native/components/ErrorOverlay";
+import { ErrorOverlay } from "./players/native/components/ErrorOverlay";
 
-const NativeVideoPlayer = dynamic(() => import("./players/NativeVideoPlayer"), {
-  ssr: false,
-});
-const YouTubePlayer = dynamic(() => import("./players/YouTubePlayer"), {
-  ssr: false,
-});
-const VimeoPlayer = dynamic(() => import("./players/VimeoPlayer"), {
-  ssr: false,
-});
-const EmbedPlayer = dynamic(() => import("./players/EmbedPlayer"), {
-  ssr: false,
-});
+const NativeVideoPlayer = dynamic(
+  () => import("./players/NativeVideoPlayer").then((mod) => mod.NativeVideoPlayer),
+  { ssr: false },
+);
+const YouTubePlayer = dynamic(
+  () => import("./players/YouTubePlayer").then((mod) => mod.YouTubePlayer),
+  { ssr: false },
+);
+const VimeoPlayer = dynamic(
+  () => import("./players/VimeoPlayer").then((mod) => mod.VimeoPlayer),
+  { ssr: false },
+);
+const EmbedPlayer = dynamic(
+  () => import("./players/EmbedPlayer").then((mod) => mod.EmbedPlayer),
+  { ssr: false },
+);
 
-function VideoPlayer({
+function VideoPlayerComponent({
   videoRef,
   videoUrl,
   subtitleUrl,
@@ -209,4 +213,4 @@ function VideoPlayer({
   );
 }
 
-export default memo(VideoPlayer);
+export const VideoPlayer = memo(VideoPlayerComponent);

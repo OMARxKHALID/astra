@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { generateId } from "@/utils/id";
-import NotificationCard from "./ui/NotificationCard";
+import { id } from "@/utils/id";
+import { NotificationCard } from "./ui/NotificationCard";
 
 const TYPE_MAP = {
   success: {
@@ -66,10 +66,10 @@ export function useToast() {
 
   const addToast = useCallback(
     (message, type = "success", duration = 3000, icon = null) => {
-      const id = generateId(16);
-      setToasts((prev) => [...prev, { id, message, type, icon, duration }]);
+      const toastId = id.generate(16);
+      setToasts((prev) => [...prev, { id: toastId, message, type, icon, duration }]);
       setTimeout(
-        () => setToasts((prev) => prev.filter((t) => t.id !== id)),
+        () => setToasts((prev) => prev.filter((t) => t.id !== toastId)),
         duration,
       );
     },
@@ -107,7 +107,7 @@ function ToastItem({ toast }) {
   );
 }
 
-export default function ToastContainer({ toasts }) {
+export function ToastContainer({ toasts }) {
   if (!toasts.length) return null;
 
   return (

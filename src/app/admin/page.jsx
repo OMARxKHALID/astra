@@ -20,10 +20,10 @@ import {
   Trash2,
   XCircle,
 } from "lucide-react";
-import BackButton from "@/components/ui/BackButton";
-import Button from "@/components/ui/Button";
+import { BackButton } from "@/components/ui/BackButton";
+import { Button } from "@/components/ui/Button";
 import { LS_KEYS } from "@/constants/config";
-import { ls } from "@/utils/localStorage";
+import { localStorage } from "@/utils/localStorage";
 
 const formatUptime = (seconds) => {
   if (!seconds) return "0h 0m";
@@ -32,7 +32,7 @@ const formatUptime = (seconds) => {
   return `${h}h ${m}m`;
 };
 
-const formatTime = (ts) => {
+const time = (ts) => {
   if (!ts) return "—";
   const diff = Date.now() - ts;
   if (diff < 60000) return "Just now";
@@ -75,9 +75,9 @@ function AdminContent() {
   const secretParam = searchParams.get("secret");
 
   useEffect(() => {
-    const savedSecret = ls.get(LS_KEYS.adminSecret);
+    const savedSecret = localStorage.get(LS_KEYS.adminSecret);
     if (secretParam) {
-      ls.set(LS_KEYS.adminSecret, secretParam);
+      localStorage.set(LS_KEYS.adminSecret, secretParam);
       setIsAuthorized(true);
       router.replace("/admin");
     } else if (savedSecret) {
@@ -91,7 +91,7 @@ function AdminContent() {
     setLoading(true);
     setError(null);
     try {
-      const secret = ls.get(LS_KEYS.adminSecret);
+      const secret = localStorage.get(LS_KEYS.adminSecret);
       // Ensure the rotation animation is visible even on fast networks
       const [res] = await Promise.all([
         fetch("/api/admin/stats", {
@@ -118,7 +118,7 @@ function AdminContent() {
   const fetchApiStatus = async () => {
     if (!isAuthorized) return;
     try {
-      const secret = ls.get(LS_KEYS.adminSecret);
+      const secret = localStorage.get(LS_KEYS.adminSecret);
       const res = await fetch("/api/admin/api-status", {
         headers: { "x-admin-secret": secret || "" },
       });
@@ -175,7 +175,7 @@ function AdminContent() {
             onSubmit={(e) => {
               e.preventDefault();
               if (secretInput.trim()) {
-                ls.set(LS_KEYS.adminSecret, secretInput.trim());
+                localStorage.set(LS_KEYS.adminSecret, secretInput.trim());
                 setIsAuthorized(true);
               } else {
                 setError("Please enter a secret key");
@@ -289,7 +289,7 @@ function AdminContent() {
                   },
                   {
                     label: "Last Active",
-                    value: formatTime(
+                    value: time(
                       stats.allRooms?.[0]?.lastUpdated || Date.now(),
                     ),
                     icon: <Zap className="w-5 h-5" />,
@@ -376,7 +376,7 @@ function AdminContent() {
                                 {room.isPaused ? "Paused" : "Playing"}
                               </span>
                               <span className="text-[10px] font-mono text-white/25">
-                                {formatTime(room.lastUpdated)}
+                                {time(room.lastUpdated)}
                               </span>
                             </div>
                             <Button
@@ -390,7 +390,7 @@ function AdminContent() {
                                 )
                                   return;
                                 try {
-                                  const secret = ls.get(LS_KEYS.adminSecret);
+                                  const secret = localStorage.get(LS_KEYS.adminSecret);
                                   const res = await fetch(
                                     `/api/admin/room/${room.roomId}`,
                                     {
@@ -542,14 +542,14 @@ function AdminContent() {
                         )
                           return;
                         try {
-                          const secret = ls.get(LS_KEYS.adminSecret);
+                          const secret = localStorage.get(LS_KEYS.adminSecret);
                           const res = await fetch("/api/admin/redis", {
                             method: "DELETE",
                             headers: { "x-admin-secret": secret || "" },
                           });
                           const json = await res.json();
                           if (json.success) {
-                            ls.remove(LS_KEYS.history);
+                            localStorage.remove(LS_KEYS.history);
                             alert(
                               "Redis database and local history flushed successfully.",
                             );
@@ -569,7 +569,7 @@ function AdminContent() {
                     <Button
                       variant="danger"
                       onClick={() => {
-                        ls.remove(LS_KEYS.adminSecret);
+                        localStorage.remove(LS_KEYS.adminSecret);
                         setIsAuthorized(false);
                       }}
                       className="w-full flex items-center justify-center gap-2 py-3"

@@ -7,58 +7,71 @@ import { createPortal } from "react-dom";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { MessageSquare as ChatIcon, Users as UsersIcon } from "lucide-react";
 
-import SyncEngine from "@/features/sync/components/SyncEngine";
-import VideoPlayer from "@/features/video";
+import { SyncEngine } from "@/features/sync/components/SyncEngine";
+import { VideoPlayer } from "@/features/video";
 import { getLeaderTime } from "@/lib/syncManager";
 import { extractJwtSub } from "@/lib/jwtAuth";
-import URLBar from "./components/URLBar";
-import ReconnectBanner from "./components/ReconnectBanner";
-import ToastContainer, { useToast } from "@/components/Toast";
-import AutoNextOverlay from "@/components/AutoNextOverlay";
+import { URLBar } from "./components/URLBar";
+import { ReconnectBanner } from "./components/ReconnectBanner";
+import { ToastContainer, useToast } from "@/components/Toast";
+import { AutoNextOverlay } from "@/components/AutoNextOverlay";
 import { SplitView } from "./components/SplitView";
 import { RoomNavbar } from "./components/RoomNavbar";
 import { MobileRoomNav } from "./components/MobileRoomNav";
 import { MobileRoomSheets } from "./components/MobileRoomSheets";
 import { IncomingCallBanner } from "./components/IncomingCallBanner";
-import CatchUpBanner from "./components/CatchUpBanner";
-import Button from "@/components/ui/Button";
-import RoomErrorBoundary from "@/components/RoomErrorBoundary";
+import { CatchUpBanner } from "./components/CatchUpBanner";
+import { Button } from "@/components/ui/Button";
+import { RoomErrorBoundary } from "@/components/RoomErrorBoundary";
 
-const SettingsPanel = dynamic(() => import("./components/SettingsPanel"), {
-  ssr: false,
-});
-const ShortcutsModal = dynamic(() => import("./components/ShortcutsModal"), {
-  ssr: false,
-});
-const PasswordModal = dynamic(() => import("./components/PasswordModal"), {
-  ssr: false,
-});
-const EpisodeSelector = dynamic(
-  () => import("@/features/content/components/EpisodeSelector"),
+const SettingsPanel = dynamic(
+  () => import("./components/SettingsPanel").then((mod) => mod.SettingsPanel),
   { ssr: false },
 );
-const ChatSidebar = dynamic(() => import("./components/ChatSidebar"), {
-  ssr: false,
-});
-const UserList = dynamic(() => import("./components/UserList"), { ssr: false });
+const ShortcutsModal = dynamic(
+  () =>
+    import("./components/ShortcutsModal").then(
+      (mod) => mod.KeyboardShortcutsModal,
+    ),
+  { ssr: false },
+);
+const PasswordModal = dynamic(
+  () => import("./components/PasswordModal").then((mod) => mod.PasswordModal),
+  { ssr: false },
+);
+const EpisodeSelector = dynamic(
+  () =>
+    import("@/features/content/components/EpisodeSelector").then(
+      (mod) => mod.EpisodeSelector,
+    ),
+  { ssr: false },
+);
+const ChatSidebar = dynamic(
+  () => import("./components/ChatSidebar").then((mod) => mod.ChatSidebar),
+  { ssr: false },
+);
+const UserList = dynamic(
+  () => import("./components/UserList").then((mod) => mod.UserList),
+  { ssr: false },
+);
 const CallGrid = dynamic(
   () => import("./components/CallGrid").then((mod) => mod.CallGrid),
   { ssr: false },
 );
 
-import useUser from "./hooks/useUser";
-import useSettings from "./hooks/useSettings";
-import useRoomState from "./hooks/useRoomState";
-import useRoomEvents from "./hooks/useRoomEvents";
-import useSidebar from "./hooks/useSidebar";
+import { useUser } from "./hooks/useUser";
+import { useSettings } from "./hooks/useSettings";
+import { useRoomState } from "./hooks/useRoomState";
+import { useRoomEvents } from "./hooks/useRoomEvents";
+import { useSidebar } from "./hooks/useSidebar";
 import { useVideoCall } from "./hooks/useVideoCall";
 import { useAmbilight } from "./hooks/useAmbilight";
 import { useMediaHistory } from "./hooks/useMediaHistory";
 import { useVideoState } from "./hooks/useVideoState";
 import { useUrlSync } from "./hooks/useUrlSync";
-import { ls } from "@/utils/localStorage";
+import { localStorage } from "@/utils/localStorage";
 
-export default function RoomView({
+export function RoomView({
   roomId,
   initialMeta,
   initialPreferences,
@@ -145,7 +158,7 @@ export default function RoomView({
   const { rootAmbiRef, bentoVideoRef, handleAmbiColors } =
     useAmbilight(settings);
 
-  const hostToken = mounted ? ls.get(`host_${roomId}`) || "" : "";
+  const hostToken = mounted ? localStorage.get(`host_${roomId}`) || "" : "";
   const tokenSub = extractJwtSub(hostToken);
   const isHost =
     room.serverState?.hostId === identity.userId ||

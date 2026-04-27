@@ -5,7 +5,7 @@ import { Search, X, Play, Star } from "lucide-react";
 
 const searchCache = new Map();
 
-export default function SearchOverlay({ onClose, onPick }) {
+export function SearchOverlay({ onClose, onPick }) {
   const [q, setQ] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);

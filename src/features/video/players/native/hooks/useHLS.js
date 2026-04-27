@@ -6,7 +6,7 @@ const logError = DEBUG ? console.error : () => {};
 const MAX_RETRIES = 3;
 const RETRY_DELAYS = [1000, 2000, 4000];
 
-export default function useHLS(videoRef, videoUrl, sourceType, setVideoError) {
+export function useHLS(videoRef, videoUrl, sourceType, setVideoError) {
   const [hlsQuality, setHlsQuality] = useState(null);
   const hlsRef = useRef(null);
   const directFallbackRef = useRef(false);

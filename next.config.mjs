@@ -1,10 +1,11 @@
+// @ts-check
 import withPWA from "@ducanh2912/next-pwa";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
-
-  turbopack: {},
+  reactStrictMode: true,
+  poweredByHeader: false,
 
   allowedDevOrigins: [
     "localhost",
@@ -14,7 +15,6 @@ const nextConfig = {
   ],
 
   images: {
-    // disabled: unoptimized was causing LCP issues - using default image optimization
     remotePatterns: [
       { protocol: "https", hostname: "api.dicebear.com" },
       { protocol: "https", hostname: "img.youtube.com" },
@@ -39,6 +39,7 @@ const nextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "Referrer-Policy", value: "no-referrer-when-downgrade" },
+          { key: "X-DNS-Prefetch-Control", value: "on" },
         ],
       },
     ];
@@ -54,6 +55,10 @@ export default withPWA({
   workboxOptions: {
     disableDevLogs: true,
     runtimeCaching: [
+      {
+        urlPattern: /^\/api\/.*/,
+        handler: "NetworkOnly",
+      },
       {
         urlPattern: /^https?.*\/(room\/.*|$)/,
         handler: "NetworkFirst",
@@ -84,6 +89,14 @@ export default withPWA({
         options: {
           cacheName: "yt-thumbs",
           expiration: { maxEntries: 50, maxAgeSeconds: 7 * 24 * 60 * 60 },
+        },
+      },
+      {
+        urlPattern: /^https:\/\/image\.tmdb\.org\/.*/,
+        handler: "CacheFirst",
+        options: {
+          cacheName: "tmdb-images",
+          expiration: { maxEntries: 100, maxAgeSeconds: 7 * 24 * 60 * 60 },
         },
       },
     ],

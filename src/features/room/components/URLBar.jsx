@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import {
   classifyUrl,
-  isStrictVideoUrl,
+  videoValidation,
   SOURCE_LABELS,
 } from "@/lib/videoResolver";
 import {
@@ -11,14 +11,14 @@ import {
   Shield as ShieldIcon,
   Upload as UploadIcon,
 } from "lucide-react";
-import YouTubeSearch from "./YouTubeSearch";
+import { YouTubeSearch } from "./YouTubeSearch";
 import { useToast } from "@/components/Toast";
-import YoutubeIcon from "@/components/icons/YoutubeIcon";
-import { ls } from "@/utils/localStorage";
+import { YoutubeIcon } from "@/components/icons/YoutubeIcon";
+import { localStorage } from "@/utils/localStorage";
 import { LS_KEYS } from "@/constants/config";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 
-export default function URLBar({
+export function URLBar({
   isHost,
   currentUrl,
   currentSubtitleUrl,
@@ -36,7 +36,7 @@ export default function URLBar({
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    setLocalFileName(ls.get(LS_KEYS.localFileName) || "");
+    setLocalFileName(localStorage.get(LS_KEYS.localFileName) || "");
   }, []);
 
   useEffect(() => {
@@ -66,7 +66,7 @@ export default function URLBar({
     setInput(val);
     if (strictVideoUrlMode && val.trim()) {
       setStrictError(
-        isStrictVideoUrl(val.trim())
+        videoValidation(val.trim())
           ? ""
           : "Only direct video file links are allowed in this room.",
       );
@@ -78,14 +78,14 @@ export default function URLBar({
   function handleSubmit(e) {
     e?.preventDefault();
     if (!input.trim() || !isHost || loading) return;
-    if (strictVideoUrlMode && !isStrictVideoUrl(input.trim())) {
+    if (strictVideoUrlMode && !videoValidation(input.trim())) {
       setStrictError("Only direct video file links are allowed in this room.");
       return;
     }
     setStrictError("");
     setLoading(true);
     setLocalFileName("");
-    ls.set(LS_KEYS.localFileName, "");
+    localStorage.set(LS_KEYS.localFileName, "");
     onLoad(input.trim(), "");
     setInput("");
     setTimeout(() => setLoading(false), 3000);
@@ -102,7 +102,7 @@ export default function URLBar({
     try {
       const blobUrl = URL.createObjectURL(file);
       setLocalFileName(file.name);
-      ls.set(LS_KEYS.localFileName, file.name);
+      localStorage.set(LS_KEYS.localFileName, file.name);
       addToast(`Local video loaded: ${file.name}`, "success");
       onLoad(blobUrl, "");
       setInput("");
@@ -123,7 +123,7 @@ export default function URLBar({
       try {
         const blobUrl = URL.createObjectURL(file);
         setLocalFileName(file.name);
-        ls.set(LS_KEYS.localFileName, file.name);
+        localStorage.set(LS_KEYS.localFileName, file.name);
         addToast(`Local video loaded: ${file.name}`, "success");
         onLoad(blobUrl, "");
         setInput("");

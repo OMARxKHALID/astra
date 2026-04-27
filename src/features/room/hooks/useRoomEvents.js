@@ -5,7 +5,7 @@ import { MAX_CHAT_MESSAGES } from "@/constants/config";
 import { useSounds } from "./useSounds";
 import { SYSTEM_ICONS } from "../constants";
 
-export default function useRoomEvents({
+export function useRoomEvents({
   userId,
   addToast,
   setParticipants,

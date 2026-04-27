@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 
-export default function BackButton({ 
+export function BackButton({ 
   onClick, 
   href,
   className = "",

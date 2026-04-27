@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { LS_KEYS } from "@/constants/config";
-import { ls } from "@/utils/localStorage";
+import { localStorage } from "@/utils/localStorage";
 
 const MIN_WIDTH = 250;
 const MAX_WIDTH = 600;
 
-export default function useSidebar() {
+export function useSidebar() {
   const [sidebarWidth, setSidebarWidth] = useState(350);
   const [isResizing, setIsResizing] = useState(false);
 
@@ -22,7 +22,7 @@ export default function useSidebar() {
 
   // Load saved width
   useEffect(() => {
-    const saved = ls.get(LS_KEYS.sidebarWidth);
+    const saved = localStorage.get(LS_KEYS.sidebarWidth);
     if (saved) {
       const val = parseInt(saved, 10);
       setSidebarWidth(val);
@@ -32,7 +32,7 @@ export default function useSidebar() {
 
   // Persist width only once when React state changes (at the end of drag)
   useEffect(() => {
-    ls.set(LS_KEYS.sidebarWidth, sidebarWidth.toString());
+    localStorage.set(LS_KEYS.sidebarWidth, sidebarWidth.toString());
   }, [sidebarWidth]);
 
   const updateWidth = useCallback(() => {

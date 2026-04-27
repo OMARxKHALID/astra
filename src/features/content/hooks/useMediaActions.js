@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { persistence } from "@/utils/persistence";
 import { buildEmbedUrl, serverOptions } from "@/lib/videoResolver";
 import { createRoom } from "@/features/room/services/createRoom";
-import { ls } from "@/utils/localStorage";
+import { localStorage } from "@/utils/localStorage";
 import { LS_KEYS } from "@/constants/config";
 
 function resolveMeta(itemOrSeason, maybeEpisode, data, type) {
@@ -26,7 +26,7 @@ function resolveMeta(itemOrSeason, maybeEpisode, data, type) {
 function findLastEpisode(tmdbId, type) {
   if (type !== "tv" || !tmdbId) return { s: 1, e: 1 };
 
-  const history = JSON.parse(ls.get(LS_KEYS.history) || "[]");
+  const history = JSON.parse(localStorage.get(LS_KEYS.history) || "[]");
 
   const showEntries = history.filter(
     (h) => h.videoUrl && h.videoUrl.includes(`/tv/${tmdbId}/`),

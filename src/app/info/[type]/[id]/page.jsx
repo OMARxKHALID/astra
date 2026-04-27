@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { notFound } from "next/navigation";
 import { NEXT_PUBLIC_SITE_URL } from "@/constants/config";
-import InfoView from "@/features/content/InfoView";
+import { InfoView } from "@/features/content/InfoView";
 
 import {
   getMovieDetails,

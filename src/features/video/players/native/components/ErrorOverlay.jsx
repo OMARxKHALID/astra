@@ -2,7 +2,7 @@
 
 import { AlertTriangle as ExclamationIcon } from "lucide-react";
 
-export default function ErrorOverlay({ error, onRetry, onDismiss }) {
+export function ErrorOverlay({ error, onRetry, onDismiss }) {
   if (!error) return null;
 
   const errorTitle = typeof error === "object" ? error.title : "Playback Error";

@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import BackButton from "@/components/ui/BackButton";
-import CreateRoomForm from "@/features/room/components/CreateRoomForm";
+import { BackButton } from "@/components/ui/BackButton";
+import { CreateRoomForm } from "@/features/room/components/CreateRoomForm";
 
 export default function CreateRoomPage() {
   const router = useRouter();

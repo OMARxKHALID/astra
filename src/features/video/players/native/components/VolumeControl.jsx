@@ -2,7 +2,7 @@
 
 import { Volume2 as VolumeIcon, VolumeX as MuteIcon } from "lucide-react";
 
-export default function VolumeControl({
+export function VolumeControl({
   volume,
   muted,
   onVolumeChange,

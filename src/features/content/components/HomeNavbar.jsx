@@ -2,11 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { Users, Search } from "lucide-react";
-import Button from "@/components/ui/Button";
-import RecentRooms from "@/features/room/components/RecentRooms";
-import UserMenu from "./UserMenu";
+import { Button } from "@/components/ui/Button";
+import { RecentRooms } from "@/features/room/components/RecentRooms";
+import { UserMenu } from "./UserMenu";
 
-export default function HomeNavbar({ onOpenSearch }) {
+export function HomeNavbar({ onOpenSearch }) {
   const router = useRouter();
 
   return (

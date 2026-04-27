@@ -2,7 +2,7 @@ import { saveRoom } from "../models/Room.js";
 import { isStrictVideoUrl } from "../utils/auth.js";
 import { NEXT_PUBLIC_SITE_URL } from "../constants.js";
 
-export default function registerVideoHandlers(
+export function registerVideoHandlers(
   io,
   socket,
   rooms,

@@ -3,9 +3,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { Play, Star, Users } from "lucide-react";
 import { GENRE_MAP } from "@/constants/maps";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 
-export default function MediaHero({ items, onPick, onPlay, onSync, loading }) {
+export function MediaHero({ items, onPick, onPlay, onSync, loading }) {
   const [idx, setIdx] = useState(0);
   const [fading, setFading] = useState(false);
   const [paused, setPaused] = useState(false);

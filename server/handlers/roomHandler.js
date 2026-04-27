@@ -15,7 +15,7 @@ const log = DEBUG ? console.log : () => {};
 const warn = DEBUG ? console.warn : () => {};
 const error = console.error;
 
-export default function registerRoomHandlers(
+export function registerRoomHandlers(
   io,
   socket,
   rooms,

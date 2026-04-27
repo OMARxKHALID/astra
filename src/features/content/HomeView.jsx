@@ -1,23 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { useToast } from "@/components/Toast";
+import { useToast, ToastContainer } from "@/components/Toast";
 import { persistence } from "@/utils/persistence";
-import ToastContainer from "@/components/Toast";
 
-import Hero from "./components/MediaHero";
-import Row from "./components/MediaRow";
-import SearchOverlay from "./components/SearchOverlay";
-import HomeNavbar from "./components/HomeNavbar";
+import { MediaHero } from "./components/MediaHero";
+import { MediaRow } from "./components/MediaRow";
+import { SearchOverlay } from "./components/SearchOverlay";
+import { HomeNavbar } from "./components/HomeNavbar";
 import { useMediaActions } from "./hooks/useMediaActions";
 
-export default function HomeView({ initialData }) {
+export function HomeView({ initialData }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { data: session, status } = useSession();
-  const { toasts, addToast } = useToast();
+  const { toasts } = useToast();
 
   const { handleWatch, handleAstraSync, creating } = useMediaActions(
     null,
@@ -73,7 +71,7 @@ export default function HomeView({ initialData }) {
       <HomeNavbar onOpenSearch={() => setShowSearch(true)} />
 
       <main className="pb-12">
-        <Hero
+        <MediaHero
           items={initialData.hero || []}
           onPick={handleNavigateToInfo}
           onPlay={handleWatch}
@@ -82,7 +80,7 @@ export default function HomeView({ initialData }) {
         />
         <div className="mt-[-80px] relative z-50 flex flex-col gap-14">
           {recommendations.length > 0 && (
-            <Row
+            <MediaRow
               title={`Because you watched ${lastWatchedTitle}`}
               items={recommendations}
               onPick={handleNavigateToInfo}
@@ -90,7 +88,7 @@ export default function HomeView({ initialData }) {
             />
           )}
           {watched.length > 0 && (
-            <Row
+            <MediaRow
               title="Continue Watching"
               items={watched.slice(0, 15)}
               onPick={handleNavigateToInfo}
@@ -98,32 +96,32 @@ export default function HomeView({ initialData }) {
             />
           )}
           {favorites.length > 0 && (
-            <Row
+            <MediaRow
               title="My List"
               items={favorites}
               onPick={handleNavigateToInfo}
               accent="var(--color-danger)"
             />
           )}
-          <Row
+          <MediaRow
             title="Trending Now"
             items={initialData.trending || []}
             onPick={handleNavigateToInfo}
             accent="var(--color-amber)"
           />
-          <Row
+          <MediaRow
             title="Top Rated Movies"
             items={initialData.topMovies || []}
             onPick={handleNavigateToInfo}
             accent="var(--color-jade)"
           />
-          <Row
+          <MediaRow
             title="Popular TV Shows"
             items={initialData.topSeries || []}
             onPick={handleNavigateToInfo}
             accent="var(--color-amber)"
           />
-          <Row
+          <MediaRow
             title="Anime / Animation"
             items={initialData.anime || []}
             onPick={handleNavigateToInfo}

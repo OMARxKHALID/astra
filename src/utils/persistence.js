@@ -1,10 +1,10 @@
-import { ls } from "./localStorage";
+import { localStorage } from "./localStorage";
 import { LS_KEYS, MAX_HISTORY_ENTRIES } from "@/constants/config";
 
 export const persistence = {
   getWatched: () => {
     try {
-      return JSON.parse(ls.get(LS_KEYS.watched) || "[]");
+      return JSON.parse(localStorage.get(LS_KEYS.watched) || "[]");
     } catch {
       return [];
     }
@@ -12,7 +12,7 @@ export const persistence = {
   
   getFavorites: () => {
     try {
-      return JSON.parse(ls.get(LS_KEYS.favorites) || "[]");
+      return JSON.parse(localStorage.get(LS_KEYS.favorites) || "[]");
     } catch {
       return [];
     }
@@ -33,7 +33,7 @@ export const persistence = {
         year: item.year
       });
       if (watched.length > 30) watched.pop();
-      ls.set(LS_KEYS.watched, JSON.stringify(watched));
+      localStorage.set(LS_KEYS.watched, JSON.stringify(watched));
       return watched;
     } catch {
       return [];
@@ -59,7 +59,7 @@ export const persistence = {
           year: item.year
         });
       }
-      ls.set(LS_KEYS.favorites, JSON.stringify(favs));
+      localStorage.set(LS_KEYS.favorites, JSON.stringify(favs));
       return !isFav;
     } catch {
       return false;
@@ -73,7 +73,7 @@ export const persistence = {
   saveToHistory: (videoUrl, tmdbId, currentTime = 0) => {
     if (!videoUrl || !tmdbId) return;
     try {
-      const history = JSON.parse(ls.get(LS_KEYS.history) || "[]");
+      const history = JSON.parse(localStorage.get(LS_KEYS.history) || "[]");
       const entry = {
         roomId: "watch",
         videoUrl,
@@ -89,7 +89,8 @@ export const persistence = {
       } else {
         history.unshift(entry);
       }
-      ls.set(LS_KEYS.history, JSON.stringify(history.slice(0, MAX_HISTORY_ENTRIES)));
+      localStorage.set(LS_KEYS.history, JSON.stringify(history.slice(0, MAX_HISTORY_ENTRIES)));
     } catch {}
   },
 };
+

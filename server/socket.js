@@ -7,11 +7,11 @@ import {
   SOCKET_PING_TIMEOUT,
 } from "./constants.js";
 import { saveRoom, deleteRoomFromRedis } from "./models/Room.js";
-import { verifyAdminSecret } from "./utils/auth.js";
-import registerChatHandlers from "./handlers/chatHandler.js";
-import registerVideoHandlers from "./handlers/videoHandler.js";
-import registerRoomHandlers from "./handlers/roomHandler.js";
-import registerCallHandlers from "./handlers/callHandler.js";
+import { adminAuth } from "./utils/auth.js";
+import { registerChatHandlers } from "./handlers/chatHandler.js";
+import { registerVideoHandlers } from "./handlers/videoHandler.js";
+import { registerRoomHandlers } from "./handlers/roomHandler.js";
+import { registerCallHandlers } from "./handlers/callHandler.js";
 
 const { loadEnvConfig } = pkg;
 loadEnvConfig(process.cwd());
@@ -76,7 +76,7 @@ httpServer.on("request", (req, res) => {
   const m = req.url?.match(/^\/rooms\/([^/?]+)/);
   if (m) {
     if (req.method === "DELETE") {
-      if (!verifyAdminSecret(req.headers["x-admin-secret"])) {
+      if (!adminAuth(req.headers["x-admin-secret"])) {
         res.writeHead(401, { "Content-Type": "application/json" });
         return res.end(JSON.stringify({ error: "Unauthorized" }));
       }
@@ -115,7 +115,7 @@ httpServer.on("request", (req, res) => {
   }
 
   if (req.url === "/stats") {
-    if (!verifyAdminSecret(req.headers["x-admin-secret"])) {
+    if (!adminAuth(req.headers["x-admin-secret"])) {
       res.writeHead(401, { "Content-Type": "application/json" });
       return res.end(JSON.stringify({ error: "Unauthorized" }));
     }

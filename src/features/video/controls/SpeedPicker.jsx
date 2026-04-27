@@ -1,8 +1,8 @@
-export const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
 import { useState, useEffect, useRef } from "react";
 
-export default function SpeedPicker({ value, onChange }) {
+export function SpeedPicker({ value, onChange }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 

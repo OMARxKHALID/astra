@@ -1,20 +1,21 @@
 // SSR-safe localStorage wrapper — single source of truth for all hooks
-export const ls = {
+export const localStorage = {
   get(k) {
     try {
-      return typeof window !== "undefined" ? localStorage.getItem(k) : null;
+      return typeof window !== "undefined" ? window.localStorage.getItem(k) : null;
     } catch {
       return null;
     }
   },
   set(k, v) {
     try {
-      if (typeof window !== "undefined") localStorage.setItem(k, v);
+      if (typeof window !== "undefined") window.localStorage.setItem(k, v);
     } catch { /* noop */ }
   },
   remove(k) {
     try {
-      if (typeof window !== "undefined") localStorage.removeItem(k);
+      if (typeof window !== "undefined") window.localStorage.removeItem(k);
     } catch { /* noop */ }
   },
 };
+

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { ls } from "@/utils/localStorage";
+import { localStorage } from "@/utils/localStorage";
 import { LS_KEYS, MAX_HISTORY_ENTRIES } from "@/constants/config";
 
 export function useMediaHistory({ roomId, videoUrl, serverState, isHost }) {
@@ -9,7 +9,7 @@ export function useMediaHistory({ roomId, videoUrl, serverState, isHost }) {
     if (!serverState || historySavedRef.current || !videoUrl) return;
     historySavedRef.current = true;
     try {
-      const history = JSON.parse(ls.get(LS_KEYS.history) || "[]");
+      const history = JSON.parse(localStorage.get(LS_KEYS.history) || "[]");
       const ytMatch = videoUrl.match(
         /(?:youtube\.com\/watch\?.*v=|youtu\.be\/)([A-Za-z0-9_-]{11})/,
       );
@@ -24,7 +24,7 @@ export function useMediaHistory({ roomId, videoUrl, serverState, isHost }) {
         lastVisited: Date.now(),
         isHost,
       };
-      ls.set(
+      localStorage.set(
         LS_KEYS.history,
         JSON.stringify(
           [entry, ...history.filter((h) => h.roomId !== roomId)].slice(

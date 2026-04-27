@@ -2,9 +2,9 @@
 
 import { useEffect, useRef } from "react";
 import Image from "next/image";
-import { formatTime } from "../../../utils";
+import { time } from "../../../utils";
 
-export default function SeekBar({
+export function SeekBar({
   localTime,
   duration,
   bufferedPct,
@@ -75,7 +75,7 @@ export default function SeekBar({
               )}
             </div>
             <span className="text-[11px] font-mono font-bold text-white bg-black/70 px-2 py-0.5 rounded-full border border-white/10">
-              {formatTime(preview.time)}
+              {time(preview.time)}
             </span>
           </div>
         </div>

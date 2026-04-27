@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Crown, Mic, MicOff, X as XIcon } from "lucide-react";
 import Image from "next/image";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { EXTERNAL_SERVICES } from "@/constants/config";
 
 function QualityDot({ deviation }) {
@@ -90,7 +90,7 @@ function Avatar({ name, isHost, inCall, micActive, camActive }) {
   );
 }
 
-export default function UserList({
+export function UserList({
   participants = [],
   myUserId,
   hostId,

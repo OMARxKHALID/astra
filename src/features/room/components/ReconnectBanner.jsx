@@ -1,6 +1,6 @@
 "use client";
 
-export default function ReconnectBanner({ connStatus }) {
+export function ReconnectBanner({ connStatus }) {
   if (connStatus === "connected") return null;
 
   const isConnecting   = connStatus === "connecting";

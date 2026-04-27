@@ -1,6 +1,6 @@
 "use client";
 
-export default function TechnicalStats({
+export function TechnicalStats({
   visible,
   hlsQuality,
   videoUrl,

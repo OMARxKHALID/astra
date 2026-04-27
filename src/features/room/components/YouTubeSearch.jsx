@@ -7,7 +7,7 @@ import Image from "next/image";
 
 const DEBOUNCE_MS = 340;
 
-export default function YouTubeSearch({ onLoad }) {
+export function YouTubeSearch({ onLoad }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
