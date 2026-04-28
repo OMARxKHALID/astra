@@ -151,8 +151,8 @@ export class Room {
       if (times.length > 2) {
         leaderTime = times[Math.floor(times.length / 2)];
       } else if (times.length === 2) {
-        // [Note] Average for 2 users prevents the 'chase' bias where everyone jumps to the fastest user
-        leaderTime = (times[0] + times[1]) / 2;
+        // [Note] Max (fastest user) for 1-2 users ensures zero-latency feel for pairs
+        leaderTime = Math.max(times[0], times[1]);
       } else if (times.length === 1) {
         leaderTime = times[0];
       }

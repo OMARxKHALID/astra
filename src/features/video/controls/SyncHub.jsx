@@ -32,6 +32,7 @@ export function SyncHub({
               ? "!bg-danger/20 !text-danger/80 hover:!bg-danger/30 hover:!text-danger"
               : "!bg-amber/20 !text-amber/80 hover:!bg-amber/30 hover:!text-amber shadow-amber/10"
             }`}
+          aria-label={isPlaying ? "Pause room" : "Play room"}
           title={isPlaying ? "Sync: Stop Room" : "Sync: Play Room"}
         >
           {isPlaying ? (

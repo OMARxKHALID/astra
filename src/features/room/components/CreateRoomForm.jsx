@@ -277,7 +277,7 @@ export function CreateRoomForm({ onResultsChange }) {
                       ? "Paste a video link (YouTube, Vimeo, HLS...)"
                       : "Search for a movie, series, trailer..."
                   }
-                  className="w-full h-14 border rounded-[var(--radius-pill)] pl-12 pr-4 text-sm font-body outline-none transition-all focus:border-amber focus:ring-4 focus:ring-amber/5 bg-[var(--color-surface)] border-white/5 text-[var(--color-text)] placeholder:text-white/20"
+                  className="w-full h-14 border rounded-[var(--radius-pill)] pl-12 pr-4 text-sm font-body outline-none transition-all focus:border-amber focus-visible:ring-2 focus-visible:ring-amber/40 bg-[var(--color-surface)] border-white/5 text-[var(--color-text)] placeholder:text-white/20"
                 />
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40 group-focus-within/input:text-[var(--color-amber)] group-focus-within/input:opacity-100 transition-all pointer-events-none">
                   {mode === "url" ? (

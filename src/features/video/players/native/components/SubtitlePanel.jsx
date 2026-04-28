@@ -281,7 +281,8 @@ export function SubtitlePanel({
                           localStorage.set(LS_KEYS.recentSubs, JSON.stringify(u));
                         }}
                         title="Remove"
-                        className="opacity-0 group-hover/sub:opacity-100 transition-opacity w-7 h-7 flex items-center justify-center rounded-full bg-danger/10 hover:bg-danger/25 text-danger/60 hover:text-danger border border-danger/15 shrink-0 text-xs"
+                        aria-label="Remove subtitle"
+                        className="opacity-0 group-hover/sub:opacity-100 transition-opacity w-7 h-7 flex items-center justify-center rounded-full bg-danger/10 hover:bg-danger/25 text-danger/60 hover:text-danger border border-danger/15 shrink-0 text-xs focus-visible:ring-2 focus-visible:ring-danger/70 outline-none"
                       >
                         ✕
                       </button>

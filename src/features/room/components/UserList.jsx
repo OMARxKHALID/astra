@@ -105,6 +105,7 @@ export function UserList({
   typingUsers = {},
 }) {
   const [confirmTransfer, setConfirmTransfer] = useState(null);
+  const [confirmKick, setConfirmKick] = useState(null);
   const getName = (uid) =>
     displayNames[uid] || `Guest-${uid.slice(0, 4).toUpperCase()}`;
   
@@ -124,6 +125,16 @@ export function UserList({
     }
   }
 
+  function handleKick(uid) {
+    if (confirmKick === uid) {
+      onKick?.(uid);
+      setConfirmKick(null);
+    } else {
+      setConfirmKick(uid);
+      setTimeout(() => setConfirmKick((p) => (p === uid ? null : p)), 4000);
+    }
+  }
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto no-scrollbar px-3 py-2 space-y-1">
@@ -134,7 +145,8 @@ export function UserList({
           const deviation = leaderTime > 0 && typeof tsMap[uid] === "number" ? Math.abs(tsMap[uid] - leaderTime) : null;
           const canKick = isHost && !isMe && !isThisHost;
           const canTransfer = isHost && !isMe && !isThisHost && !!onTransferHost;
-          const confirming = confirmTransfer === uid;
+          const confirmingT = confirmTransfer === uid;
+          const confirmingK = confirmKick === uid;
           const inCall = inCallUsers.includes(uid);
           const userStatus = remoteStatus?.[uid];
           const micActive = userStatus?.micActive !== false;
@@ -185,9 +197,10 @@ export function UserList({
                     variant="custom"
                     size="sm"
                     onClick={() => handleTransfer(uid)}
-                    title={confirming ? "Confirm: make host?" : "Transfer host"}
+                    title={confirmingT ? "Confirm: make host?" : "Transfer host"}
+                    aria-label={confirmingT ? "Confirm: make host?" : "Transfer host"}
                     className={`shrink-0 !w-8 !p-0 !min-w-0 ${
-                      confirming 
+                      confirmingT 
                         ? "bg-amber/20 border-amber/40 text-amber animate-pulse" 
                         : "bg-amber/10 hover:bg-amber/20 border-amber/20 text-amber/70 hover:text-amber"
                     }`}
@@ -199,9 +212,14 @@ export function UserList({
                   <Button
                     variant="custom"
                     size="sm"
-                    onClick={() => onKick?.(uid)}
-                    title={`Kick ${name}`}
-                    className="shrink-0 !w-8 !p-0 !min-w-0 bg-danger/10 hover:bg-danger/20 border-danger/20 text-danger/70 hover:text-danger"
+                    onClick={() => handleKick(uid)}
+                    title={confirmingK ? `Confirm: kick ${name}?` : `Kick ${name}`}
+                    aria-label={confirmingK ? `Confirm kick ${name}` : `Kick ${name}`}
+                    className={`shrink-0 !w-8 !p-0 !min-w-0 ${
+                      confirmingK 
+                        ? "bg-danger/20 border-danger/40 text-danger animate-pulse" 
+                        : "bg-danger/10 hover:bg-danger/20 border-danger/20 text-danger/70 hover:text-danger"
+                    }`}
                   >
                     <XIcon className="w-3.5 h-3.5" />
                   </Button>
@@ -215,10 +233,10 @@ export function UserList({
         })}
       </div>
 
-      {confirmTransfer && (
+      {(confirmTransfer || confirmKick) && (
         <div className="px-4 pb-3 shrink-0">
-          <p className="text-[10px] font-mono text-center text-amber/60">
-            Tap crown again to confirm
+          <p className="text-[10px] font-mono text-center text-amber/60 animate-in fade-in zoom-in-95">
+            Tap {confirmTransfer ? "crown" : "✕"} again to confirm
           </p>
         </div>
       )}

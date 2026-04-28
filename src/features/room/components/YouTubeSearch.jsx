@@ -82,7 +82,10 @@ export function YouTubeSearch({ onLoad }) {
       if (resJson.success && resJson.data.items) {
         setResults((prev) => {
           const seen = new Set(prev.map((i) => i.id));
-          return [...prev, ...resJson.data.items.filter((i) => !seen.has(i.id))];
+          return [
+            ...prev,
+            ...resJson.data.items.filter((i) => !seen.has(i.id)),
+          ];
         });
         setNextPageToken(resJson.data.nextPageToken || null);
       }
@@ -135,12 +138,16 @@ export function YouTubeSearch({ onLoad }) {
         style={{
           backgroundColor: "var(--color-surface)",
           borderColor:
-            focused || open ? "rgba(var(--color-amber-rgb), 0.4)" : "var(--color-border)",
+            focused || open
+              ? "rgba(var(--color-amber-rgb), 0.4)"
+              : "var(--color-border)",
         }}
       >
         <Search
           className="w-4 h-4 transition-colors shrink-0"
-          style={{ color: focused ? "var(--color-amber)" : "var(--color-muted)" }}
+          style={{
+            color: focused ? "var(--color-amber)" : "var(--color-muted)",
+          }}
         />
         <input
           type="text"
@@ -163,6 +170,7 @@ export function YouTubeSearch({ onLoad }) {
           onBlur={() => setFocused(false)}
           onKeyDown={(e) => e.key === "Enter" && search(query)}
           placeholder="Search YouTube…"
+          aria-label="Search YouTube"
           className="flex-1 bg-transparent text-sm font-body outline-none"
           style={{ color: "var(--color-text)" }}
         />

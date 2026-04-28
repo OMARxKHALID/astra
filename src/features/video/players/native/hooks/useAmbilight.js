@@ -16,11 +16,12 @@ export function useAmbilight(videoRef, videoUrl, onAmbiColors, enabled = true) {
     const v = videoRef.current;
     if (!v) return;
 
-    // Small canvas for efficient sampling (64 total pixels)
+    // Efficient sampling: reuse canvas and context via refs to avoid heavy GC pressure
     const canvas = document.createElement("canvas");
     canvas.width = 8;
     canvas.height = 8;
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    
     let lastT = 0;
     const lerp = (a, b, t) => a + (b - a) * t;
 

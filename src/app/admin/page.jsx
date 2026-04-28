@@ -86,6 +86,9 @@ function AdminContent() {
     setReady(true);
   }, [secretParam, router]);
 
+  const [confirmTerminate, setConfirmTerminate] = useState(null);
+  const [confirmFlush, setConfirmFlush] = useState(false);
+
   const fetchStats = async () => {
     if (!isAuthorized) return;
     setLoading(true);
@@ -112,6 +115,56 @@ function AdminContent() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTerminate = async (roomId) => {
+    if (confirmTerminate === roomId) {
+      try {
+        const secret = localStorage.get(LS_KEYS.adminSecret);
+        const res = await fetch(`/api/admin/room/${roomId}`, {
+          method: "DELETE",
+          headers: { "x-admin-secret": secret || "" },
+        });
+        const json = await res.json();
+        if (json.success) {
+          fetchStats();
+        } else {
+          setError(json.error || "Failed to terminate room.");
+        }
+      } catch (err) {
+        setError(err.message);
+      }
+      setConfirmTerminate(null);
+    } else {
+      setConfirmTerminate(roomId);
+      setTimeout(() => setConfirmTerminate((p) => (p === roomId ? null : p)), 3000);
+    }
+  };
+
+  const handleFlushRedis = async () => {
+    if (confirmFlush) {
+      try {
+        const secret = localStorage.get(LS_KEYS.adminSecret);
+        const res = await fetch("/api/admin/redis", {
+          method: "DELETE",
+          headers: { "x-admin-secret": secret || "" },
+        });
+        const json = await res.json();
+        if (json.success) {
+          localStorage.remove(LS_KEYS.history);
+          addToast?.("Redis flushed successfully", "success");
+          fetchStats();
+        } else {
+          setError(json.error || "Failed to flush Redis.");
+        }
+      } catch (err) {
+        setError(err.message);
+      }
+      setConfirmFlush(false);
+    } else {
+      setConfirmFlush(true);
+      setTimeout(() => setConfirmFlush(false), 3000);
     }
   };
 
@@ -247,6 +300,7 @@ function AdminContent() {
               fetchApiStatus();
             }}
             disabled={loading}
+            aria-label="Refresh telemetry"
             className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-pill)] glass-card border-white/5 hover:border-white/15 transition-all active:scale-95 disabled:opacity-40"
           >
             <RefreshCw
@@ -339,86 +393,62 @@ function AdminContent() {
 
                   <div className="divide-y divide-white/[0.04]">
                     {stats.topRooms?.length > 0 ? (
-                      stats.topRooms.map((room) => (
-                        <div
-                          key={room.roomId}
-                          className="px-6 py-4 flex items-center gap-4 hover:bg-white/[0.025] transition-colors group"
-                        >
-                          <div className="relative shrink-0">
-                            <div className="w-12 h-12 rounded-[var(--radius-panel)] bg-void border border-white/10 flex items-center justify-center font-mono font-black text-lg text-amber">
-                              {room.participants}
-                            </div>
-                            {!room.isPaused && (
-                              <div className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-jade border-2 border-void animate-pulse" />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-0.5">
-                              <span className="font-mono font-bold text-sm text-white/80">
-                                {room.roomId}
-                              </span>
-                              {room.isPaused && (
-                                <Lock className="w-3 h-3 text-white/30" />
+                      stats.topRooms.map((room) => {
+                        const confirming = confirmTerminate === room.roomId;
+                        return (
+                          <div
+                            key={room.roomId}
+                            className="px-6 py-4 flex items-center gap-4 hover:bg-white/[0.025] transition-colors group"
+                          >
+                            <div className="relative shrink-0">
+                              <div className="w-12 h-12 rounded-[var(--radius-panel)] bg-void border border-white/10 flex items-center justify-center font-mono font-black text-lg text-amber">
+                                {room.participants}
+                              </div>
+                              {!room.isPaused && (
+                                <div className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-jade border-2 border-void animate-pulse" />
                               )}
                             </div>
-                            <p className="text-[11px] font-mono text-white/25 truncate">
-                              {room.videoUrl || "No media loaded"}
-                            </p>
-                          </div>
-
-                          <div className="flex items-center gap-4 shrink-0">
-                            <div className="hidden sm:flex flex-col items-end gap-1">
-                              <span
-                                className={`text-[11px] font-bold font-mono ${
-                                  room.isPaused ? "text-white/30" : "text-jade"
-                                }`}
-                              >
-                                {room.isPaused ? "Paused" : "Playing"}
-                              </span>
-                              <span className="text-[10px] font-mono text-white/25">
-                                {time(room.lastUpdated)}
-                              </span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <span className="font-mono font-bold text-sm text-white/80">
+                                  {room.roomId}
+                                </span>
+                                {room.isPaused && (
+                                  <Lock className="w-3 h-3 text-white/30" />
+                                )}
+                              </div>
+                              <p className="text-[11px] font-mono text-white/25 truncate">
+                                {room.videoUrl || "No media loaded"}
+                              </p>
                             </div>
-                            <Button
-                              variant="custom"
-                              title="Terminate Session"
-                              onClick={async () => {
-                                if (
-                                  !confirm(
-                                    `Are you sure you want to completely terminate room ${room.roomId}? All users will be kicked.`,
-                                  )
-                                )
-                                  return;
-                                try {
-                                  const secret = localStorage.get(LS_KEYS.adminSecret);
-                                  const res = await fetch(
-                                    `/api/admin/room/${room.roomId}`,
-                                    {
-                                      method: "DELETE",
-                                      headers: {
-                                        "x-admin-secret": secret || "",
-                                      },
-                                    },
-                                  );
-                                  const json = await res.json();
-                                  if (json.success) {
-                                    fetchStats();
-                                  } else {
-                                    alert(
-                                      json.error || "Failed to terminate room.",
-                                    );
-                                  }
-                                } catch (err) {
-                                  alert(err.message);
-                                }
-                              }}
-                              className="w-8 h-8 !p-0 rounded-[var(--radius-pill)] flex items-center justify-center text-white/20 hover:bg-danger/20 hover:text-danger transition-colors opacity-0 group-hover:opacity-100 !bg-transparent"
-                            >
-                              <XCircle className="w-4 h-4" />
-                            </Button>
+
+                            <div className="flex items-center gap-4 shrink-0">
+                              <div className="hidden sm:flex flex-col items-end gap-1">
+                                <span
+                                  className={`text-[11px] font-bold font-mono ${
+                                    room.isPaused ? "text-white/30" : "text-jade"
+                                  }`}
+                                >
+                                  {room.isPaused ? "Paused" : "Playing"}
+                                </span>
+                                <span className="text-[10px] font-mono text-white/25">
+                                  {time(room.lastUpdated)}
+                                </span>
+                              </div>
+                              <Button
+                                variant="custom"
+                                title={confirming ? "Tap to confirm" : "Terminate Session"}
+                                aria-label={confirming ? "Confirm: terminate room" : "Terminate room"}
+                                onClick={() => handleTerminate(room.roomId)}
+                                className={`w-8 h-8 !p-0 rounded-[var(--radius-pill)] flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 !bg-transparent
+                                  ${confirming ? "text-danger animate-pulse opacity-100" : "text-white/20 hover:bg-danger/20 hover:text-danger"}`}
+                              >
+                                {confirming ? <Zap className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      ))
+                        );
+                      })
                     ) : (
                       <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
                         <Tv className="w-10 h-10 text-white/5" />
@@ -534,37 +564,14 @@ function AdminContent() {
                   <div className="flex flex-col gap-3">
                     <Button
                       variant="danger"
-                      onClick={async () => {
-                        if (
-                          !confirm(
-                            "Are you sure you want to flush all stored room data from Redis? This action cannot be undone.",
-                          )
-                        )
-                          return;
-                        try {
-                          const secret = localStorage.get(LS_KEYS.adminSecret);
-                          const res = await fetch("/api/admin/redis", {
-                            method: "DELETE",
-                            headers: { "x-admin-secret": secret || "" },
-                          });
-                          const json = await res.json();
-                          if (json.success) {
-                            localStorage.remove(LS_KEYS.history);
-                            alert(
-                              "Redis database and local history flushed successfully.",
-                            );
-                            fetchStats();
-                          } else {
-                            alert(json.error || "Failed to flush Redis.");
-                          }
-                        } catch (err) {
-                          alert(err.message);
-                        }
-                      }}
-                      className="w-full flex items-center justify-center gap-2 py-3 bg-danger/10 border border-danger/20 hover:bg-danger/20 text-danger"
+                      onClick={handleFlushRedis}
+                      className={`w-full flex items-center justify-center gap-2 py-3 border transition-all
+                        ${confirmFlush 
+                          ? "bg-danger text-void border-danger animate-pulse" 
+                          : "bg-danger/10 border-danger/20 hover:bg-danger/20 text-danger"}`}
                     >
-                      <Trash2 className="w-4 h-4" />
-                      Flush Redis Database
+                      {confirmFlush ? <Zap className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
+                      {confirmFlush ? "Tap again to confirm flush" : "Flush Redis Database"}
                     </Button>
                     <Button
                       variant="danger"

@@ -13,7 +13,7 @@ export function VolumeControl({
       <button
         onClick={onMuteToggle}
         aria-label={muted || volume === 0 ? "Unmute" : "Mute"}
-        className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/10 text-white/40 hover:text-white transition-all active:scale-95 focus-visible:ring-2"
+        className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/10 text-white/40 hover:text-white transition-all active:scale-95 focus-visible:ring-2 focus-visible:ring-white/40 outline-none"
       >
         {muted || volume === 0 ? (
           <MuteIcon className="w-5 h-5 text-danger/80" />
@@ -35,6 +35,7 @@ export function VolumeControl({
             step="0.05"
             value={muted ? 0 : volume}
             onChange={onVolumeChange}
+            aria-label="Volume"
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           />
         </div>

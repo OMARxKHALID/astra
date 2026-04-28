@@ -1,9 +1,12 @@
 import { apiResponse } from "@/utils/apiResponse";
 import { getSeasonData } from "@/features/content/services/tmdb";
+import { withRateLimit } from "@/lib/rateLimit";
 
 const VALID_ID_PATTERN = /^\d+$/;
 
 export async function GET(req, { params }) {
+  const limited = await withRateLimit(req, { key: "tmdb:season", requests: 30, window: "1 m" });
+  if (limited) return limited;
   const { type, id, number } = await params;
 
   if (type !== "tv")

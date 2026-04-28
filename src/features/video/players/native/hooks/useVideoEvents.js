@@ -42,8 +42,8 @@ export function useVideoEvents({
       setPosterVisible(false);
     };
 
-    const onWait = () => {};
-    const onCan = () => {};
+    const onWait = () => setBuffering(true);
+    const onCan = () => setBuffering(false);
 
     const onNativeEnded = () => {
       onEnded?.();

@@ -1,7 +1,10 @@
 import { apiResponse } from "@/utils/apiResponse";
 import { fetchTMDB, normalizeTMDB } from "@/features/content/services/tmdb";
+import { withRateLimit } from "@/lib/rateLimit";
 
 export async function GET(req) {
+  const limited = await withRateLimit(req, { key: "tmdb:recommendations", requests: 40, window: "1 m" });
+  if (limited) return limited;
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id")?.slice(0, 20) || "";

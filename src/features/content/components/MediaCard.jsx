@@ -4,7 +4,7 @@ import { Film, Play, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { memo } from "react";
 
-function MediaCardComponent({ item, onPick }) {
+function MediaCardInner({ item, onPick }) {
   const router = useRouter();
 
   const handleHover = () => {
@@ -29,6 +29,7 @@ function MediaCardComponent({ item, onPick }) {
             alt={item.title}
             width={160}
             height={240}
+            sizes="160px"
             className="w-full h-full object-cover"
           />
         ) : (
@@ -68,4 +69,4 @@ function MediaCardComponent({ item, onPick }) {
   );
 }
 
-export const MediaCard = memo(MediaCardComponent);
+export const MediaCard = memo(MediaCardInner);

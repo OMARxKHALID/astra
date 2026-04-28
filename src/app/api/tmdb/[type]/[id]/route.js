@@ -1,9 +1,12 @@
 import { apiResponse } from "@/utils/apiResponse";
 import { getMovieDetails, getTVDetails } from "@/features/content/services/tmdb";
+import { withRateLimit } from "@/lib/rateLimit";
 
 const VALID_ID_PATTERN = /^\d+$/;
 
 export async function GET(req, { params }) {
+  const limited = await withRateLimit(req, { key: "tmdb:details", requests: 60, window: "1 m" });
+  if (limited) return limited;
   const { type, id } = await params;
 
   if (!id || !VALID_ID_PATTERN.test(id)) {

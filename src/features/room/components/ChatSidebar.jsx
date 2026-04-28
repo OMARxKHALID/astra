@@ -334,7 +334,7 @@ export function ChatSidebar({
                 placeholder="Write a message…"
                 maxLength={500}
                 autoComplete="off"
-                className="w-full border border-white/10 bg-white/5 text-white/90 rounded-xl pl-4 pr-11 py-2 text-[12.5px] font-body outline-none transition-all focus:ring-1 focus:ring-amber/40 focus:border-amber/40 placeholder:opacity-25"
+                className="w-full border border-white/10 bg-white/5 text-white/90 rounded-xl pl-4 pr-11 py-2 text-[12.5px] font-body outline-none transition-all focus-visible:ring-1 focus-visible:ring-amber/40 focus:border-amber/40 placeholder:opacity-25"
               />
             </>
           )}

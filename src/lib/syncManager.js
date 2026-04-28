@@ -35,8 +35,8 @@ export function getLeaderTime(tsMap) {
     _cachedLeader =
       times.length % 2 !== 0 ? times[mid] : (times[mid - 1] + times[mid]) / 2;
   } else if (times.length === 2) {
-    // [Note] Average for 2 users prevents the 'chase' bias where everyone jumps to the fastest user
-    _cachedLeader = (times[0] + times[1]) / 2;
+    // [Note] Max (fastest user) for 1-2 users ensures zero-latency feel for pairs
+    _cachedLeader = Math.max(times[0], times[1]);
   } else {
     _cachedLeader = times[0];
   }
@@ -51,16 +51,15 @@ export function computeCorrection(localTime, targetTime, isPlaying) {
   if (!isPlaying) return { action: "none", playbackRate: 1 };
   const drift = targetTime - localTime;
   
-  // Use a smaller internal tolerance for smoother handling 
-  if (Math.abs(drift) <= 0.2) return { action: "none", playbackRate: 1 };
+  // [Note] Correction deadzone: Specified 0.5s tolerance to avoid jitter
+  if (Math.abs(drift) <= 0.5) return { action: "none", playbackRate: 1 };
 
-  // [Note] Cubic-like ramp: drift / 40 creates a nearly imperceptible transition.
-  // Capping at 1.06 ensures pitch shifting remains within reasonable bounds.
+  // [Note] Correction ramp: Clamped to 0.9x - 1.1x as per performance rules
   if (drift > 0) {
-    const rate = parseFloat(Math.min(1 + drift / 40, 1.06).toFixed(4));
+    const rate = parseFloat(Math.min(1 + drift / 40, 1.1).toFixed(4));
     return { action: "soft", playbackRate: rate };
   }
 
-  const rate = parseFloat(Math.max(1 + drift / 40, 0.94).toFixed(4));
+  const rate = parseFloat(Math.max(1 + drift / 40, 0.9).toFixed(4));
   return { action: "soft", playbackRate: rate };
 }
